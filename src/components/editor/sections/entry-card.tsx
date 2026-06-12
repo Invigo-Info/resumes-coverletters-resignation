@@ -1,0 +1,77 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function EntryCard({
+  title,
+  subtitle,
+  onDelete,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onDelete: () => void;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-xl border border-border bg-card">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-foreground">
+              {title || "Untitled"}
+            </p>
+            {subtitle && (
+              <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
+        </button>
+        <button
+          onClick={onDelete}
+          aria-label="Delete entry"
+          className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="size-4" />
+        </button>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Collapse" : "Expand"}
+          className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <ChevronDown
+            className={cn("size-4 transition-transform", open && "rotate-180")}
+          />
+        </button>
+      </div>
+
+      {open && <div className="border-t border-border p-4">{children}</div>}
+    </div>
+  );
+}
+
+export function AddMoreButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 rounded-xl bg-muted px-5 py-4 text-left font-semibold text-foreground transition-colors hover:bg-muted/70"
+    >
+      <span className="text-lg leading-none">+</span>
+      {label}
+    </button>
+  );
+}
