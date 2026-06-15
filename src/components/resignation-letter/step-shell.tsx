@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { HelpPill } from "@/components/layout/help-pill";
+import { HomeButton } from "@/components/layout/home-button";
 import { ResignationLetterPreview } from "./resignation-letter-preview";
 import {
   RL_STEPPER_STEPS,
@@ -72,9 +73,12 @@ export function StepShell({
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header: logo · stepper · percent + emoji */}
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 sm:px-8">
-        <Link href="/resignation-letters" aria-label="resume.co home" className="w-fit">
-          <LogoMark withWordmark={false} className="size-7" />
-        </Link>
+        <div className="flex w-fit items-center gap-3">
+          <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
+          <Link href="/resignation-letters" aria-label="resume.co home" className="w-fit">
+            <LogoMark withWordmark={false} className="size-7" />
+          </Link>
+        </div>
 
         <Stepper step={step} />
 

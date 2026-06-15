@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Send, Plus } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +23,10 @@ const TABS = [
 
 export function TopNav({ active = "Resumes" }: { active?: string }) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const email = session?.user?.email ?? "";
+  // Avatar shows the first letter of the signed-in email (fallback to name).
+  const initial = (email || session?.user?.name || "").trim().charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm">
@@ -53,23 +58,42 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
 
         {/* Right: subscribe, avatar, create */}
         <div className="ml-auto flex items-center gap-4">
-          <button className="hidden items-center gap-1.5 text-sm font-semibold text-primary hover:opacity-80 sm:flex">
+          <Link
+            href="/payment"
+            className="hidden items-center gap-1.5 text-sm font-semibold text-primary hover:opacity-80 sm:flex"
+          >
             <Send className="size-4 -rotate-45" />
             Subscribe now
-          </button>
+          </Link>
 
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="grid size-9 place-items-center rounded-full bg-[#D2451E] text-sm font-semibold text-white outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="grid size-9 place-items-center rounded-full bg-[#D2451E] text-sm font-semibold uppercase text-white outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
               aria-label="Account menu"
             >
-              J
+              {initial}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuContent align="end" className="min-w-56">
+              {email && (
+                <>
+                  <div className="px-2 py-1.5">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {session?.user?.name || email.split("@")[0]}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem>Account</DropdownMenuItem>
               <DropdownMenuItem>Help &amp; support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Logout</DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

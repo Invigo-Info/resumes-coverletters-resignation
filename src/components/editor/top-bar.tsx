@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
 import { downloadResume } from "@/lib/download-pdf";
+import { HomeButton } from "@/components/layout/home-button";
 
 export type EditorTab = "write" | "design" | "improve";
 
@@ -66,6 +67,9 @@ export function TopBar({
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
+      {/* Home */}
+      <HomeButton className="size-13" />
+
       {/* Tabs */}
       <div className="flex items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border">
         {TABS.map((t) => {

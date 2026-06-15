@@ -15,6 +15,7 @@ import {
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
+import { HomeButton } from "@/components/layout/home-button";
 import { StartOptionCard } from "@/components/creation/start-option-card";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
@@ -72,7 +73,8 @@ export default function CoverLetterNewPage() {
 
   return (
     <PageShell>
-      <div className="absolute left-6 top-6">
+      <div className="absolute left-6 top-6 flex items-center gap-3">
+        <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
         <Link href="/cover-letters" aria-label="resume.co home">
           <LogoMark />
         </Link>

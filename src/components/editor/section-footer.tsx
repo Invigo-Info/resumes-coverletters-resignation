@@ -54,7 +54,14 @@ export function EditorFooter({
   );
 }
 
-export function SectionFooter({ onReorder }: { onReorder: () => void }) {
+export function SectionFooter({
+  onReorder,
+  onComplete,
+}: {
+  onReorder: () => void;
+  /** Called by Next on the final section (e.g. advance to the Design tab). */
+  onComplete?: () => void;
+}) {
   const order = useResumeStore((s) => s.sectionOrder);
   const active = useResumeStore((s) => s.activeSection);
   const setActive = useResumeStore((s) => s.setActiveSection);
@@ -67,8 +74,13 @@ export function SectionFooter({ onReorder }: { onReorder: () => void }) {
     <EditorFooter
       onBack={isFirst ? undefined : () => setActive(order[idx - 1])}
       onReorder={onReorder}
-      // On the final section, Next advances into the Additional-section picker.
-      onNext={() => setActive(isLast ? "additional" : order[idx + 1])}
+      nextLabel={isLast ? "Next: Design" : "Next"}
+      // On the final section, Next moves on to the Design step; otherwise to the
+      // next section in the editing order.
+      onNext={() => {
+        if (isLast) onComplete?.();
+        else setActive(order[idx + 1]);
+      }}
     />
   );
 }

@@ -103,6 +103,11 @@
   --ai-to: #d946ef;
   --logo-from: #34d399;
   --logo-to: #2563eb;
+  /* creation-menu icon tiles (the "How should we start?" cards) */
+  --tile-strong-from: #4f8bff;
+  --tile-strong-to: #2563eb;
+  --tile-soft-from: #7aa6ff;
+  --tile-soft-to: #4f7dff;
   --progress-from: #fb923c;
   --progress-via: #fbbf24;
   --progress-to: #84cc16;
@@ -145,6 +150,12 @@
   }
   .bg-gradient-logo {
     background-image: linear-gradient(135deg, var(--logo-from), var(--logo-to));
+  }
+  .bg-tile-strong {
+    background-image: linear-gradient(135deg, var(--tile-strong-from), var(--tile-strong-to));
+  }
+  .bg-tile-soft {
+    background-image: linear-gradient(135deg, var(--tile-soft-from), var(--tile-soft-to));
   }
   .bg-gradient-progress {
     background-image: linear-gradient(

@@ -108,7 +108,10 @@ export function EditorShell({ templateId }: { templateId?: string }) {
                   </motion.div>
                 </AnimatePresence>
                 {active !== "reorder" && active !== "additional" && (
-                  <SectionFooter onReorder={() => setActive("reorder")} />
+                  <SectionFooter
+                    onReorder={() => setActive("reorder")}
+                    onComplete={() => setTab("design")}
+                  />
                 )}
               </div>
             </main>
@@ -151,7 +154,7 @@ export function EditorShell({ templateId }: { templateId?: string }) {
                     setActive(sec);
                     setTab("write");
                   }}
-                  onBack={() => setTab("write")}
+                  onBack={() => setTab("design")}
                 />
               </div>
             </main>

@@ -13,7 +13,7 @@ function dateRange(start: string, end: string) {
 }
 
 const FONT_STACK: Record<DesignOptions["font"], string> = {
-  roboto: "var(--font-sans), system-ui, sans-serif",
+  roboto: "Verdana, Geneva, Tahoma, sans-serif",
   georgia: "Georgia, 'Times New Roman', serif",
   garamond: "'EB Garamond', Garamond, Georgia, serif",
 };
@@ -277,9 +277,14 @@ export function LivePreview() {
   };
 
   const twoCol = design.columns !== "centered";
-  const mainKeys = twoCol
+  const mainKeysRaw = twoCol
     ? s.sectionOrder.filter((k) => !isSidebar(k, s.additional))
     : s.sectionOrder;
+  // Professional summary always renders at the top of the resume, even though it
+  // sits last in the editing/nav order.
+  const mainKeys = mainKeysRaw.includes("summary")
+    ? ["summary", ...mainKeysRaw.filter((k) => k !== "summary")]
+    : mainKeysRaw;
   const sidebarKeys = twoCol
     ? s.sectionOrder.filter((k) => isSidebar(k, s.additional))
     : [];
@@ -326,7 +331,7 @@ export function LivePreview() {
       <div
         data-resume-preview
         className="flex min-h-[calc(100vh-7rem)] w-full overflow-hidden rounded-2xl text-neutral-900"
-        style={fontStyle}
+        style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
       >
         <div className={`flex w-full ${onRight ? "flex-row-reverse" : ""}`}>
           <aside

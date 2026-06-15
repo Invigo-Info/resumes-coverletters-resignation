@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
+import { BackPill } from "@/components/layout/back-pill";
 import { TemplateGallery } from "@/components/templates/template-gallery";
 
 export default function TemplateGalleryPage() {
@@ -26,6 +27,7 @@ export default function TemplateGalleryPage() {
         <TemplateGallery />
       </div>
 
+      <BackPill />
       <HelpPill />
     </PageShell>
   );

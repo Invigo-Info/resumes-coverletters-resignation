@@ -1,9 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Plus, Sparkles } from "lucide-react";
+import {
+  ChevronDown,
+  Plus,
+  Sparkles,
+  Loader2,
+  RefreshCw,
+  Check,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 import { useResumeStore, type EmploymentEntry } from "@/lib/store/resume-store";
-import { improveBullets, refineBullets } from "@/lib/ai/mock";
+import { improveBullets, rewriteBullets } from "@/lib/ai/mock";
+import { EditWithAiMenu, LengthBadge } from "./ai-edit";
 import { Field, FieldWrap, SectionHeading } from "./field";
 import { EntryCard, AddMoreButton } from "./entry-card";
 import { RichTextEditor } from "../rich-text-editor";
@@ -14,6 +24,31 @@ import { JOB_TITLES, LOCATIONS } from "@/lib/suggestions";
 const strip = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 const dateRange = (a: string, b: string) =>
   [a, b].filter(Boolean).join(" – ");
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Pull bullet text out of the description HTML (falls back to lines). */
+function htmlToBullets(html: string): string[] {
+  if (!html) return [];
+  const lis = Array.from(html.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)).map((m) =>
+    strip(m[1])
+  );
+  if (lis.length) return lis.filter(Boolean);
+  return strip(html)
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Wrap plain bullet strings back into a <ul>. */
+function bulletsToUl(bullets: string[]): string {
+  const items = bullets
+    .map((b) => b.replace(/^[•\-*\s]+/, "").trim())
+    .filter(Boolean);
+  if (!items.length) return "";
+  return `<ul>${items.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`;
+}
 
 /**
  * The description editor plus AI bullet assistance, mirroring resume.co:
@@ -26,7 +61,10 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   const [ideas, setIdeas] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [improved, setImproved] = useState(false);
+  const [editing, setEditing] = useState(false);
+  // AI "Edit with AI" preview: null = closed, [] = generating, [...] = result.
+  const [preview, setPreview] = useState<string[] | null>(null);
+  const [previewInstruction, setPreviewInstruction] = useState("");
   const loadedFor = useRef("");
 
   const hasContent = strip(entry.description).length > 0;
@@ -44,7 +82,6 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
         page: nextPage,
       });
       setIdeas((prev) => (nextPage === 0 ? more : [...prev, ...more]));
-      setImproved(false);
       setPage(nextPage);
       setLoading(false);
     },
@@ -63,27 +100,57 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
     return () => clearTimeout(t);
   }, [entry.jobTitle, fetchIdeas]);
 
-  // Rewrite the user's existing bullets into stronger versions.
-  async function improve() {
-    if (!hasContent) return;
-    setLoading(true);
-    const better = await refineBullets({
-      text: strip(entry.description),
-      role: entry.jobTitle,
+  // "Edit with AI" — generate a rewritten version to PREVIEW (Rewrite / Use).
+  // keepPanel: from the preview's Rewrite menu (keep showing the current result
+  // while regenerating); otherwise open the panel fresh in its loading state.
+  async function generate(instruction: string, keepPanel: boolean) {
+    const bullets = htmlToBullets(entry.description);
+    if (!bullets.length) {
+      toast.error("Add a few bullet points first", {
+        description: "Write or pick some bullets, then edit them with AI.",
+      });
+      return;
+    }
+    const reroll = keepPanel && instruction === previewInstruction;
+    setPreviewInstruction(instruction);
+    if (!keepPanel) setPreview([]); // open the panel in its loading state
+    setEditing(true);
+    const result = await rewriteBullets({
+      bullets,
+      instruction: reroll
+        ? `${instruction} Give a fresh alternative phrasing, different from a previous attempt.`
+        : instruction,
+      jobTitle: entry.jobTitle,
     });
-    setIdeas(better);
-    setImproved(true);
-    setPage(0);
-    setLoading(false);
+    setEditing(false);
+    if (result && result.length) {
+      setPreview(result);
+    } else {
+      if (!keepPanel) setPreview(null);
+      toast.error("Couldn't reach AI", {
+        description: "Please try again in a moment.",
+      });
+    }
   }
 
-  function insert(text: string) {
+  const runAiEdit = (instruction: string) => generate(instruction, false);
+
+  function usePreview() {
+    if (!preview || !preview.length) return;
+    updateEmployment(entry.id, { description: bulletsToUl(preview) });
+    setPreview(null);
+    toast.success("Bullet points updated");
+  }
+
+  function insert(text: string, index: number) {
     const current = entry.description.replace(/<p><\/p>/g, "").trim();
     const li = `<li>${text}</li>`;
     const next = current.includes("<ul>")
       ? current.replace("</ul>", `${li}</ul>`)
       : `${current}<ul>${li}</ul>`;
     updateEmployment(entry.id, { description: next });
+    // Remove the chosen suggestion so it no longer shows in the list.
+    setIdeas((prev) => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -94,33 +161,78 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
         placeholder="• Describe numbers or concrete outcomes when you can"
         toolbarRight={
           hasContent ? (
-            <button
-              type="button"
-              onClick={improve}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ai-from)] transition-opacity hover:opacity-80 disabled:opacity-50"
-            >
-              <Sparkles className="size-3.5" />
-              {loading && improved ? "Improving…" : "Improve with AI"}
-            </button>
+            <div className="flex items-center gap-3">
+              <LengthBadge html={entry.description} />
+              <EditWithAiMenu busy={editing} onRun={runAiEdit} />
+            </div>
           ) : undefined
         }
       />
 
-      {ideas.length > 0 && (
-        <div className="mt-3">
-          {improved && (
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--ai-from)]">
-              <Sparkles className="size-3.5" />
-              Improved bullet points
-            </p>
+      {/* "Edit with AI" result preview — Rewrite to regenerate, Use to apply. */}
+      {preview !== null && (
+        <div className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5">
+          <span className="absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full bg-[var(--ai-from)] text-white shadow-sm">
+            <Sparkles className="size-3.5" />
+          </span>
+          <button
+            type="button"
+            onClick={() => setPreview(null)}
+            aria-label="Dismiss"
+            className="absolute right-2 top-2 grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+
+          {preview.length === 0 ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin text-[var(--ai-from)]" />
+              Generating…
+            </div>
+          ) : (
+            <>
+              <ul className="mt-1 list-disc space-y-1.5 pl-5 text-sm leading-snug text-foreground marker:text-[var(--ai-from)]">
+                {preview.map((b, i) => (
+                  <li key={i}>{b}</li>
+                ))}
+              </ul>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <EditWithAiMenu
+                  busy={editing}
+                  onRun={(instruction) => generate(instruction, true)}
+                  label="Rewrite"
+                  busyLabel="Rewriting…"
+                  idleIcon={RefreshCw}
+                  openUp
+                  triggerClassName="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={usePreview}
+                  disabled={editing}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ai-from)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <Check className="size-4" />
+                  Use
+                </button>
+              </div>
+            </>
           )}
+        </div>
+      )}
+
+      {preview === null && ideas.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--ai-from)]">
+            <Sparkles className="size-3.5" />
+            Suggested bullet points
+          </p>
           <ul className="divide-y divide-border">
             {ideas.map((idea, i) => (
               <li key={i}>
                 <button
                   type="button"
-                  onClick={() => insert(idea)}
+                  onClick={() => insert(idea, i)}
                   className="group flex w-full items-start gap-2.5 py-2.5 text-left"
                 >
                   <Plus className="mt-0.5 size-4 shrink-0 text-[var(--ai-from)]" />
@@ -137,7 +249,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
             disabled={loading}
             className="ml-auto mt-1 flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           >
-            {loading && !improved ? "Loading…" : "Show more ideas"}
+            {loading ? "Loading…" : "Show more ideas"}
             <ChevronDown className="size-3.5" />
           </button>
         </div>
@@ -159,10 +271,29 @@ export function EmploymentHistoryForm() {
   const updateEmployment = useResumeStore((s) => s.updateEmployment);
   const removeEmployment = useResumeStore((s) => s.removeEmployment);
 
+  // Accordion: only one entry open at a time. null = all collapsed.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const didInit = useRef(false);
+
   // Start with one empty entry so the form isn't blank.
   useEffect(() => {
     if (useResumeStore.getState().employment.length === 0) addEmployment();
   }, [addEmployment]);
+
+  // Open the first entry once on mount (after entries exist).
+  useEffect(() => {
+    if (!didInit.current && employment.length > 0) {
+      didInit.current = true;
+      setOpenId(employment[0].id);
+    }
+  }, [employment]);
+
+  // Add a new entry and open it (collapsing the others).
+  function handleAdd() {
+    addEmployment();
+    const list = useResumeStore.getState().employment;
+    setOpenId(list[list.length - 1]?.id ?? null);
+  }
 
   return (
     <div>
@@ -178,6 +309,8 @@ export function EmploymentHistoryForm() {
             title={[e.jobTitle, e.company].filter(Boolean).join(", ") || "Untitled"}
             subtitle={dateRange(e.startDate, e.endDate)}
             onDelete={() => removeEmployment(e.id)}
+            open={openId === e.id}
+            onToggle={() => setOpenId((prev) => (prev === e.id ? null : e.id))}
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FieldWrap label="Job title">
@@ -232,10 +365,7 @@ export function EmploymentHistoryForm() {
           </EntryCard>
         ))}
 
-        <AddMoreButton
-          label="Add another experience"
-          onClick={addEmployment}
-        />
+        <AddMoreButton label="Add another experience" onClick={handleAdd} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { HomeButton } from "@/components/layout/home-button";
 import { cn } from "@/lib/utils";
 import type { CLPhase } from "@/lib/store/cover-letter-store";
 
@@ -83,9 +84,12 @@ export function StepShell({
     <div className="flex min-h-screen flex-col bg-background">
       {/* Minimal header */}
       <header className="flex items-center justify-between px-5 py-4 sm:px-8">
-        <Link href="/cover-letters" aria-label="resume.co home">
-          <LogoMark withWordmark={false} className="size-7" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
+          <Link href="/cover-letters" aria-label="resume.co home">
+            <LogoMark withWordmark={false} className="size-7" />
+          </Link>
+        </div>
         <StepIndicator phase={phase} />
       </header>
 

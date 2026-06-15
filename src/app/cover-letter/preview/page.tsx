@@ -67,9 +67,9 @@ export default function CoverLetterPreviewPage() {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
         <Link
-          href="/cover-letters"
+          href="/dashboard"
           aria-label="Home"
-          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-card shadow-card ring-1 ring-border"
+          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-card shadow-card ring-1 ring-border transition-colors hover:bg-muted"
         >
           <Home className="size-4 text-foreground" />
         </Link>

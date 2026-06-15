@@ -21,23 +21,41 @@ type Task =
   | "suggest"
   | "coverLetter"
   | "parseResume"
+  | "extractResume"
+  | "rewriteBullets"
   | "rankChips"
   | "resignationLetter"
   | "improveText";
+
+/** Optional file (e.g. an uploaded PDF) sent inline to the model. */
+interface InlineFile {
+  mimeType: string;
+  data: string; // base64 (no data: prefix)
+}
 
 interface Body {
   task: Task;
   payload: Record<string, unknown>;
 }
 
-async function gemini(key: string, prompt: string, json: boolean) {
+async function gemini(
+  key: string,
+  prompt: string,
+  json: boolean,
+  file?: InlineFile
+) {
+  const parts: Record<string, unknown>[] = [];
+  if (file) parts.push({ inlineData: { mimeType: file.mimeType, data: file.data } });
+  parts.push({ text: prompt });
+
   const res = await fetch(ENDPOINT(key), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: {
-        temperature: 0.8,
+        // Extraction must be faithful, not creative → low temperature for parsing.
+        temperature: file ? 0.1 : 0.8,
         ...(json ? { responseMimeType: "application/json" } : {}),
       },
     }),
@@ -156,6 +174,61 @@ Resume:
 """${(p.resumeText as string) || (p.resumeTitle as string) || ""}"""`,
       };
     }
+    case "extractResume": {
+      return {
+        json: true,
+        prompt: `You are a precise resume parser. Extract the candidate's REAL information from the attached resume document (and/or the text below) into JSON with EXACTLY these keys:
+{
+  "firstName": string,
+  "lastName": string,
+  "jobTitle": string,            // current or most recent / target role
+  "email": string,
+  "phone": string,
+  "linkedin": string,            // URL or handle if present
+  "location": string,            // "City, ST" or "City, Country"
+  "summary": string,             // the professional summary as plain text (no markdown)
+  "employment": [                // most recent first
+    {
+      "jobTitle": string,
+      "company": string,
+      "location": string,
+      "startDate": string,       // exactly as written, e.g. "2020" or "Mar 2021"
+      "endDate": string,         // e.g. "Present"
+      "bullets": [string]        // each responsibility/achievement, plain text, no leading bullet glyphs
+    }
+  ],
+  "skills": [string],            // short skill names (1-4 words), de-duplicated
+  "education": [
+    {
+      "institution": string,
+      "degree": string,          // e.g. "Bachelor of Business Administration (BBA), Marketing"
+      "location": string,
+      "startDate": string,
+      "endDate": string,
+      "description": string      // plain text, "" if none
+    }
+  ]
+}
+Rules: COPY real data verbatim (names, companies, dates, bullet text) — do NOT invent, summarize away, or substitute placeholder/sample data. Use "" or [] for anything genuinely absent. Merge "Core Skills", "Tools & Platforms" and "Certifications" into skills if no dedicated skills list exists. Return JSON only, no markdown, no extra keys.
+
+Resume text (may be empty if a document is attached):
+"""${(p.resumeText as string) || ""}"""`,
+      };
+    }
+    case "rewriteBullets": {
+      const instruction =
+        (p.instruction as string) || "Make them stronger and more impactful";
+      const bullets = (p.bullets as string[]) || [];
+      return {
+        json: true,
+        prompt: `Rewrite the following resume bullet points for a ${role}.
+Instruction: ${instruction}.
+Rules: keep every fact truthful — do NOT invent companies, metrics, or responsibilities that aren't implied by the originals. Keep them ATS-friendly, each starting with a strong action verb, concrete and outcome-focused. Return a JSON array of strings (one rewritten bullet per original, or fewer if merging tightens them). No markdown, no numbering, no leading bullet glyphs.
+
+Bullets:
+${JSON.stringify(bullets)}`,
+      };
+    }
     case "rankChips": {
       const kind = (p.kind as string) || "skills";
       const options = (p.options as string[]) || [];
@@ -241,7 +314,27 @@ export async function POST(req: Request) {
   try {
     const { task, payload } = (await req.json()) as Body;
     const { prompt, json } = buildPrompt(task, payload);
-    const text = await gemini(key, prompt, json);
+    const file = payload.file as InlineFile | undefined;
+    const inline = file?.data ? file : undefined;
+
+    // Retry with backoff on transient failures (rate limit / overload / timeout)
+    // before falling back, so a single throttled window doesn't break the edit.
+    let text = "";
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        text = await gemini(key, prompt, json, inline);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        const msg = e instanceof Error ? e.message : String(e);
+        const transient = /\b(429|500|503)\b|RESOURCE_EXHAUSTED|UNAVAILABLE|overloaded/i.test(msg);
+        if (!transient || attempt === 2) break;
+        await new Promise((r) => setTimeout(r, 900 * (attempt + 1)));
+      }
+    }
+    if (lastErr) throw lastErr;
     if (json) {
       const cleaned = text.replace(/^```json\s*|\s*```$/g, "");
       return NextResponse.json({ data: JSON.parse(cleaned) });

@@ -9,21 +9,32 @@ export function EntryCard({
   subtitle,
   onDelete,
   defaultOpen = true,
+  open: openProp,
+  onToggle,
   children,
 }: {
   title: string;
   subtitle?: string;
   onDelete: () => void;
   defaultOpen?: boolean;
+  /** Controlled open state (for accordion behaviour). Omit for self-managed. */
+  open?: boolean;
+  onToggle?: () => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+  const toggle = () => {
+    if (isControlled) onToggle?.();
+    else setInternalOpen((v) => !v);
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card">
       <div className="flex items-center gap-2 px-4 py-3">
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <div className="min-w-0">
@@ -43,7 +54,7 @@ export function EntryCard({
           <Trash2 className="size-4" />
         </button>
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           aria-label={open ? "Collapse" : "Expand"}
           className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
         >

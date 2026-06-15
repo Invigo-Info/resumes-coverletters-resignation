@@ -129,6 +129,52 @@ export async function refineBullets(opts: {
   return BULLET_POOL.slice(0, 3);
 }
 
+/**
+ * Transform existing bullet points in place per a free-form instruction
+ * ("Edit with AI": Improve / More human / Shorter / Ask AI to…).
+ * Returns the rewritten bullets, or null when AI is unavailable/failed so the
+ * caller can show feedback instead of silently leaving the text unchanged.
+ */
+export async function rewriteBullets(opts: {
+  bullets: string[];
+  instruction: string;
+  jobTitle?: string;
+}): Promise<string[] | null> {
+  const ai = await callAi<string[]>("rewriteBullets", {
+    bullets: opts.bullets,
+    instruction: opts.instruction,
+    jobTitle: opts.jobTitle,
+  });
+  if (ai && Array.isArray(ai)) {
+    const cleaned = ai
+      .filter((s): s is string => typeof s === "string")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (cleaned.length) return cleaned;
+  }
+  return null; // AI unavailable / failed
+}
+
+/**
+ * Rewrite a free-text block (e.g. the professional summary) per an instruction
+ * ("Edit with AI": Improve / More human / Shorter / Ask AI to…).
+ * Returns the rewritten text, or null when AI is unavailable/failed.
+ */
+export async function rewriteText(opts: {
+  text: string;
+  instruction: string;
+  context?: string;
+}): Promise<string | null> {
+  const ai = await callAi<string>("improveText", {
+    text: opts.text,
+    instruction: opts.context
+      ? `${opts.instruction} ${opts.context}`
+      : opts.instruction,
+  });
+  if (typeof ai === "string" && ai.trim()) return ai.trim();
+  return null;
+}
+
 /** Tailor a resume to a pasted job description (returns summary + keywords). */
 export async function tailorResume(opts: {
   jobDescription: string;

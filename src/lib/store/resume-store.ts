@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { getTemplate } from "@/lib/templates";
 
 /* ------------------------------------------------------------------ */
@@ -90,7 +91,8 @@ export interface DesignOptions {
   font: FontId;
   spacing: SpacingId;
   columns: ColumnsId;
-  color: string; // hex accent
+  color: string; // hex accent (headings / title / rules)
+  bg: string; // page background ("" = white); set by "combination" color themes
   dark: boolean; // dark sidebar layout
 }
 
@@ -148,6 +150,8 @@ export interface ResumeState {
 
   /** Replace the whole resume (used by upload-parse in Phase 12). */
   hydrate: (data: Partial<ResumeState>) => void;
+  /** Clear back to a pristine, empty resume (used by "Start from scratch"). */
+  reset: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -180,17 +184,29 @@ const emptyEducation = (): EducationEntry => ({
 export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   "personal",
   "contact",
-  "summary",
   "employment",
-  "skills",
   "education",
+  "skills",
+  "summary",
 ];
 
-/* ------------------------------------------------------------------ */
-/* Store                                                              */
-/* ------------------------------------------------------------------ */
+/** A pristine, empty resume — shared by the store's initial state and reset(). */
+type ResumeData = Pick<
+  ResumeState,
+  | "templateId"
+  | "personal"
+  | "contact"
+  | "summary"
+  | "employment"
+  | "skills"
+  | "education"
+  | "additional"
+  | "design"
+  | "sectionOrder"
+  | "activeSection"
+>;
 
-export const useResumeStore = create<ResumeState>((set) => ({
+const emptyResume = (): ResumeData => ({
   templateId: "clear-ats",
   personal: {
     firstName: "",
@@ -211,17 +227,29 @@ export const useResumeStore = create<ResumeState>((set) => ({
     spacing: "normal",
     columns: "centered",
     color: "#111827",
+    bg: "",
     dark: false,
   },
-  sectionOrder: DEFAULT_SECTION_ORDER,
+  sectionOrder: [...DEFAULT_SECTION_ORDER],
   activeSection: "personal",
+});
+
+/* ------------------------------------------------------------------ */
+/* Store                                                              */
+/* ------------------------------------------------------------------ */
+
+export const useResumeStore = create<ResumeState>()(
+  persist(
+    (set) => ({
+  ...emptyResume(),
 
   setTemplate: (id) => set({ templateId: id }),
   applyTemplate: (id) =>
     set((s) => {
       const t = getTemplate(id);
       if (!t) return { templateId: id };
-      return { templateId: id, design: { ...s.design, ...t.preset } };
+      // Reset the combination background unless the template's preset sets one.
+      return { templateId: id, design: { ...s.design, bg: "", ...t.preset } };
     }),
   setDesign: (patch) => set((s) => ({ design: { ...s.design, ...patch } })),
   setPersonal: (patch) =>
@@ -318,7 +346,31 @@ export const useResumeStore = create<ResumeState>((set) => ({
   setSectionOrder: (order) => set({ sectionOrder: order }),
 
   hydrate: (data) => set((s) => ({ ...s, ...data })),
-}));
+  reset: () => set(emptyResume()),
+    }),
+    {
+      name: "resume-co:resume",
+      storage: createJSONStorage(() => localStorage),
+      // Don't restore the transient UI cursor — always open on the first section.
+      partialize: ({ activeSection: _activeSection, ...rest }) => rest,
+      // v1: normalise built-in order (summary last) for resumes saved earlier.
+      version: 1,
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<ResumeState> | undefined;
+        if (state && version < 1 && Array.isArray(state.sectionOrder)) {
+          const prev = state.sectionOrder;
+          const builtinOrder = ["personal", "contact", "employment", "education", "skills"];
+          const builtins = builtinOrder.filter((k) => prev.includes(k));
+          const additional = prev.filter(
+            (k) => !builtinOrder.includes(k) && k !== "summary"
+          );
+          state.sectionOrder = [...builtins, ...additional, "summary"];
+        }
+        return state as ResumeState;
+      },
+    }
+  )
+);
 
 /* ------------------------------------------------------------------ */
 /* Progress (shared by the top bar + the Improve tab)                 */
