@@ -5,7 +5,15 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 
-export function EmptyState() {
+export function EmptyState({
+  heading = "If you don't have a resume yet, it's a great time to create one!",
+  buttonLabel = "Build my resume",
+  href = "/resume-creation-menu",
+}: {
+  heading?: string;
+  buttonLabel?: string;
+  href?: string;
+} = {}) {
   return (
     <div className="flex flex-col items-center gap-6 py-10 text-center">
       <Image
@@ -18,12 +26,12 @@ export function EmptyState() {
         priority
       />
       <h1 className="max-w-md font-heading text-2xl font-extrabold leading-snug text-foreground">
-        If you don&apos;t have a resume yet, it&apos;s a great time to create one!
+        {heading}
       </h1>
-      <Link href="/resume-creation-menu">
+      <Link href={href}>
         <PrimaryButton>
           <Plus className="size-4" />
-          Build my resume
+          {buttonLabel}
         </PrimaryButton>
       </Link>
     </div>

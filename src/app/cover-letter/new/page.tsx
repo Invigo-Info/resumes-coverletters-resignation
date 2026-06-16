@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import {
   FileText,
   Sparkles,
   FileUp,
   ChevronRight,
   Loader2,
-  Link2,
   RotateCcw,
 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
@@ -17,15 +17,28 @@ import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { HomeButton } from "@/components/layout/home-button";
 import { StartOptionCard } from "@/components/creation/start-option-card";
+import {
+  DropboxIcon,
+  GoogleDriveIcon,
+  LinkedInIcon,
+} from "@/components/brand/source-icons";
+import {
+  GoogleConsentDialog,
+  LinkedInImportDialog,
+} from "@/components/creation/cloud-source-dialogs";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
 import { mockResumes } from "@/lib/mock-data";
+import { isDropboxConfigured, chooseFromDropbox } from "@/lib/dropbox";
+import { toast } from "sonner";
 
 export default function CoverLetterNewPage() {
   const router = useRouter();
   const [resumeOpen, setResumeOpen] = useState(true); // Use-your-resume is primary/expanded
   const [uploadOpen, setUploadOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [googleOpen, setGoogleOpen] = useState(false);
+  const [linkedInOpen, setLinkedInOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setFlow = useCoverLetterStore((s) => s.setFlow);
@@ -45,30 +58,56 @@ export default function CoverLetterNewPage() {
 
   function continueDraft() {
     if (hasBody) router.push("/cover-letter/preview");
-    else router.push("/cover-letter/builder");
+    else router.push("/cover-letters/write/intent");
   }
 
   function startScratch() {
     reset();
     setFlow("scratch");
     setStep("intent");
-    router.push("/cover-letter/builder");
+    router.push("/cover-letters/write/intent");
   }
 
   // Resume / upload flows: parse the resume (live AI, persona fallback),
   // populate the store, then land on the shared Review screen.
   async function startFromResume(
     meta: { sourceResumeId?: string; uploadedFileName?: string },
-    flow: "use-resume" | "upload"
+    flow: "use-resume" | "upload",
+    file?: File
   ) {
     setAnalyzing(true);
     reset();
     setFlow(flow, meta);
     setMode("onboarding");
     setStep("intent");
-    const parsed = await parseResumeForCoverLetter(flow, meta.sourceResumeId);
+    const parsed = await parseResumeForCoverLetter(flow, meta.sourceResumeId, file);
     hydrate(parsed);
     router.push("/cover-letter/review");
+  }
+
+  // Google Drive: consent gate -> real Google account chooser (NextAuth OAuth).
+  function consentToGoogle() {
+    setGoogleOpen(false);
+    signIn("google", { callbackUrl: "/cover-letter/new" });
+  }
+
+  // Dropbox: open the real Dropbox window when configured; else pick a file.
+  async function handleDropbox() {
+    if (!isDropboxConfigured()) {
+      toast.message("Connect Dropbox to import from there", {
+        description:
+          "Add NEXT_PUBLIC_DROPBOX_APP_KEY to enable the Dropbox window. Pick a file to upload for now.",
+      });
+      fileInputRef.current?.click();
+      return;
+    }
+    const picked = await chooseFromDropbox();
+    if (picked) startFromResume({ uploadedFileName: picked.name }, "upload");
+  }
+
+  function importFromLinkedIn() {
+    setLinkedInOpen(false);
+    startFromResume({ uploadedFileName: "LinkedIn profile" }, "upload");
   }
 
   return (
@@ -85,7 +124,11 @@ export default function CoverLetterNewPage() {
         type="file"
         accept=".pdf,.doc,.docx"
         className="hidden"
-        onChange={() => startFromResume({ uploadedFileName: "resume.pdf" }, "upload")}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = ""; // allow re-selecting the same file after a retry
+          startFromResume({ uploadedFileName: file?.name ?? "resume.pdf" }, "upload", file);
+        }}
       />
 
       <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4 py-16">
@@ -163,7 +206,12 @@ export default function CoverLetterNewPage() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    startFromResume({ uploadedFileName: "resume.pdf" }, "upload");
+                    const file = e.dataTransfer.files?.[0];
+                    startFromResume(
+                      { uploadedFileName: file?.name ?? "resume.pdf" },
+                      "upload",
+                      file
+                    );
                   }}
                   onClick={() => fileInputRef.current?.click()}
                   className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-background/60 px-4 py-8 text-center transition-colors hover:border-primary/50"
@@ -177,24 +225,28 @@ export default function CoverLetterNewPage() {
                 </div>
 
                 {[
-                  { label: "Dropbox", color: "#0061FF", icon: null },
-                  { label: "Google Drive", color: "#1FA463", icon: null },
-                  { label: "LinkedIn profile", color: "#0A66C2", icon: <Link2 className="size-4 text-white" /> },
+                  { label: "Dropbox", Icon: DropboxIcon, onClick: handleDropbox },
+                  {
+                    label: "Google Drive",
+                    Icon: GoogleDriveIcon,
+                    onClick: () => setGoogleOpen(true),
+                  },
+                  {
+                    label: "LinkedIn profile",
+                    Icon: LinkedInIcon,
+                    onClick: () => setLinkedInOpen(true),
+                  },
                 ].map((src) => (
                   <button
                     key={src.label}
                     type="button"
-                    onClick={() => startFromResume({ uploadedFileName: src.label }, "upload")}
-                    className="flex w-full items-center gap-3 rounded-xl bg-secondary px-4 py-3 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                    onClick={src.onClick}
+                    className="flex w-full items-center gap-3 rounded-xl bg-secondary px-4 py-3.5 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                   >
-                    <span
-                      className="grid size-5 shrink-0 place-items-center rounded-[4px]"
-                      style={{ backgroundColor: src.color }}
-                      aria-hidden
-                    >
-                      {src.icon}
+                    <src.Icon className="size-5 shrink-0" />
+                    <span className="flex-1 text-sm font-semibold text-foreground">
+                      {src.label}
                     </span>
-                    <span className="flex-1 text-sm font-medium text-foreground">{src.label}</span>
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </button>
                 ))}
@@ -213,6 +265,17 @@ export default function CoverLetterNewPage() {
           </div>
         </div>
       )}
+
+      <GoogleConsentDialog
+        open={googleOpen}
+        onOpenChange={setGoogleOpen}
+        onConsent={consentToGoogle}
+      />
+      <LinkedInImportDialog
+        open={linkedInOpen}
+        onOpenChange={setLinkedInOpen}
+        onImport={importFromLinkedIn}
+      />
 
       <HelpPill />
     </PageShell>

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CircleCheck, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
+import { useResumeAutosave } from "@/lib/store/documents-store";
+import {
+  RESUME_WRITE_BASE,
+  resumeKeyFromSlug,
+  resumeSlugFromKey,
+} from "@/lib/section-routes";
 import { HelpPill } from "@/components/layout/help-pill";
 import { TopBar, type EditorTab } from "./top-bar";
 import { SectionNav } from "./section-nav";
@@ -66,20 +73,51 @@ function ActiveSectionForm({ onFinish }: { onFinish: () => void }) {
   }
 }
 
-export function EditorShell({ templateId }: { templateId?: string }) {
+export function EditorShell({
+  templateId,
+  routedSection,
+}: {
+  templateId?: string;
+  /** When set, the write step is driven by (and kept in sync with) the URL. */
+  routedSection?: string;
+}) {
+  const router = useRouter();
   const [tab, setTab] = useState<EditorTab>("write");
   const [mobilePreview, setMobilePreview] = useState(false);
   const applyTemplate = useResumeStore((s) => s.applyTemplate);
   const setActive = useResumeStore((s) => s.setActiveSection);
   const active = useResumeStore((s) => s.activeSection);
 
+  // Persist the working resume into the dashboard's drafts list.
+  useResumeAutosave();
+
   useEffect(() => {
     if (templateId) applyTemplate(templateId);
   }, [templateId, applyTemplate]);
 
+  // URL -> store: the section slug in the path selects the active write step.
+  useEffect(() => {
+    if (!routedSection) return;
+    const key = resumeKeyFromSlug(routedSection);
+    if (key && key !== useResumeStore.getState().activeSection) {
+      setActive(key as SectionKey);
+    }
+    setTab("write");
+  }, [routedSection, setActive]);
+
+  // store -> URL: while writing, reflect the active step back into the path so
+  // every section is a shareable, refresh-safe URL.
+  useEffect(() => {
+    if (!routedSection || tab !== "write") return;
+    const slug = resumeSlugFromKey(active);
+    if (slug && slug !== routedSection) {
+      router.replace(`${RESUME_WRITE_BASE}/${slug}`);
+    }
+  }, [active, tab, routedSection, router]);
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1500px]">
+      <div className="mx-auto max-w-[1800px]">
         <TopBar tab={tab} onTabChange={setTab} />
 
         {tab === "write" && (

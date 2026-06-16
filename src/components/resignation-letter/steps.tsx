@@ -1,14 +1,82 @@
 "use client";
 
+import { useState } from "react";
+import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useResignationLetterStore, isValidEmail } from "@/lib/store/resignation-letter-store";
 import { RL_REASONS, RL_OTHER_REASON, RL_GRATITUDE } from "@/lib/resignation-letter/suggestions";
+import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { bodyToHtml, htmlToText } from "@/lib/resignation-letter/format";
+import { improveLetterBody } from "@/lib/resignation-letter/ai";
 import {
   StepHeading,
   RLField,
   ChipSingleSelect,
   ChipMultiSelect,
   ChoiceButtons,
+  IMPROVE_AI_ACTIONS,
 } from "./widgets";
+
+/**
+ * Reusable "Improve with AI" dropdown. Reads the current paragraph HTML, runs
+ * the chosen action through the AI bridge and writes the improved HTML back.
+ * Shared by the Reason and Gratitude steps.
+ */
+function ImproveWithAIMenu({
+  html,
+  onResult,
+}: {
+  html: string;
+  onResult: (improvedHtml: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function run(instruction: string) {
+    setOpen(false);
+    const plain = htmlToText(html);
+    if (!plain.trim()) return;
+    setBusy(true);
+    try {
+      const improved = await improveLetterBody(plain, instruction);
+      if (improved) onResult(bodyToHtml(improved));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-[#7C3AED] transition-colors hover:bg-[#7C3AED]/10 disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+        Improve with AI
+        {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-10 mt-1 w-56 overflow-hidden rounded-xl bg-card p-1.5 shadow-card-lg ring-1 ring-border">
+          {IMPROVE_AI_ACTIONS.map((a) => {
+            const Icon = a.icon;
+            return (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => run(a.instruction)}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <Icon className="size-4 text-[#7C3AED]" />
+                {a.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* --- Step 1: Heading / Full name — Step 2.png ---------------------- */
 export function HeadingStep() {
@@ -121,6 +189,8 @@ export function ReasonStep() {
   const setReason = useResignationLetterStore((s) => s.setReason);
   const otherReasonText = useResignationLetterStore((s) => s.otherReasonText);
   const setOtherReasonText = useResignationLetterStore((s) => s.setOtherReasonText);
+  const reasonText = useResignationLetterStore((s) => s.reasonText);
+  const setReasonText = useResignationLetterStore((s) => s.setReasonText);
 
   return (
     <div>
@@ -129,6 +199,7 @@ export function ReasonStep() {
         subtitle="You may briefly mention your reason for resigning, though this is optional. If you choose to include it, our AI will help keep the tone positive and professional."
       />
       <ChipSingleSelect options={RL_REASONS} value={reason} onSelect={setReason} />
+
       {reason === RL_OTHER_REASON && (
         <div className="mt-5 max-w-md">
           <RLField
@@ -140,6 +211,23 @@ export function ReasonStep() {
           />
         </div>
       )}
+
+      {/* Editable reason paragraph, seeded from the selected reason and refinable
+          with AI. Appears once a reason is chosen. */}
+      {reason && (
+        <div className="mt-6">
+          <RichTextEditor
+            value={reasonText}
+            onChange={(html) => setReasonText(html)}
+            minHeight={170}
+            placeholder="Your reason for resigning…"
+            toolbarRight={<ImproveWithAIMenu html={reasonText} onResult={setReasonText} />}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            We&apos;ve drafted this from your selected reason. Edit it freely or refine it with AI.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -148,6 +236,9 @@ export function ReasonStep() {
 export function GratitudeStep() {
   const gratitude = useResignationLetterStore((s) => s.gratitude);
   const toggle = useResignationLetterStore((s) => s.toggleGratitude);
+  const gratitudeText = useResignationLetterStore((s) => s.gratitudeText);
+  const setGratitudeText = useResignationLetterStore((s) => s.setGratitudeText);
+
   return (
     <div>
       <StepHeading
@@ -155,6 +246,23 @@ export function GratitudeStep() {
         subtitle="In this optional paragraph, our AI can help you express gratitude for the opportunities you've been given, laying the groundwork for a positive long-term relationship."
       />
       <ChipMultiSelect options={RL_GRATITUDE} selected={gratitude} onToggle={toggle} max={3} />
+
+      {/* Editable gratitude paragraph, seeded from the selected chips and
+          refinable with AI. Appears once at least one chip is selected. */}
+      {gratitude.length > 0 && (
+        <div className="mt-6">
+          <RichTextEditor
+            value={gratitudeText}
+            onChange={(html) => setGratitudeText(html)}
+            minHeight={170}
+            placeholder="What are you grateful for…"
+            toolbarRight={<ImproveWithAIMenu html={gratitudeText} onResult={setGratitudeText} />}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            We&apos;ve drafted this from your selected highlights. Edit it freely or refine it with AI.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -163,6 +271,9 @@ export function GratitudeStep() {
 export function AssistanceStep() {
   const assistance = useResignationLetterStore((s) => s.assistance);
   const setAssistance = useResignationLetterStore((s) => s.setAssistance);
+  const assistanceText = useResignationLetterStore((s) => s.assistanceText);
+  const setAssistanceText = useResignationLetterStore((s) => s.setAssistanceText);
+
   return (
     <div>
       <StepHeading
@@ -177,6 +288,23 @@ export function AssistanceStep() {
         value={assistance}
         onSelect={setAssistance}
       />
+
+      {/* Editable assistance paragraph, seeded when the user opts in and
+          refinable with AI. */}
+      {assistance === true && (
+        <div className="mt-6">
+          <RichTextEditor
+            value={assistanceText}
+            onChange={(html) => setAssistanceText(html)}
+            minHeight={170}
+            placeholder="How you'll help with the transition…"
+            toolbarRight={<ImproveWithAIMenu html={assistanceText} onResult={setAssistanceText} />}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            We&apos;ve drafted this offer to help. Edit it freely or refine it with AI.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

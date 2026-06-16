@@ -1,7 +1,39 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Sparkles, PencilLine, Smile, Briefcase, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Shared "Improve with AI" menu actions (label + icon + the instruction sent to
+ * the AI bridge). Used by both the Reason step and the Write-mode editor so the
+ * dropdown is identical everywhere.
+ */
+export const IMPROVE_AI_ACTIONS: {
+  label: string;
+  icon: LucideIcon;
+  instruction: string;
+}[] = [
+  {
+    label: "Improve phrasing",
+    icon: Sparkles,
+    instruction: "Improve the phrasing and word choice while keeping the original meaning",
+  },
+  {
+    label: "Improve grammar",
+    icon: PencilLine,
+    instruction: "Fix any spelling and grammar mistakes, keeping the original meaning",
+  },
+  {
+    label: "More friendly",
+    icon: Smile,
+    instruction: "Rewrite this in a warmer, friendlier and more approachable tone",
+  },
+  {
+    label: "More professional",
+    icon: Briefcase,
+    instruction: "Rewrite this in a more formal, professional tone",
+  },
+];
 
 /** Left-aligned step heading + optional helper text (Step 2–8.png). */
 export function StepHeading({ title, subtitle }: { title: string; subtitle?: string }) {

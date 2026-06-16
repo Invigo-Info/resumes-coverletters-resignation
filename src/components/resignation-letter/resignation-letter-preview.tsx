@@ -1,7 +1,7 @@
 "use client";
 
 import { useResignationLetterStore, type RLFontId, type RLFontSize } from "@/lib/store/resignation-letter-store";
-import { formatLetterDate, previewOpeningLine } from "@/lib/resignation-letter/format";
+import { formatLetterDate, previewOpeningLine, htmlToText } from "@/lib/resignation-letter/format";
 import { cn } from "@/lib/utils";
 
 const FONT_STACK: Record<RLFontId, string> = {
@@ -63,9 +63,38 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
           dangerouslySetInnerHTML={{ __html: s.letter.body }}
         />
       ) : (
-        <p className="mt-4 leading-relaxed opacity-90" style={{ fontSize: isPage ? "0.95em" : "0.72em" }}>
-          {previewOpeningLine(s.lastWorkingDay)}
-        </p>
+        <div className="mt-4 space-y-3" style={{ fontSize: isPage ? "0.95em" : "0.72em" }}>
+          {s.salutation.trim() && (
+            <p className="leading-relaxed opacity-90">{s.salutation.trim()}</p>
+          )}
+          <p className="leading-relaxed opacity-90">{previewOpeningLine(s.lastWorkingDay)}</p>
+          {/* The seeded/edited reason + gratitude paragraphs — highlighted to show
+              they update live as the user fills the builder. */}
+          {htmlToText(s.reasonText).trim() && (
+            <p className="leading-relaxed font-medium" style={{ color: titleColor }}>
+              {htmlToText(s.reasonText).trim()}
+            </p>
+          )}
+          {htmlToText(s.gratitudeText)
+            .trim()
+            .split(/\n{2,}/)
+            .filter(Boolean)
+            .map((para, i) => (
+              <p key={`g${i}`} className="leading-relaxed font-medium" style={{ color: titleColor }}>
+                {para}
+              </p>
+            ))}
+          {s.assistance &&
+            htmlToText(s.assistanceText)
+              .trim()
+              .split(/\n{2,}/)
+              .filter(Boolean)
+              .map((para, i) => (
+                <p key={`a${i}`} className="leading-relaxed font-medium" style={{ color: titleColor }}>
+                  {para}
+                </p>
+              ))}
+        </div>
       )}
 
       <div className="flex-1" />

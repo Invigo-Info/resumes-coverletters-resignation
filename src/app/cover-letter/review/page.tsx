@@ -16,7 +16,7 @@ export default function CoverLetterReviewPage() {
   function edit(step: CLStep) {
     setMode("edit");
     setStep(step);
-    router.push("/cover-letter/builder");
+    router.push(`/cover-letters/write/${step}`);
   }
 
   const education = [s.education.university, s.education.field].filter(Boolean).join(", ");
@@ -50,7 +50,7 @@ export default function CoverLetterReviewPage() {
   function continueFlow() {
     setMode("onboarding");
     setStep("intent");
-    router.push("/cover-letter/builder");
+    router.push("/cover-letters/write/intent");
   }
 
   return (

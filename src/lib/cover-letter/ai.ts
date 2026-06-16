@@ -57,8 +57,44 @@ function fallbackLetter(input: CoverLetterInput): string {
     .join("\n\n");
 }
 
+/**
+ * Tidy a raw letter body for display/PDF:
+ * - swap signature placeholders (e.g. "[Candidate's Full Name]") for the name,
+ * - drop any other leftover [bracket] placeholders,
+ * - normalise to one paragraph per line with blank lines between them so the
+ *   preview/PDF gets real paragraph spacing,
+ * - ensure a "Sincerely," sign-off before the name.
+ */
+export function cleanLetterBody(body: string, fullName: string): string {
+  const name = fullName.trim();
+  let text = body.replace(/\r/g, "").trim();
+  text = text.replace(/\[[^\]]*name[^\]]*\]/gi, name); // [Your Name], [Candidate's Full Name]…
+  text = text.replace(/\s*\[[^\]]+\]\s*/g, " "); // any remaining placeholder
+
+  const paras = text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (name) {
+    const tail = `${paras[paras.length - 2] ?? ""} ${paras[paras.length - 1] ?? ""}`;
+    const hasSignoff = /\b(sincerely|regards|best regards|yours)\b/i.test(tail);
+    const endsWithName = paras[paras.length - 1]?.toLowerCase() === name.toLowerCase();
+    if (endsWithName && !hasSignoff) paras.splice(paras.length - 1, 0, "Sincerely,");
+    else if (!endsWithName && !hasSignoff) paras.push("Sincerely,", name);
+  }
+
+  return paras.join("\n\n");
+}
+
+/** True if a body still has an unresolved [placeholder] (needs regeneration). */
+export function hasPlaceholder(body: string): boolean {
+  return /\[[^\]]+\]/.test(body);
+}
+
 /** Generate the full cover-letter body. Always returns text (AI or fallback). */
 export async function generateCoverLetter(input: CoverLetterInput): Promise<string> {
+  const fullName = `${input.personal.firstName} ${input.personal.lastName}`.trim();
   const ai = await callAi<string>("coverLetter", {
     jobTitle: input.jobDetails.desiredJobTitle,
     hasSpecificJob: input.jobIntent.hasSpecificJob,
@@ -71,8 +107,8 @@ export async function generateCoverLetter(input: CoverLetterInput): Promise<stri
     recentJob: input.recentJob,
     education: input.education,
   });
-  if (ai && ai.trim()) return ai.trim();
-  return fallbackLetter(input);
+  const raw = ai && ai.trim() ? ai : fallbackLetter(input);
+  return cleanLetterBody(raw, fullName);
 }
 
 /**

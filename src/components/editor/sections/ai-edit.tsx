@@ -8,6 +8,7 @@ import {
   Shrink,
   WandSparkles,
   Loader2,
+  ArrowUp,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -132,7 +133,8 @@ export function EditWithAiMenu({
       {open && (
         <div
           className={cn(
-            "absolute right-0 z-30 w-52 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-card-lg",
+            "absolute right-0 z-30 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-card-lg",
+            asking ? "w-[28rem] max-w-[calc(100vw-2rem)]" : "w-52",
             openUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
           )}
         >
@@ -163,25 +165,28 @@ export function EditWithAiMenu({
             </>
           ) : (
             <div className="p-1.5">
-              <input
-                autoFocus
-                value={ask}
-                onChange={(e) => setAsk(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && ask.trim()) run(ask.trim());
-                  if (e.key === "Escape") setAsking(false);
-                }}
-                placeholder="e.g. add metrics, focus on leadership"
-                className="w-full rounded-lg border border-border px-2.5 py-1.5 text-sm outline-none focus:border-[var(--ai-from)]"
-              />
-              <button
-                type="button"
-                disabled={!ask.trim()}
-                onClick={() => ask.trim() && run(ask.trim())}
-                className="mt-1.5 w-full rounded-lg bg-[var(--ai-from)] px-2.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                Generate
-              </button>
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--ai-from)]/40 bg-card py-1.5 pl-3 pr-1.5 transition-colors focus-within:border-[var(--ai-from)]">
+                <input
+                  autoFocus
+                  value={ask}
+                  onChange={(e) => setAsk(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && ask.trim()) run(ask.trim());
+                    if (e.key === "Escape") setAsking(false);
+                  }}
+                  placeholder="Write your request..."
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                  type="button"
+                  disabled={!ask.trim()}
+                  onClick={() => ask.trim() && run(ask.trim())}
+                  aria-label="Send request"
+                  className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--ai-from)] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <ArrowUp className="size-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

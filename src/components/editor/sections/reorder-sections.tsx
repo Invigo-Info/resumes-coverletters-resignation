@@ -38,6 +38,25 @@ function useMeta() {
   };
 }
 
+/** Sections that can't be dragged and are pinned to the very end (e.g. summary). */
+const PINNED_END: SectionKey[] = ["summary"];
+
+function LockedRow({
+  label,
+  Icon,
+}: {
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+      <Lock className="size-4 text-muted-foreground" />
+      <Icon className="size-4 text-muted-foreground" />
+      <span className="flex-1 font-medium text-foreground">{label}</span>
+    </div>
+  );
+}
+
 function SortableRow({
   id,
   label,
@@ -97,8 +116,14 @@ export function ReorderSections({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const locked = order.filter((k) => meta(k)?.reorderable !== true);
-  const movable = order.filter((k) => meta(k)?.reorderable === true);
+  const isMovable = (k: SectionKey) => meta(k)?.reorderable === true;
+  // personal / contact stay at the top; summary stays pinned at the bottom;
+  // everything reorderable (incl. additional sections) moves freely in between.
+  const leadingLocked = order.filter(
+    (k) => !isMovable(k) && !PINNED_END.includes(k)
+  );
+  const movable = order.filter(isMovable);
+  const trailingLocked = order.filter((k) => PINNED_END.includes(k));
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -106,7 +131,7 @@ export function ReorderSections({
     const oldIdx = movable.indexOf(active.id as string);
     const newIdx = movable.indexOf(over.id as string);
     const next = arrayMove(movable, oldIdx, newIdx);
-    setOrder([...locked, ...next]);
+    setOrder([...leadingLocked, ...next, ...trailingLocked]);
   }
 
   function remove(key: SectionKey) {
@@ -123,23 +148,13 @@ export function ReorderSections({
       />
 
       <div className="space-y-2">
-        {/* Locked */}
-        {locked.map((key) => {
+        {/* Locked at the top (personal, contact) */}
+        {leadingLocked.map((key) => {
           const m = meta(key)!;
-          const Icon = m.icon;
-          return (
-            <div
-              key={key}
-              className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3.5"
-            >
-              <Lock className="size-4 text-muted-foreground" />
-              <Icon className="size-4 text-muted-foreground" />
-              <span className="flex-1 font-medium text-foreground">{m.label}</span>
-            </div>
-          );
+          return <LockedRow key={key} label={m.label} Icon={m.icon} />;
         })}
 
-        {/* Draggable */}
+        {/* Draggable (employment, education, skills, additional sections) */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -162,6 +177,12 @@ export function ReorderSections({
             </div>
           </SortableContext>
         </DndContext>
+
+        {/* Pinned to the bottom (professional summary) */}
+        {trailingLocked.map((key) => {
+          const m = meta(key)!;
+          return <LockedRow key={key} label={m.label} Icon={m.icon} />;
+        })}
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">

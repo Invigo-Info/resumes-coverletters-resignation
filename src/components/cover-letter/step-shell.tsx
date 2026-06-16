@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { HomeButton } from "@/components/layout/home-button";
+import { HelpPill } from "@/components/layout/help-pill";
 import { cn } from "@/lib/utils";
 import type { CLPhase } from "@/lib/store/cover-letter-store";
 
@@ -148,6 +149,9 @@ export function StepShell({
           </div>
         </div>
       </footer>
+
+      {/* Help — lifted above the fixed footer so it doesn't overlap Next. */}
+      <HelpPill className="bottom-24" />
     </div>
   );
 }

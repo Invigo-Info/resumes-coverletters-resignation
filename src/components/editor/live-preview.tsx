@@ -242,7 +242,7 @@ export function LivePreview() {
         ) : null;
       case "skills":
         return s.skills.some((sk) => sk.name) ? (
-          <PreviewSection title="Skills" key={key}>
+          <PreviewSection title={s.skillsTitle?.trim() || "Skills"} key={key}>
             <p className="text-[11px] text-neutral-700">
               {s.skills
                 .filter((sk) => sk.name)
@@ -371,8 +371,8 @@ export function LivePreview() {
   return (
     <div
       data-resume-preview
-      className="w-full px-12 py-11 text-neutral-900"
-      style={fontStyle}
+      className="min-h-[calc(100vh-7rem)] w-full rounded-2xl px-12 py-11 text-neutral-900"
+      style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
     >
       {header}
 

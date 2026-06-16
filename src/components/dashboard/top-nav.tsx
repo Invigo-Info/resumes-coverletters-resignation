@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Send, Plus } from "lucide-react";
+import { Send, Plus, Settings, CircleHelp, LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full items-center gap-6 px-4 sm:px-6 lg:px-10">
         {/* Left: logo + tabs */}
         <Link href="/dashboard" aria-label="resume.co home">
           <LogoMark withWordmark={false} className="size-7" />
@@ -85,14 +85,20 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem>Account</DropdownMenuItem>
-              <DropdownMenuItem>Help &amp; support</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push("/account")}>
+                <Settings className="size-4 text-muted-foreground" />
+                Account settings
+              </DropdownMenuItem>
               <DropdownMenuItem
-                variant="destructive"
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => window.open("mailto:support@resume.co", "_self")}
               >
-                Logout
+                <CircleHelp className="size-4 text-muted-foreground" />
+                Help &amp; support
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+                <LogOut className="size-4 text-muted-foreground" />
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -111,7 +117,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
               <DropdownMenuItem onClick={() => router.push("/cover-letter/new")}>
                 New cover letter
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/resignation-letter/builder")}>
+              <DropdownMenuItem onClick={() => router.push("/resignation-letters/write/heading")}>
                 New resignation letter
               </DropdownMenuItem>
             </DropdownMenuContent>

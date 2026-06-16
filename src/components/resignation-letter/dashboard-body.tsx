@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus, FileText, RotateCcw, ChevronRight } from "lucide-react";
+import { Plus, RotateCcw, ChevronRight } from "lucide-react";
+import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { ResignationLetterCard } from "@/components/resignation-letter/resignation-letter-card";
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
@@ -23,12 +25,12 @@ export function ResignationDashboardBody({ initialDocs }: { initialDocs: Resigna
   const hasDraft = mounted && (hasBody || step !== "heading" || !!managerName || !!position);
 
   function continueDraft() {
-    router.push(hasBody ? "/resignation-letter/preview" : "/resignation-letter/builder");
+    router.push(hasBody ? "/resignation-letter/preview" : "/resignation-letters/write/heading");
   }
 
   function createNew() {
     reset();
-    router.push("/resignation-letter/builder");
+    router.push("/resignation-letters/write/heading");
   }
 
   function copyDoc(id: string) {
@@ -70,39 +72,50 @@ export function ResignationDashboardBody({ initialDocs }: { initialDocs: Resigna
       )}
 
       {docs.length > 0 ? (
-        <div className="space-y-6">
-          {docs.map((doc) => (
-            <ResignationLetterCard
-              key={doc.id}
-              doc={doc}
-              onCopy={() => copyDoc(doc.id)}
-              onDelete={() => deleteDoc(doc.id)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-6">
+            {docs.map((doc) => (
+              <ResignationLetterCard
+                key={doc.id}
+                doc={doc}
+                onCopy={() => copyDoc(doc.id)}
+                onDelete={() => deleteDoc(doc.id)}
+              />
+            ))}
+          </div>
+
+          {/* Create new */}
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={createNew}
+              className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
+            >
+              <Plus className="size-4" />
+              Create new resignation letter
+            </button>
+          </div>
+        </>
       ) : (
-        <div className="flex flex-col items-center rounded-3xl bg-card px-6 py-16 text-center shadow-card ring-1 ring-border">
-          <span className="grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground">
-            <FileText className="size-6" />
-          </span>
-          <h2 className="mt-4 font-heading text-xl font-bold text-foreground">No resignation letters yet</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create your first one — it only takes a couple of minutes.
-          </p>
+        <div className="flex flex-col items-center gap-6 py-10 text-center">
+          <Image
+            src="/illustration.png"
+            alt="Diverse professionals"
+            width={544}
+            height={379}
+            className="w-[420px] max-w-full"
+            unoptimized
+            priority
+          />
+          <h1 className="max-w-md font-heading text-2xl font-extrabold leading-snug text-foreground">
+            If you don&apos;t have a resignation letter yet, it&apos;s a great time to create one!
+          </h1>
+          <PrimaryButton onClick={createNew}>
+            <Plus className="size-4" />
+            Build my resignation letter
+          </PrimaryButton>
         </div>
       )}
-
-      {/* Create new */}
-      <div className="mt-8 flex justify-center">
-        <button
-          type="button"
-          onClick={createNew}
-          className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
-        >
-          <Plus className="size-4" />
-          Create new resignation letter
-        </button>
-      </div>
     </>
   );
 }

@@ -3,14 +3,29 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Sparkles, ScanLine, FileUp, ChevronRight, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { StartOptionCard } from "@/components/creation/start-option-card";
+import {
+  DropboxIcon,
+  GoogleDriveIcon,
+  LinkedInIcon,
+} from "@/components/brand/source-icons";
+import {
+  GoogleConsentDialog,
+  LinkedInImportDialog,
+} from "@/components/creation/cloud-source-dialogs";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
+import {
+  isDropboxConfigured,
+  chooseFromDropbox,
+  fetchDropboxFile,
+} from "@/lib/dropbox";
 
 /**
  * The resume creation onboarding ("How should we start?"). Rendered both as the
@@ -21,6 +36,8 @@ export function ResumeOnboarding() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [showSave, setShowSave] = useState(false);
+  const [googleOpen, setGoogleOpen] = useState(false);
+  const [linkedInOpen, setLinkedInOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
@@ -29,14 +46,50 @@ export function ResumeOnboarding() {
     setAnalyzing(true);
     try {
       const parsed = await parseResume(file);
+      reset(); // start a fresh draft (new id) so we don't overwrite another
       hydrate(parsed);
-      router.push("/builder?source=upload");
+      router.push("/resumes/write/personal?source=upload");
     } catch {
       setAnalyzing(false);
       toast.error("We couldn't read that resume", {
         description: "Please try uploading the file again (PDF works best).",
       });
     }
+  }
+
+  // Google Drive: consent gate -> real Google account chooser (NextAuth OAuth).
+  function consentToGoogle() {
+    setGoogleOpen(false);
+    signIn("google", { callbackUrl: "/resumes/write/personal?source=gdrive" });
+  }
+
+  // Dropbox: opens the real Dropbox sign-in + file chooser when an app key is
+  // configured; otherwise falls back to picking a file from this device.
+  async function handleDropbox() {
+    if (!isDropboxConfigured()) {
+      toast.message("Connect Dropbox to import from there", {
+        description:
+          "Add NEXT_PUBLIC_DROPBOX_APP_KEY to enable the Dropbox window. Pick a file to upload for now.",
+      });
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      const picked = await chooseFromDropbox();
+      if (!picked) return; // cancelled
+      const file = await fetchDropboxFile(picked.name, picked.link);
+      handleUpload(file);
+    } catch {
+      toast.error("Couldn't import from Dropbox", {
+        description: "Please try again or upload the file directly.",
+      });
+    }
+  }
+
+  // LinkedIn: capture the profile URL, then build a resume from it.
+  function importFromLinkedIn() {
+    setLinkedInOpen(false);
+    handleUpload();
   }
 
   return (
@@ -108,21 +161,26 @@ export function ResumeOnboarding() {
 
                 {/* Cloud sources */}
                 {[
-                  { label: "Dropbox", color: "#0061FF" },
-                  { label: "Google Drive", color: "#1FA463" },
+                  { label: "Dropbox", Icon: DropboxIcon, onClick: handleDropbox },
+                  {
+                    label: "Google Drive",
+                    Icon: GoogleDriveIcon,
+                    onClick: () => setGoogleOpen(true),
+                  },
+                  {
+                    label: "LinkedIn profile",
+                    Icon: LinkedInIcon,
+                    onClick: () => setLinkedInOpen(true),
+                  },
                 ].map((src) => (
                   <button
                     key={src.label}
                     type="button"
-                    onClick={() => handleUpload()}
-                    className="flex w-full items-center gap-3 rounded-xl bg-secondary px-4 py-3 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                    onClick={src.onClick}
+                    className="flex w-full items-center gap-3 rounded-xl bg-secondary px-4 py-3.5 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                   >
-                    <span
-                      className="size-5 shrink-0 rounded-[4px]"
-                      style={{ backgroundColor: src.color }}
-                      aria-hidden
-                    />
-                    <span className="flex-1 text-sm font-medium text-foreground">
+                    <src.Icon className="size-5 shrink-0" />
+                    <span className="flex-1 text-sm font-semibold text-foreground">
                       {src.label}
                     </span>
                     <ChevronRight className="size-4 text-muted-foreground" />
@@ -141,7 +199,7 @@ export function ResumeOnboarding() {
               <p className="text-sm text-muted-foreground">Pick up where you left off</p>
             </div>
             <button
-              onClick={() => router.push("/builder")}
+              onClick={() => router.push("/resumes/write/personal")}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
             >
               Continue
@@ -167,6 +225,17 @@ export function ResumeOnboarding() {
           </div>
         </div>
       )}
+
+      <GoogleConsentDialog
+        open={googleOpen}
+        onOpenChange={setGoogleOpen}
+        onConsent={consentToGoogle}
+      />
+      <LinkedInImportDialog
+        open={linkedInOpen}
+        onOpenChange={setLinkedInOpen}
+        onImport={importFromLinkedIn}
+      />
 
       <HelpPill />
     </PageShell>

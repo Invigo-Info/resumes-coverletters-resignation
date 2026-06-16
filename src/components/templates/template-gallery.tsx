@@ -60,7 +60,7 @@ export function TemplateGallery() {
         {visible.map((t) => (
           <div key={t.id} className="space-y-3">
             <button
-              onClick={() => router.push(`/builder?template=${t.id}`)}
+              onClick={() => router.push(`/resumes/write/personal?template=${t.id}`)}
               className="group relative block w-full overflow-hidden rounded-xl bg-card shadow-card ring-1 ring-border transition-all duration-200 hover:-translate-y-1 hover:shadow-card-lg hover:ring-primary/30"
             >
               <div className="relative aspect-[210/297] w-full bg-white">

@@ -1,29 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Trash2, Plus } from "lucide-react";
+import { RefreshCw, Plus, Pencil, Check, Trash2, X } from "lucide-react";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { generateSkills } from "@/lib/ai/mock";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { SectionHeading } from "./field";
-import { AddMoreButton } from "./entry-card";
-
-const SKILL_LEVELS = [
-  "Not applicable",
-  "Novice",
-  "Beginner",
-  "Skillful",
-  "Experienced",
-  "Expert",
-];
+import { cn } from "@/lib/utils";
 
 function SuggestionGroup({
   label,
@@ -37,15 +19,15 @@ function SuggestionGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-foreground">{label}</p>
-      <div className="flex flex-wrap gap-2">
+      <p className="mb-2.5 text-sm text-muted-foreground">{label}</p>
+      <div className="flex flex-wrap gap-2.5">
         {items.map((name) => (
           <button
             key={name}
             onClick={() => onAdd(name)}
-            className="inline-flex items-center gap-1 rounded-full bg-muted px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/70 hover:text-foreground"
           >
-            <Plus className="size-3.5" />
+            <Plus className="size-4 text-muted-foreground" />
             {name}
           </button>
         ))}
@@ -57,17 +39,23 @@ function SuggestionGroup({
 export function SkillsForm() {
   const skills = useResumeStore((s) => s.skills);
   const addSkill = useResumeStore((s) => s.addSkill);
-  const updateSkill = useResumeStore((s) => s.updateSkill);
   const removeSkill = useResumeStore((s) => s.removeSkill);
+  const clearSkills = useResumeStore((s) => s.clearSkills);
   const jobTitle = useResumeStore((s) => s.personal.jobTitle);
+  const skillsTitle = useResumeStore((s) => s.skillsTitle);
+  const setSkillsTitle = useResumeStore((s) => s.setSkillsTitle);
 
   const [hard, setHard] = useState<string[]>([]);
   const [soft, setSoft] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [seed, setSeed] = useState(0);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
 
-  const chosen = new Set(skills.map((s) => s.name).filter(Boolean));
-  const count = chosen.size;
+  const selected = skills.filter((sk) => sk.name.trim());
+  const chosen = new Set(selected.map((sk) => sk.name.trim().toLowerCase()));
+  const count = selected.length;
 
   const loadSuggestions = useCallback(
     async (nextSeed: number) => {
@@ -85,92 +73,136 @@ export function SkillsForm() {
   );
 
   useEffect(() => {
-    if (useResumeStore.getState().skills.length === 0) addSkill();
     loadSuggestions(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Add a skill, ignoring blanks and case-insensitive duplicates. */
   function add(name: string) {
-    // fill the first empty skill row, otherwise append
-    const empty = skills.find((s) => !s.name.trim());
-    if (empty) updateSkill(empty.id, { name });
-    else addSkill(name);
+    const clean = name.trim();
+    if (!clean) return;
+    const exists = useResumeStore
+      .getState()
+      .skills.some((sk) => sk.name.trim().toLowerCase() === clean.toLowerCase());
+    if (!exists) addSkill(clean);
+  }
+
+  function commitOwn() {
+    add(draft);
+    setDraft("");
+    setAdding(false);
   }
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-3">
-        <div>
+      {/* Header: title (renamable) + count + clear-all */}
+      <div className="mb-1.5 flex items-center gap-2">
+        {editingTitle ? (
+          <Input
+            autoFocus
+            value={skillsTitle}
+            onChange={(e) => setSkillsTitle(e.target.value)}
+            onBlur={() => setEditingTitle(false)}
+            onKeyDown={(e) => e.key === "Enter" && setEditingTitle(false)}
+            className="h-10 max-w-xs rounded-lg text-2xl font-extrabold"
+          />
+        ) : (
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground">
-            Skills
+            {skillsTitle?.trim() || "Skills"}
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            List your relevant skills — they impact automated screening the most.
-          </p>
+        )}
+        <button
+          onClick={() => setEditingTitle((v) => !v)}
+          aria-label="Rename section"
+          className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {editingTitle ? <Check className="size-4" /> : <Pencil className="size-4" />}
+        </button>
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5" aria-label={`${count} skills`}>
+            <span
+              className={cn(
+                "text-sm font-bold tabular-nums",
+                count ? "text-emerald-600" : "text-muted-foreground"
+              )}
+            >
+              {count}
+            </span>
+            <span
+              className={cn(
+                "size-3.5 rounded-full border-2",
+                count ? "border-emerald-500" : "border-muted-foreground/40"
+              )}
+              aria-hidden
+            />
+          </span>
+          <button
+            onClick={clearSkills}
+            disabled={!count}
+            aria-label="Clear all skills"
+            className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
-        <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-muted text-sm font-bold text-foreground">
-          {count}
-        </span>
       </div>
 
-      {/* Selected skills */}
-      <div className="space-y-4">
-        {skills.map((sk) => (
-          <div key={sk.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Skill</Label>
-                <Input
-                  value={sk.name}
-                  onChange={(e) => updateSkill(sk.id, { name: e.target.value })}
-                  placeholder="Data Analysis"
-                  className="h-12 rounded-xl bg-card"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Level</Label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={sk.level ?? ""}
-                    onValueChange={(v) => updateSkill(sk.id, { level: (v as string) ?? "" })}
-                  >
-                    <SelectTrigger className="h-12 w-full rounded-xl bg-card">
-                      <SelectValue placeholder="Select skill level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SKILL_LEVELS.map((lvl) => (
-                        <SelectItem key={lvl} value={lvl}>
-                          {lvl}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <button
-                    onClick={() => removeSkill(sk.id)}
-                    aria-label="Remove skill"
-                    className="grid size-10 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+      <p className="mb-6 text-muted-foreground">
+        List your relevant skills — they impact automated screening the most.
+      </p>
+
+      {/* Selected skills (blue chips) + add your own */}
+      <div className="flex flex-wrap gap-2.5">
+        {selected.map((sk) => (
+          <button
+            key={sk.id}
+            onClick={() => removeSkill(sk.id)}
+            title="Remove skill"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-primary/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-destructive/60 hover:bg-destructive/5"
+          >
+            {sk.name}
+            <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-destructive" />
+          </button>
         ))}
 
-        <AddMoreButton label="Add one more skill" onClick={() => addSkill()} />
+        {adding ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitOwn}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitOwn();
+              if (e.key === "Escape") {
+                setDraft("");
+                setAdding(false);
+              }
+            }}
+            placeholder="Type a skill"
+            className="min-w-44 rounded-full border border-dashed border-primary/60 bg-card px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary"
+          />
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+          >
+            <Plus className="size-4" />
+            Add your own skill
+          </button>
+        )}
       </div>
 
-      {/* Suggestions */}
-      <div className="mt-8 space-y-5">
+      {/* AI suggestions */}
+      <div className="mt-7 space-y-5">
         <SuggestionGroup
           label="Hard skills"
-          items={hard.filter((s) => !chosen.has(s))}
+          items={hard.filter((s) => !chosen.has(s.trim().toLowerCase()))}
           onAdd={add}
         />
         <SuggestionGroup
           label="Soft skills"
-          items={soft.filter((s) => !chosen.has(s))}
+          items={soft.filter((s) => !chosen.has(s.trim().toLowerCase()))}
           onAdd={add}
         />
         <button
@@ -180,10 +212,14 @@ export function SkillsForm() {
             loadSuggestions(next);
           }}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color-mix(in_oklab,var(--ai-from),white_92%)] py-4 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "Generating…" : "Regenerate"}
+          <RefreshCw
+            className={cn("size-4 text-[var(--ai-from)]", loading && "animate-spin")}
+          />
+          <span className="text-gradient-ai">
+            {loading ? "Generating…" : "Regenerate"}
+          </span>
         </button>
       </div>
     </div>

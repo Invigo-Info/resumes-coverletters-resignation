@@ -248,17 +248,38 @@ ${JSON.stringify(options)}`,
       const salutation = (p.salutation as string) || "Dear Hiring Manager,";
       const lastDay = (p.lastWorkingDay as string) || "my final working day";
       const reason = (p.reason as string) || "";
+      const reasonText = (p.reasonText as string) || "";
       const gratitude = (p.gratitude as string[]) || [];
+      const gratitudeText = (p.gratitudeText as string) || "";
       const assistance = !!p.assistance;
+      const assistanceText = (p.assistanceText as string) || "";
       return {
         json: false,
         prompt: `Write the BODY of a professional, warm, and concise resignation letter as plain text.
 Candidate full name: ${fullName}.
 Open with this salutation on its own line: "${salutation}".
 First paragraph: formally state resignation from the position of ${position}${company ? ` at ${company}` : ""}, clearly stating the last working day is ${lastDay}.
-${reason ? `Include one brief, positive, professional sentence referencing the reason for leaving: "${reason}". Keep it gracious — never negative.` : ""}
-${gratitude.length ? `Add a sincere paragraph of gratitude touching on: ${gratitude.join(", ")}.` : ""}
-${assistance ? `Add a short paragraph offering to help ensure a smooth transition (e.g. training a replacement, wrapping up pending work).` : ""}
+${
+  reasonText
+    ? `Use the following reason paragraph as the second paragraph, preserving its meaning and keeping the tone positive and professional (light polishing only): "${reasonText}".`
+    : reason
+      ? `Include one brief, positive, professional sentence referencing the reason for leaving: "${reason}". Keep it gracious — never negative.`
+      : ""
+}
+${
+  gratitudeText
+    ? `Use the following gratitude paragraph, preserving its meaning and warm, professional tone (light polishing only): "${gratitudeText}".`
+    : gratitude.length
+      ? `Add a sincere paragraph of gratitude touching on: ${gratitude.join(", ")}.`
+      : ""
+}
+${
+  assistance && assistanceText
+    ? `Use the following paragraph offering transition help, preserving its meaning and professional tone (light polishing only): "${assistanceText}".`
+    : assistance
+      ? `Add a short paragraph offering to help ensure a smooth transition (e.g. training a replacement, wrapping up pending work).`
+      : ""
+}
 Close with a courteous sign-off (e.g. "Sincerely,") and the candidate's full name on the final line.
 Plain text only — no markdown, no subject line, no recipient address block, no date line, no email. 3 to 5 short paragraphs.`,
       };

@@ -1,0 +1,80 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { ResumeCard } from "./resume-card";
+import { EmptyState } from "./empty-state";
+import { GhostButton } from "@/components/brand/brand-buttons";
+import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
+import { useDocumentsStore } from "@/lib/store/documents-store";
+import { getTemplate } from "@/lib/templates";
+import type { ResumeDoc } from "@/lib/mock-data";
+
+function formatUpdated(ts: number): string {
+  const d = new Date(ts);
+  const day = d.getDate();
+  const month = d.toLocaleString("en-US", { month: "short" });
+  return `Updated ${day} ${month} ${d.getFullYear()}`;
+}
+
+export function DashboardResumes() {
+  const router = useRouter();
+  const resumes = useDocumentsStore((s) => s.resumes);
+  const removeResume = useDocumentsStore((s) => s.removeResume);
+  const upsertResume = useDocumentsStore((s) => s.upsertResume);
+  const loadDocument = useResumeStore((s) => s.loadDocument);
+
+  // Avoid SSR/client mismatch — drafts live in localStorage (client only).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || resumes.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-7">
+      {resumes.map((rec) => {
+        const doc: ResumeDoc = {
+          id: rec.id,
+          title: rec.title,
+          updatedAt: formatUpdated(rec.updatedAt),
+          thumb: getTemplate(rec.templateId)?.image ?? "/resume-thumb.svg",
+        };
+        const open = () => {
+          loadDocument(rec.id, rec.data);
+          router.push("/resumes/write/personal");
+        };
+        return (
+          <ResumeCard
+            key={rec.id}
+            resume={doc}
+            onEdit={open}
+            onDownload={open}
+            onCopy={() => {
+              const id = newResumeId();
+              upsertResume({
+                ...rec,
+                id,
+                title: `${rec.title} (copy)`,
+                updatedAt: Date.now(),
+              });
+            }}
+            onDelete={() => removeResume(rec.id)}
+          />
+        );
+      })}
+
+      <div className="flex justify-center">
+        <Link href="/resume-creation-menu">
+          <GhostButton className="bg-card shadow-card hover:bg-card">
+            <Plus className="size-4" />
+            Create new resume
+          </GhostButton>
+        </Link>
+      </div>
+    </div>
+  );
+}

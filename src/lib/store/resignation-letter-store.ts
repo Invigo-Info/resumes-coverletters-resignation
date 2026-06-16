@@ -2,6 +2,27 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  reasonParagraph,
+  gratitudeParagraph,
+  assistanceParagraph,
+} from "@/lib/resignation-letter/suggestions";
+import { bodyToHtml } from "@/lib/resignation-letter/format";
+
+/** Seed the editable reason paragraph (stored as HTML for the rich editor). */
+function seedReasonHtml(reason: string | null, otherText: string, company: string): string {
+  return bodyToHtml(reasonParagraph(reason, otherText, company));
+}
+
+/** Seed the editable gratitude paragraph (stored as HTML for the rich editor). */
+function seedGratitudeHtml(selected: string[], company: string, position: string): string {
+  return bodyToHtml(gratitudeParagraph(selected, company, position));
+}
+
+/** Seed the editable assistance paragraph (stored as HTML for the rich editor). */
+function seedAssistanceHtml(): string {
+  return bodyToHtml(assistanceParagraph());
+}
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -46,8 +67,20 @@ export interface ResignationLetterState {
   lastWorkingDay: string; // ISO yyyy-mm-dd
   reason: string | null; // single-select
   otherReasonText: string;
+  /** Editable reason paragraph (HTML), seeded from the selected reason chip. */
+  reasonText: string;
+  /** True once the user manually edits the reason paragraph. */
+  reasonTextTouched: boolean;
   gratitude: string[]; // multi-select, max 3
+  /** Editable gratitude paragraph (HTML), seeded from the selected chips. */
+  gratitudeText: string;
+  /** True once the user manually edits the gratitude paragraph. */
+  gratitudeTextTouched: boolean;
   assistance: boolean | null;
+  /** Editable assistance paragraph (HTML), seeded when the user opts in. */
+  assistanceText: string;
+  /** True once the user manually edits the assistance paragraph. */
+  assistanceTextTouched: boolean;
   contacts: RLContacts;
 
   letter: { body: string };
@@ -68,8 +101,11 @@ export interface ResignationLetterState {
   setLastWorkingDay: (value: string) => void;
   setReason: (value: string | null) => void;
   setOtherReasonText: (value: string) => void;
+  setReasonText: (value: string) => void;
   toggleGratitude: (value: string) => void;
+  setGratitudeText: (value: string) => void;
   setAssistance: (value: boolean) => void;
+  setAssistanceText: (value: string) => void;
   patchContacts: (patch: Partial<RLContacts>) => void;
   setLetter: (patch: Partial<{ body: string }>) => void;
   setDesign: (patch: Partial<{ font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme }>) => void;
@@ -96,8 +132,14 @@ const initial = {
   lastWorkingDay: "",
   reason: null as string | null,
   otherReasonText: "",
+  reasonText: "",
+  reasonTextTouched: false,
   gratitude: [] as string[],
+  gratitudeText: "",
+  gratitudeTextTouched: false,
   assistance: null as boolean | null,
+  assistanceText: "",
+  assistanceTextTouched: false,
   contacts: { email: "", phone: "", address: "" },
   letter: { body: "" },
   design: { font: "georgia" as RLFontId, accent: "#111827", fontSize: "M" as RLFontSize, theme: "light" as RLTheme },
@@ -212,26 +254,90 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
                 ? `Dear ${patch.managerName.trim()},`
                 : ""
               : s.salutation;
-          return { employer, salutation };
+          // Keep the seeded reason/gratitude paragraphs in sync with the company
+          // name until the user edits them manually.
+          const reasonText =
+            patch.companyName !== undefined && s.reason && !s.reasonTextTouched
+              ? seedReasonHtml(s.reason, s.otherReasonText, employer.companyName)
+              : s.reasonText;
+          const gratitudeText =
+            patch.companyName !== undefined && s.gratitude.length && !s.gratitudeTextTouched
+              ? seedGratitudeHtml(s.gratitude, employer.companyName, s.position)
+              : s.gratitudeText;
+          return { employer, salutation, reasonText, gratitudeText };
         }),
 
       setSalutation: (value) => set({ salutation: value, salutationTouched: true }),
-      setPosition: (value) => set({ position: value }),
+      setPosition: (value) =>
+        set((s) => {
+          // The gratitude paragraph references the role being left.
+          const gratitudeText =
+            s.gratitude.length && !s.gratitudeTextTouched
+              ? seedGratitudeHtml(s.gratitude, s.employer.companyName, value)
+              : s.gratitudeText;
+          return { position: value, gratitudeText };
+        }),
       setSubmissionDate: (value) => set({ submissionDate: value }),
       setLastWorkingDay: (value) => set({ lastWorkingDay: value }),
 
-      setReason: (value) => set((s) => ({ reason: s.reason === value ? null : value })),
-      setOtherReasonText: (value) => set({ otherReasonText: value }),
+      setReason: (value) =>
+        set((s) => {
+          // Toggling the active chip off clears the seeded paragraph.
+          if (s.reason === value) {
+            return s.reasonTextTouched
+              ? { reason: null }
+              : { reason: null, reasonText: "", reasonTextTouched: false };
+          }
+          // Selecting a different reason (re)seeds the editable paragraph.
+          return {
+            reason: value,
+            reasonText: seedReasonHtml(value, s.otherReasonText, s.employer.companyName),
+            reasonTextTouched: false,
+          };
+        }),
+
+      setOtherReasonText: (value) =>
+        set((s) => {
+          const reasonText =
+            s.reason === "Other Reason" && !s.reasonTextTouched
+              ? seedReasonHtml(s.reason, value, s.employer.companyName)
+              : s.reasonText;
+          return { otherReasonText: value, reasonText };
+        }),
+
+      setReasonText: (value) => set({ reasonText: value, reasonTextTouched: true }),
 
       toggleGratitude: (value) =>
         set((s) => {
           const has = s.gratitude.includes(value);
-          if (has) return { gratitude: s.gratitude.filter((x) => x !== value) };
-          if (s.gratitude.length >= MAX_GRATITUDE) return s;
-          return { gratitude: [...s.gratitude, value] };
+          let gratitude: string[];
+          if (has) {
+            gratitude = s.gratitude.filter((x) => x !== value);
+          } else {
+            if (s.gratitude.length >= MAX_GRATITUDE) return s;
+            gratitude = [...s.gratitude, value];
+          }
+          // Reseed the editable paragraph from the new selection until the user
+          // edits it manually.
+          const gratitudeText = s.gratitudeTextTouched
+            ? s.gratitudeText
+            : seedGratitudeHtml(gratitude, s.employer.companyName, s.position);
+          return { gratitude, gratitudeText };
         }),
 
-      setAssistance: (value) => set({ assistance: value }),
+      setGratitudeText: (value) => set({ gratitudeText: value, gratitudeTextTouched: true }),
+
+      setAssistance: (value) =>
+        set((s) => {
+          if (s.assistanceTextTouched) return { assistance: value };
+          // Opting in seeds the help paragraph; skipping clears it.
+          return {
+            assistance: value,
+            assistanceText: value ? seedAssistanceHtml() : "",
+          };
+        }),
+
+      setAssistanceText: (value) => set({ assistanceText: value, assistanceTextTouched: true }),
       patchContacts: (patch) => set((s) => ({ contacts: { ...s.contacts, ...patch } })),
       setLetter: (patch) => set((s) => ({ letter: { ...s.letter, ...patch } })),
       setDesign: (patch) => set((s) => ({ design: { ...s.design, ...patch } })),

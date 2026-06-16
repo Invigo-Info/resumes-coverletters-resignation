@@ -8,6 +8,7 @@ import {
   CircleCheck,
   Sparkles,
   ChevronDown,
+  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -18,7 +19,7 @@ import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { bodyToHtml, htmlToText } from "@/lib/resignation-letter/format";
 import { improveLetterBody } from "@/lib/resignation-letter/ai";
 import { ResignationLetterPreview } from "./resignation-letter-preview";
-import { RLField } from "./widgets";
+import { RLField, IMPROVE_AI_ACTIONS } from "./widgets";
 import { cn } from "@/lib/utils";
 
 type Section = "personal" | "employer" | "content";
@@ -27,13 +28,6 @@ const NAV: { key: Section; label: string; icon: React.ReactNode }[] = [
   { key: "personal", label: "Personal details", icon: <UserRound className="size-4" /> },
   { key: "employer", label: "Employer's info", icon: <Briefcase className="size-4" /> },
   { key: "content", label: "Letter content", icon: <Mail className="size-4" /> },
-];
-
-const IMPROVE_ACTIONS: { label: string; instruction: string }[] = [
-  { label: "Improve writing", instruction: "Improve the writing while keeping the original meaning" },
-  { label: "Make it shorter", instruction: "Make this more concise while keeping the key points" },
-  { label: "More formal", instruction: "Rewrite this in a more formal, professional tone" },
-  { label: "Fix spelling & grammar", instruction: "Fix any spelling and grammar mistakes" },
 ];
 
 function PersonalSection() {
@@ -105,19 +99,24 @@ function ImproveWithAI() {
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
         Improve with AI
-        <ChevronDown className="size-3.5" />
+        {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-52 overflow-hidden rounded-xl bg-card p-1 shadow-card-lg ring-1 ring-border">
-          {IMPROVE_ACTIONS.map((a) => (
-            <button
-              key={a.label}
-              onClick={() => run(a.instruction)}
-              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
-            >
-              {a.label}
-            </button>
-          ))}
+        <div className="absolute right-0 top-full z-10 mt-1 w-56 overflow-hidden rounded-xl bg-card p-1.5 shadow-card-lg ring-1 ring-border">
+          {IMPROVE_AI_ACTIONS.map((a) => {
+            const Icon = a.icon;
+            return (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => run(a.instruction)}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <Icon className="size-4 text-[#7C3AED]" />
+                {a.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

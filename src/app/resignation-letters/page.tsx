@@ -10,8 +10,9 @@ export default async function ResignationLettersPage({
   searchParams: Promise<{ filled?: string }>;
 }) {
   const { filled } = await searchParams;
-  // Default shows the saved cards; ?filled=0 previews the empty state.
-  const docs = filled === "0" ? [] : mockResignationLetters;
+  // Home shows the empty "create one" state by default; ?filled=1 previews the
+  // saved cards.
+  const docs = filled === "1" ? mockResignationLetters : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

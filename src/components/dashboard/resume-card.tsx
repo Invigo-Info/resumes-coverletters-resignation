@@ -3,10 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Download, Sparkles } from "lucide-react";
+import { Download, Sparkles, Trash2 } from "lucide-react";
 import type { ResumeDoc } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { TailorDialog } from "./tailor-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 function ActionButton({
   children,
@@ -35,9 +41,22 @@ function ActionButton({
   );
 }
 
-export function ResumeCard({ resume }: { resume: ResumeDoc }) {
+export function ResumeCard({
+  resume,
+  onEdit,
+  onDownload,
+  onCopy,
+  onDelete,
+}: {
+  resume: ResumeDoc;
+  onEdit?: () => void;
+  onDownload?: () => void;
+  onCopy?: () => void;
+  onDelete?: () => void;
+}) {
   const router = useRouter();
   const [tailorOpen, setTailorOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
@@ -61,15 +80,24 @@ export function ResumeCard({ resume }: { resume: ResumeDoc }) {
           <div className="mt-5 flex flex-wrap gap-2">
             <ActionButton
               className="text-primary hover:bg-secondary"
-              onClick={() => router.push("/builder")}
+              onClick={onDownload ?? (() => router.push("/resumes/write/personal"))}
             >
               <Download className="size-4" />
               Download
             </ActionButton>
-            <ActionButton onClick={() => router.push("/builder")}>Edit</ActionButton>
-            <ActionButton>Copy</ActionButton>
+            <ActionButton onClick={onEdit ?? (() => router.push("/resumes/write/personal"))}>
+              Edit
+            </ActionButton>
+            <ActionButton onClick={onCopy} disabled={!onCopy}>
+              Copy
+            </ActionButton>
             <ActionButton>Share</ActionButton>
-            <ActionButton disabled>Delete</ActionButton>
+            <ActionButton
+              onClick={onDelete ? () => setConfirmOpen(true) : undefined}
+              disabled={!onDelete}
+            >
+              Delete
+            </ActionButton>
           </div>
         </div>
       </div>
@@ -95,6 +123,46 @@ export function ResumeCard({ resume }: { resume: ResumeDoc }) {
         onClose={() => setTailorOpen(false)}
         resumeTitle={resume.title}
       />
+
+      {/* Delete confirmation */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="rounded-2xl p-6 pt-8 sm:max-w-md">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span
+              className="grid size-20 place-items-center rounded-full bg-destructive/10"
+              aria-hidden
+            >
+              <Trash2 className="size-8 text-destructive" />
+            </span>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
+              Are you sure you want to delete this resume?
+            </DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground">
+              You can&apos;t undo this action.
+            </DialogDescription>
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmOpen(false);
+                onDelete?.();
+              }}
+              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+            >
+              Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

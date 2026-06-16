@@ -28,6 +28,23 @@ export type CLStep =
 export type EducationLevel = "college" | "highschool" | "student" | "none";
 
 export type CLFontId = "georgia" | "inter" | "garamond";
+export type CLSpacingId = "dense" | "normal" | "loose";
+export type CLLayoutId = "accent-top" | "split";
+
+export interface CLDesign {
+  font: CLFontId;
+  accent: string;
+  /** Vertical rhythm (Compact / Standard / Spacious). */
+  spacing: CLSpacingId;
+  /** Tinted or dark page background ("" = white). */
+  bg: string;
+  /** Dark page (white text) — set by "dark combination" color swatches. */
+  dark: boolean;
+  /** Header arrangement, set by the selected Style template. */
+  layout: CLLayoutId;
+  /** Selected Style template id. */
+  template: string;
+}
 
 export interface CLJobDetails {
   desiredJobTitle: string;
@@ -60,7 +77,7 @@ export interface CoverLetterState {
   personal: CLPersonal;
 
   letter: { companyName: string; hiringManagerName: string; body: string };
-  design: { font: CLFontId; accent: string };
+  design: CLDesign;
 
   /** wizard control */
   step: CLStep;
@@ -80,7 +97,7 @@ export interface CoverLetterState {
   toggleStrength: (strength: string) => void;
   patchPersonal: (patch: Partial<CLPersonal>) => void;
   setLetter: (patch: Partial<{ companyName: string; hiringManagerName: string; body: string }>) => void;
-  setDesign: (patch: Partial<{ font: CLFontId; accent: string }>) => void;
+  setDesign: (patch: Partial<CLDesign>) => void;
 
   goNext: () => void;
   goBack: () => void;
@@ -107,7 +124,15 @@ const initial = {
   strengths: [] as string[],
   personal: { firstName: "", lastName: "", email: "", phone: "", address: "" },
   letter: { companyName: "", hiringManagerName: "", body: "" },
-  design: { font: "georgia" as CLFontId, accent: "#111827" },
+  design: {
+    font: "georgia" as CLFontId,
+    accent: "#111827",
+    spacing: "normal" as CLSpacingId,
+    bg: "",
+    dark: false,
+    layout: "accent-top" as CLLayoutId,
+    template: "classic",
+  },
   step: "intent" as CLStep,
   mode: "onboarding" as const,
 };

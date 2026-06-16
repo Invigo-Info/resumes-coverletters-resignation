@@ -8,8 +8,9 @@ import { CoverLetterPreview } from "@/components/cover-letter/cover-letter-previ
 import { CoverLetterDesignPanel } from "@/components/cover-letter/design-panel";
 import { WriteMode } from "@/components/cover-letter/write-mode";
 import { PaywallDialog } from "@/components/cover-letter/paywall-dialog";
+import { HelpPill } from "@/components/layout/help-pill";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
-import { generateCoverLetter } from "@/lib/cover-letter/ai";
+import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
 import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import { usePaywall } from "@/lib/cover-letter/paywall";
@@ -24,10 +25,11 @@ export default function CoverLetterPreviewPage() {
   const [downloading, setDownloading] = useState(false);
   const requestDownload = usePaywall((s) => s.requestDownload);
 
-  // Generate on mount if we don't already have a letter body.
+  // Generate on mount if we don't have a body yet — or regenerate a stale one
+  // that still contains an unresolved "[placeholder]" (old format/alignment).
   useEffect(() => {
     const store = useCoverLetterStore.getState();
-    if (store.letter.body.trim()) return;
+    if (store.letter.body.trim() && !hasPlaceholder(store.letter.body)) return;
     setGenerating(true);
     generateCoverLetter({
       jobIntent: store.jobIntent,
@@ -63,6 +65,7 @@ export default function CoverLetterPreviewPage() {
   return (
     <div className="min-h-screen bg-background">
       <PaywallDialog />
+      <HelpPill />
 
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
@@ -132,8 +135,8 @@ export default function CoverLetterPreviewPage() {
         <WriteMode onSwitchToDesign={() => setMode("design")} />
       ) : (
         <div className="flex gap-6 px-4 pb-16">
-          <aside className="w-full shrink-0 lg:w-[380px]">
-            <CoverLetterDesignPanel />
+          <aside className="w-full shrink-0 lg:w-[560px]">
+            <CoverLetterDesignPanel onEdit={() => setMode("write")} />
           </aside>
           <section className="hidden min-w-0 flex-1 overflow-auto lg:block">
             <CoverLetterPreview />

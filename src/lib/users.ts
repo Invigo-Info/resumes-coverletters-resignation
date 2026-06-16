@@ -76,6 +76,29 @@ export async function createUser(
   return { id: user.id, email: user.email, name: user.name };
 }
 
+/**
+ * Update a user's display name. No-op (returns false) for accounts that don't
+ * live in the file store — e.g. Google-only sign-ins, whose name comes from the
+ * OAuth profile / session instead.
+ */
+export async function updateUserName(email: string, name: string): Promise<boolean> {
+  const users = await readUsers();
+  const target = normalize(email);
+  const user = users.find((u) => u.email === target);
+  if (!user) return false;
+  const next = name.trim();
+  if (next) user.name = next;
+  await writeUsers(users);
+  return true;
+}
+
+/** Permanently remove a user from the file store (idempotent). */
+export async function deleteUser(email: string): Promise<void> {
+  const users = await readUsers();
+  const target = normalize(email);
+  await writeUsers(users.filter((u) => u.email !== target));
+}
+
 /** Return the user if email + password match, otherwise null. */
 export async function verifyCredentials(
   email: string,

@@ -28,6 +28,9 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       allowDangerousEmailAccountLinking: true,
+      // Always show the Google "Choose an account" screen, even when the user
+      // already has an active Google session (otherwise it silently re-auths).
+      authorization: { params: { prompt: "select_account" } },
     })
   );
 }
@@ -37,6 +40,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   trustHost: true,
+  callbacks: {
+    // Remember which provider signed the user in (shown on the account page),
+    // and let `useSession().update({ name })` refresh the display name live.
+    async jwt({ token, account, trigger, session }) {
+      if (account?.provider) token.provider = account.provider;
+      if (
+        trigger === "update" &&
+        session &&
+        typeof (session as { name?: unknown }).name === "string"
+      ) {
+        token.name = (session as { name: string }).name;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        if (typeof token.provider === "string") session.user.provider = token.provider;
+        if (typeof token.name === "string") session.user.name = token.name;
+      }
+      return session;
+    },
+  },
 });
 
 /** Whether Google sign-in is configured (read by the login page via an API). */

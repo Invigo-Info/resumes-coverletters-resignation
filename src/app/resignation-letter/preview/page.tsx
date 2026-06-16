@@ -43,8 +43,11 @@ export default function ResignationLetterPreviewPage() {
       lastWorkingDay: store.lastWorkingDay,
       reason: store.reason,
       otherReasonText: store.otherReasonText,
+      reasonText: store.reasonText,
       gratitude: store.gratitude,
+      gratitudeText: store.gratitudeText,
       assistance: store.assistance,
+      assistanceText: store.assistanceText,
       contacts: store.contacts,
     })
       .then((body) => store.setLetter({ body: bodyToHtml(body) }))

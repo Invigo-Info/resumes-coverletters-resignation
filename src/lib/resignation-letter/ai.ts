@@ -1,7 +1,7 @@
 "use client";
 
 import type { ResignationLetterState } from "@/lib/store/resignation-letter-store";
-import { formatLetterDate } from "@/lib/resignation-letter/format";
+import { formatLetterDate, htmlToText } from "@/lib/resignation-letter/format";
 import { RL_OTHER_REASON } from "@/lib/resignation-letter/suggestions";
 
 /**
@@ -36,8 +36,11 @@ export type ResignationLetterInput = Pick<
   | "lastWorkingDay"
   | "reason"
   | "otherReasonText"
+  | "reasonText"
   | "gratitude"
+  | "gratitudeText"
   | "assistance"
+  | "assistanceText"
   | "contacts"
 >;
 
@@ -54,6 +57,7 @@ function fallbackLetter(input: ResignationLetterInput): string {
   const position = input.position.trim() || "my position";
   const salutation = input.salutation.trim() || "Dear Hiring Manager,";
   const lastDay = formatLetterDate(input.lastWorkingDay) || "my final working day";
+  const reasonStatement = htmlToText(input.reasonText).trim();
   const reason = resolveReason(input);
 
   const paras: string[] = [
@@ -63,19 +67,30 @@ function fallbackLetter(input: ResignationLetterInput): string {
     }, with my last working day being ${lastDay}.`,
   ];
 
-  if (reason) {
+  if (reasonStatement) {
+    // Use the user's edited reason paragraph verbatim.
+    paras.push(reasonStatement);
+  } else if (reason) {
     paras.push(
       `This decision follows a thoughtful reflection on ${reason.toLowerCase()}, and I am grateful for the understanding and support I have received.`
     );
   }
-  if (input.gratitude.length) {
+  const gratitudeStatement = htmlToText(input.gratitudeText).trim();
+  if (gratitudeStatement) {
+    // Use the user's edited gratitude paragraph verbatim.
+    paras.push(gratitudeStatement);
+  } else if (input.gratitude.length) {
     paras.push(
       `I am sincerely thankful for the ${input.gratitude
         .join(", ")
         .toLowerCase()} I experienced during my time${company ? ` at ${company}` : " here"}. It has meaningfully shaped my professional growth.`
     );
   }
-  if (input.assistance) {
+  const assistanceStatement = htmlToText(input.assistanceText).trim();
+  if (input.assistance && assistanceStatement) {
+    // Use the user's edited assistance paragraph verbatim.
+    paras.push(assistanceStatement);
+  } else if (input.assistance) {
     paras.push(
       `I am happy to assist with a smooth transition over the coming weeks, whether that means training a replacement or wrapping up ongoing projects.`
     );
@@ -105,8 +120,11 @@ export async function generateResignationLetter(input: ResignationLetterInput): 
     submissionDate: formatLetterDate(input.submissionDate),
     lastWorkingDay: formatLetterDate(input.lastWorkingDay),
     reason: resolveReason(input),
+    reasonText: htmlToText(input.reasonText),
     gratitude: input.gratitude,
+    gratitudeText: htmlToText(input.gratitudeText),
     assistance: input.assistance,
+    assistanceText: htmlToText(input.assistanceText),
   });
   if (ai && ai.trim()) return ai.trim();
   return fallbackLetter(input);

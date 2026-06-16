@@ -97,12 +97,16 @@ export interface DesignOptions {
 }
 
 export interface ResumeState {
+  /** Stable id linking the active resume to its saved draft on the dashboard. */
+  id: string;
   templateId: string;
   personal: PersonalDetails;
   contact: ContactInfo;
   summary: string; // HTML
   employment: EmploymentEntry[];
   skills: SkillEntry[];
+  /** Editable heading for the Skills section (renamable via the pencil). */
+  skillsTitle: string;
   education: EducationEntry[];
   additional: AdditionalSection[];
   design: DesignOptions;
@@ -128,6 +132,8 @@ export interface ResumeState {
   addSkill: (name?: string) => void;
   updateSkill: (id: string, patch: Partial<SkillEntry>) => void;
   removeSkill: (id: string) => void;
+  clearSkills: () => void;
+  setSkillsTitle: (title: string) => void;
 
   addEducation: () => void;
   updateEducation: (id: string, patch: Partial<EducationEntry>) => void;
@@ -150,8 +156,10 @@ export interface ResumeState {
 
   /** Replace the whole resume (used by upload-parse in Phase 12). */
   hydrate: (data: Partial<ResumeState>) => void;
-  /** Clear back to a pristine, empty resume (used by "Start from scratch"). */
+  /** Clear back to a pristine, empty resume + new id ("Start from scratch"). */
   reset: () => void;
+  /** Load a saved draft into the editor (used by the dashboard "Edit"). */
+  loadDocument: (id: string, data: Partial<ResumeState>) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -190,15 +198,21 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   "summary",
 ];
 
+/** Generate a unique resume/draft id. */
+export const newResumeId = () =>
+  `res-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
 /** A pristine, empty resume — shared by the store's initial state and reset(). */
 type ResumeData = Pick<
   ResumeState,
+  | "id"
   | "templateId"
   | "personal"
   | "contact"
   | "summary"
   | "employment"
   | "skills"
+  | "skillsTitle"
   | "education"
   | "additional"
   | "design"
@@ -207,6 +221,7 @@ type ResumeData = Pick<
 >;
 
 const emptyResume = (): ResumeData => ({
+  id: "",
   templateId: "clear-ats",
   personal: {
     firstName: "",
@@ -220,6 +235,7 @@ const emptyResume = (): ResumeData => ({
   summary: "",
   employment: [],
   skills: [],
+  skillsTitle: "Skills",
   education: [],
   additional: [],
   design: {
@@ -278,6 +294,8 @@ export const useResumeStore = create<ResumeState>()(
     })),
   removeSkill: (id) =>
     set((s) => ({ skills: s.skills.filter((sk) => sk.id !== id) })),
+  clearSkills: () => set({ skills: [] }),
+  setSkillsTitle: (title) => set({ skillsTitle: title }),
 
   addEducation: () =>
     set((s) => ({ education: [...s.education, emptyEducation()] })),
@@ -292,14 +310,22 @@ export const useResumeStore = create<ResumeState>()(
 
   addAdditionalSection: (type, title) => {
     const id = uid(type);
-    set((s) => ({
-      additional: [
-        ...s.additional,
-        { id, type, title, entries: [{ id: uid("ent") }] },
-      ],
-      sectionOrder: [...s.sectionOrder, id],
-      activeSection: id,
-    }));
+    set((s) => {
+      // Insert the new section just before Professional summary, which always
+      // stays last. Falls back to the end if there's no summary in the order.
+      const order = [...s.sectionOrder];
+      const summaryIdx = order.indexOf("summary");
+      if (summaryIdx >= 0) order.splice(summaryIdx, 0, id);
+      else order.push(id);
+      return {
+        additional: [
+          ...s.additional,
+          { id, type, title, entries: [{ id: uid("ent") }] },
+        ],
+        sectionOrder: order,
+        activeSection: id,
+      };
+    });
     return id;
   },
   updateAdditionalTitle: (id, title) =>
@@ -346,7 +372,8 @@ export const useResumeStore = create<ResumeState>()(
   setSectionOrder: (order) => set({ sectionOrder: order }),
 
   hydrate: (data) => set((s) => ({ ...s, ...data })),
-  reset: () => set(emptyResume()),
+  reset: () => set({ ...emptyResume(), id: newResumeId() }),
+  loadDocument: (id, data) => set((s) => ({ ...s, ...data, id })),
     }),
     {
       name: "resume-co:resume",
@@ -354,7 +381,9 @@ export const useResumeStore = create<ResumeState>()(
       // Don't restore the transient UI cursor — always open on the first section.
       partialize: ({ activeSection: _activeSection, ...rest }) => rest,
       // v1: normalise built-in order (summary last) for resumes saved earlier.
-      version: 1,
+      // v2: re-pin summary to the very end (fixes orders where an additional
+      //     section or a reorder pushed it out of last place).
+      version: 2,
       migrate: (persisted, version) => {
         const state = persisted as Partial<ResumeState> | undefined;
         if (state && version < 1 && Array.isArray(state.sectionOrder)) {
@@ -365,6 +394,12 @@ export const useResumeStore = create<ResumeState>()(
             (k) => !builtinOrder.includes(k) && k !== "summary"
           );
           state.sectionOrder = [...builtins, ...additional, "summary"];
+        }
+        if (state && version < 2 && Array.isArray(state.sectionOrder)) {
+          const rest = state.sectionOrder.filter((k) => k !== "summary");
+          state.sectionOrder = state.sectionOrder.includes("summary")
+            ? [...rest, "summary"]
+            : rest;
         }
         return state as ResumeState;
       },
