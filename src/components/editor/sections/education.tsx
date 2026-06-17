@@ -14,10 +14,14 @@ export function EducationForm() {
   const addEducation = useResumeStore((s) => s.addEducation);
   const updateEducation = useResumeStore((s) => s.updateEducation);
   const removeEducation = useResumeStore((s) => s.removeEducation);
+  const setActiveEntryId = useResumeStore((s) => s.setActiveEntryId);
 
   useEffect(() => {
     if (useResumeStore.getState().education.length === 0) addEducation();
   }, [addEducation]);
+
+  // Clear the inner-entry cursor when leaving the section.
+  useEffect(() => () => setActiveEntryId(null), [setActiveEntryId]);
 
   return (
     <div>
@@ -33,6 +37,7 @@ export function EducationForm() {
             title={[e.degree, e.institution].filter(Boolean).join(", ") || "Untitled"}
             subtitle={[e.startDate, e.endDate].filter(Boolean).join(" – ")}
             onDelete={() => removeEducation(e.id)}
+            onActivate={() => setActiveEntryId(e.id)}
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FieldWrap label="Institution">

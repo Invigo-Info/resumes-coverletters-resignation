@@ -2,6 +2,7 @@
 
 import { useResignationLetterStore, type RLFontId, type RLFontSize } from "@/lib/store/resignation-letter-store";
 import { formatLetterDate, previewOpeningLine, htmlToText } from "@/lib/resignation-letter/format";
+import { spaceBlocks } from "@/lib/html-spacing";
 import { cn } from "@/lib/utils";
 
 const FONT_STACK: Record<RLFontId, string> = {
@@ -28,6 +29,11 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
   const isPage = variant === "page";
   // Dark letterhead only applies to the full document (the builder card stays light).
   const dark = isPage && s.design.theme === "dark";
+  // A tinted combination fills the page and colors the letter text in the accent
+  // (a monochrome letterhead look); plain combinations keep dark, readable body.
+  const tinted = !dark && !!s.design.bg;
+  const pageBg = dark ? "#171717" : s.design.bg || "#ffffff";
+  const textColor = dark ? "#ffffff" : tinted ? s.design.accent : "#111827";
   const titleColor = dark ? "#ffffff" : s.design.accent;
 
   return (
@@ -37,9 +43,14 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
         isPage
           ? "mx-auto w-full max-w-[816px] rounded-sm px-16 py-14 shadow-card-lg ring-1"
           : "flex h-full min-h-[520px] w-full flex-col rounded-2xl px-7 py-6 shadow-card ring-1",
-        dark ? "bg-neutral-900 text-white ring-neutral-800" : "bg-white text-neutral-900 ring-border"
+        dark ? "ring-neutral-800" : "ring-border"
       )}
-      style={{ fontFamily: FONT_STACK[s.design.font], fontSize: `${scale}rem` }}
+      style={{
+        fontFamily: FONT_STACK[s.design.font],
+        fontSize: `${scale}rem`,
+        backgroundColor: pageBg,
+        color: textColor,
+      }}
     >
       <h2
         className="font-bold tracking-tight"
@@ -55,12 +66,13 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
         {date}
       </p>
 
-      {/* Body: generated letter once available, otherwise the live template. */}
+      {/* Body: generated letter once available, otherwise the live template.
+          Paragraph gaps are baked inline (spaceBlocks) so they survive the PDF. */}
       {hasBody ? (
         <div
-          className="mt-4 space-y-3 leading-relaxed [&_p]:mb-3"
+          className="mt-4 leading-relaxed"
           style={{ fontSize: isPage ? "0.95em" : "0.72em" }}
-          dangerouslySetInnerHTML={{ __html: s.letter.body }}
+          dangerouslySetInnerHTML={{ __html: spaceBlocks(s.letter.body, 0.9) }}
         />
       ) : (
         <div className="mt-4 space-y-3" style={{ fontSize: isPage ? "0.95em" : "0.72em" }}>

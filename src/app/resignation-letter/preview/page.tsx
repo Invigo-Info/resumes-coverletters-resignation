@@ -8,6 +8,7 @@ import { DesignToolbar } from "@/components/resignation-letter/design-toolbar";
 import { WriteMode } from "@/components/resignation-letter/write-mode";
 import { PaywallDialog } from "@/components/cover-letter/paywall-dialog";
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
+import { useResignationLetterAutosave } from "@/lib/store/resignation-letter-documents-store";
 import { generateResignationLetter } from "@/lib/resignation-letter/ai";
 import { downloadResignationLetter } from "@/lib/resignation-letter/download";
 import { bodyToHtml } from "@/lib/resignation-letter/format";
@@ -28,6 +29,9 @@ export default function ResignationLetterPreviewPage() {
   const [generating, setGenerating] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const requestDownload = usePaywall((s) => s.requestDownload);
+
+  // Persist the finished resignation letter into the dashboard's drafts list.
+  useResignationLetterAutosave();
 
   // Generate on mount if we don't already have a letter body.
   useEffect(() => {
@@ -76,7 +80,7 @@ export default function ResignationLetterPreviewPage() {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
         <Link
-          href="/dashboard"
+          href="/"
           aria-label="Home"
           className="grid size-10 shrink-0 place-items-center rounded-2xl bg-card shadow-card ring-1 ring-border transition-colors hover:bg-muted"
         >
@@ -136,13 +140,36 @@ export default function ResignationLetterPreviewPage() {
       ) : mode === "write" ? (
         <WriteMode onSwitchToDesign={() => setMode("design")} />
       ) : (
-        <div className="flex justify-center gap-4 px-4 pb-16 pt-2">
+        <div className="flex justify-center gap-4 px-4 pb-28 pt-2">
           <div className="sticky top-4 self-start">
             <DesignToolbar />
           </div>
           <div className="min-w-0 flex-1">
             <ResignationLetterPreview variant="page" />
           </div>
+        </div>
+      )}
+
+      {/* Floating actions: edit the letter or download it */}
+      {!generating && mode === "design" && (
+        <div className="fixed bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("write")}
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background shadow-card-lg transition-colors hover:bg-foreground/90"
+          >
+            <PenLine className="size-4" />
+            Edit your letter
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-card-lg transition-colors hover:bg-primary/90 disabled:opacity-60"
+          >
+            {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+            {downloading ? "Preparing…" : "Download"}
+          </button>
         </div>
       )}
     </div>

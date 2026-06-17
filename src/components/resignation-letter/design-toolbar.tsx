@@ -16,8 +16,20 @@ const FONTS: { id: RLFontId; label: string; family: string }[] = [
   { id: "garamond", label: "Garamond", family: "'EB Garamond', Garamond, serif" },
 ];
 
-/** Light accent colors (circles). */
-const ACCENTS = ["#111827", "#059669", "#2563eb", "#0d9488"];
+/**
+ * Color combinations. A plain swatch sets an accent on a white page; a tinted
+ * swatch also fills the page with a soft background; the dark swatch flips the
+ * whole letterhead to a dark theme. Tints use a dark-enough accent so the
+ * colored letter text stays readable.
+ */
+type Combo = { accent: string; bg?: string; dark?: boolean };
+const COMBOS: Combo[] = [
+  { accent: "#111827" },
+  { accent: "#0f766e", bg: "#e8f5ef" },
+  { accent: "#1d4ed8", bg: "#eaf0fe" },
+  { accent: "#0e7490", bg: "#e7f6fb" },
+  { accent: "#ffffff", bg: "#0e4b5a", dark: true },
+];
 
 /**
  * Floating vertical design toolbar (Step 9.png): text size, font, and
@@ -89,35 +101,46 @@ export function DesignToolbar() {
 
       <span className="h-px w-7 bg-border" />
 
-      {/* Color / theme swatches */}
+      {/* Color combinations (accent + page background) */}
       <div className="flex flex-col items-center gap-2 pb-1">
-        {ACCENTS.map((color) => {
-          const active = design.theme === "light" && design.accent === color;
+        {COMBOS.map((c) => {
+          const active = c.dark
+            ? design.theme === "dark"
+            : design.theme === "light" &&
+              design.accent === c.accent &&
+              (design.bg || "") === (c.bg || "");
           return (
             <button
-              key={color}
-              onClick={() => setDesign({ accent: color, theme: "light" })}
+              key={`${c.accent}-${c.bg ?? ""}`}
+              onClick={() =>
+                setDesign({
+                  accent: c.accent,
+                  bg: c.bg ?? "",
+                  theme: c.dark ? "dark" : "light",
+                })
+              }
               className={cn(
-                "grid size-7 place-items-center rounded-full transition-all",
+                "grid size-7 place-items-center transition-all",
+                c.bg ? "rounded-md" : "rounded-full",
                 active && "ring-2 ring-primary ring-offset-2"
               )}
-              aria-label={`Accent ${color}`}
+              aria-label={c.dark ? "Dark letterhead" : c.bg ? `Theme ${c.accent}` : `Accent ${c.accent}`}
             >
-              <span className="size-5 rounded-full" style={{ backgroundColor: color }} />
+              {c.dark ? (
+                <span className="size-5 rounded-[5px] bg-neutral-900" />
+              ) : c.bg ? (
+                <span
+                  className="grid size-6 place-items-center rounded-[6px] ring-1 ring-black/5"
+                  style={{ backgroundColor: c.bg }}
+                >
+                  <span className="size-3 rounded-full" style={{ backgroundColor: c.accent }} />
+                </span>
+              ) : (
+                <span className="size-5 rounded-full" style={{ backgroundColor: c.accent }} />
+              )}
             </button>
           );
         })}
-        {/* Dark letterhead theme */}
-        <button
-          onClick={() => setDesign({ theme: "dark" })}
-          className={cn(
-            "grid size-7 place-items-center rounded-md transition-all",
-            design.theme === "dark" && "ring-2 ring-primary ring-offset-2"
-          )}
-          aria-label="Dark letterhead"
-        >
-          <span className="size-5 rounded-[5px] bg-neutral-900" />
-        </button>
       </div>
     </div>
   );

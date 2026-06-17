@@ -118,26 +118,34 @@ function snapshot(s: ResumeState): ResumeRecord {
 }
 
 /**
+ * Snapshot the active resume into the dashboard's drafts list if it has real
+ * content (assigning an id the first time). Safe to call any number of times —
+ * it upserts by id. Returns the record id, or null when there's nothing to save.
+ *
+ * Used by both the editor autosave and the dashboard (to backfill a draft that
+ * was created/edited before it ever reached the documents list).
+ */
+export function saveActiveResume(): string | null {
+  const s = useResumeStore.getState();
+  if (!hasContent(s)) return null;
+  let id = s.id;
+  if (!id) {
+    id = newResumeId();
+    useResumeStore.setState({ id });
+  }
+  useDocumentsStore.getState().upsertResume({ ...snapshot(useResumeStore.getState()), id });
+  return id;
+}
+
+/**
  * Auto-save the active resume into the dashboard's drafts list. Mount once in
  * the editor; it debounces store changes and upserts the matching record.
  */
 export function useResumeAutosave() {
-  const upsertResume = useDocumentsStore((s) => s.upsertResume);
-
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const save = () => {
-      const s = useResumeStore.getState();
-      if (!hasContent(s)) return;
-      // Assign an id the first time a draft gets real content.
-      let id = s.id;
-      if (!id) {
-        id = newResumeId();
-        useResumeStore.setState({ id });
-      }
-      upsertResume({ ...snapshot(useResumeStore.getState()), id });
-    };
+    const save = () => saveActiveResume();
 
     const schedule = () => {
       if (timer) clearTimeout(timer);
@@ -150,5 +158,5 @@ export function useResumeAutosave() {
       if (timer) clearTimeout(timer);
       unsub();
     };
-  }, [upsertResume]);
+  }, []);
 }

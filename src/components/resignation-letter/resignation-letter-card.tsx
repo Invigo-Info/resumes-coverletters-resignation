@@ -62,14 +62,19 @@ function MiniLetter({ doc }: { doc: ResignationLetterDoc }) {
 
 export function ResignationLetterCard({
   doc,
+  onEdit,
+  onDownload,
   onCopy,
   onDelete,
 }: {
   doc: ResignationLetterDoc;
+  onEdit?: () => void;
+  onDownload?: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
 }) {
   const router = useRouter();
+  const openPreview = () => router.push("/resignation-letter/preview");
 
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
@@ -87,13 +92,15 @@ export function ResignationLetterCard({
           <div className="mt-5 flex flex-wrap gap-2">
             <ActionButton
               className="text-primary hover:bg-secondary"
-              onClick={() => router.push("/resignation-letter/preview")}
+              onClick={onDownload ?? openPreview}
             >
               <Download className="size-4" />
               Download
             </ActionButton>
-            <ActionButton onClick={() => router.push("/resignation-letter/preview")}>Edit</ActionButton>
-            <ActionButton onClick={onCopy}>Copy</ActionButton>
+            <ActionButton onClick={onEdit ?? openPreview}>Edit</ActionButton>
+            <ActionButton onClick={onCopy} disabled={!onCopy}>
+              Copy
+            </ActionButton>
             <ActionButton onClick={onDelete} disabled={!onDelete}>
               Delete
             </ActionButton>

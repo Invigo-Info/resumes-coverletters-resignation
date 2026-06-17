@@ -121,7 +121,7 @@ function CheckoutInner() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <Link href="/dashboard" aria-label="resume.co home" className="inline-block">
+        <Link href="/" aria-label="resume.co home" className="inline-block">
           <LogoMark />
         </Link>
 

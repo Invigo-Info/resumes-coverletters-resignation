@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const TABS = [
-  { label: "Resumes", href: "/dashboard" },
+  { label: "Resumes", href: "/" },
   { label: "Cover letters", href: "/cover-letters" },
   { label: "Resignation letters", href: "/resignation-letters" },
   { label: "Jobs", href: "#" },
@@ -32,7 +32,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full items-center gap-6 px-4 sm:px-6 lg:px-10">
         {/* Left: logo + tabs */}
-        <Link href="/dashboard" aria-label="resume.co home">
+        <Link href="/" aria-label="resume.co home">
           <LogoMark withWordmark={false} className="size-7" />
         </Link>
 

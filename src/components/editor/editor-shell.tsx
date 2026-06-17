@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -91,6 +91,11 @@ export function EditorShell({
   // Persist the working resume into the dashboard's drafts list.
   useResumeAutosave();
 
+  // True for the one render where `active` changed because the URL synced it
+  // (not a user click) — so the store->URL effect below doesn't fire a spurious
+  // router.replace with the stale section and cause the page to flip/blink.
+  const syncingFromUrl = useRef(false);
+
   useEffect(() => {
     if (templateId) applyTemplate(templateId);
   }, [templateId, applyTemplate]);
@@ -100,15 +105,21 @@ export function EditorShell({
     if (!routedSection) return;
     const key = resumeKeyFromSlug(routedSection);
     if (key && key !== useResumeStore.getState().activeSection) {
+      syncingFromUrl.current = true;
       setActive(key as SectionKey);
     }
     setTab("write");
   }, [routedSection, setActive]);
 
   // store -> URL: while writing, reflect the active step back into the path so
-  // every section is a shareable, refresh-safe URL.
+  // every section is a shareable, refresh-safe URL. Skip the push when the
+  // active change originated from the URL (the line above).
   useEffect(() => {
     if (!routedSection || tab !== "write") return;
+    if (syncingFromUrl.current) {
+      syncingFromUrl.current = false;
+      return;
+    }
     const slug = resumeSlugFromKey(active);
     if (slug && slug !== routedSection) {
       router.replace(`${RESUME_WRITE_BASE}/${slug}`);

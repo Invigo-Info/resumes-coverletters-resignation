@@ -10,6 +10,7 @@ import { WriteMode } from "@/components/cover-letter/write-mode";
 import { PaywallDialog } from "@/components/cover-letter/paywall-dialog";
 import { HelpPill } from "@/components/layout/help-pill";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
 import { downloadCoverLetter } from "@/lib/cover-letter/download";
@@ -24,6 +25,9 @@ export default function CoverLetterPreviewPage() {
   const [generating, setGenerating] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const requestDownload = usePaywall((s) => s.requestDownload);
+
+  // Persist the finished cover letter into the dashboard's drafts list.
+  useCoverLetterAutosave();
 
   // Generate on mount if we don't have a body yet — or regenerate a stale one
   // that still contains an unresolved "[placeholder]" (old format/alignment).
@@ -70,7 +74,7 @@ export default function CoverLetterPreviewPage() {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
         <Link
-          href="/dashboard"
+          href="/"
           aria-label="Home"
           className="grid size-10 shrink-0 place-items-center rounded-2xl bg-card shadow-card ring-1 ring-border transition-colors hover:bg-muted"
         >

@@ -150,6 +150,7 @@ export function AdditionalSectionForm({
   const removeSection = useResumeStore((s) => s.removeAdditionalSection);
   const addEntry = useResumeStore((s) => s.addAdditionalEntry);
   const removeEntry = useResumeStore((s) => s.removeAdditionalEntry);
+  const setActiveEntryId = useResumeStore((s) => s.setActiveEntryId);
 
   const [editingTitle, setEditingTitle] = useState(false);
 
@@ -216,6 +217,7 @@ export function AdditionalSectionForm({
               }
               subtitle={entry[cfg.fields[1]?.key]}
               onDelete={() => removeEntry(section.id, entry.id)}
+              onActivate={() => setActiveEntryId(entry.id)}
             >
               <EntryFields section={section} entry={entry} />
             </EntryCard>

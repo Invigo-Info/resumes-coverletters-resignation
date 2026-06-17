@@ -3,119 +3,137 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus, RotateCcw, ChevronRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { ResignationLetterCard } from "@/components/resignation-letter/resignation-letter-card";
-import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
+import {
+  useResignationLetterStore,
+  newResignationLetterId,
+} from "@/lib/store/resignation-letter-store";
+import {
+  useResignationLetterDocumentsStore,
+  saveActiveResignationLetter,
+  type ResignationLetterRecord,
+} from "@/lib/store/resignation-letter-documents-store";
+import { formatLetterDate, htmlToText, previewOpeningLine } from "@/lib/resignation-letter/format";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
 
-export function ResignationDashboardBody({ initialDocs }: { initialDocs: ResignationLetterDoc[] }) {
+function formatUpdated(ts: number): string {
+  const d = new Date(ts);
+  const day = d.getDate();
+  const month = d.toLocaleString("en-US", { month: "short" });
+  return `Updated ${day} ${month} ${d.getFullYear()}`;
+}
+
+/** Map a saved record to the card's letterhead-preview doc shape. */
+function toDoc(rec: ResignationLetterRecord): ResignationLetterDoc {
+  const d = rec.data;
+  const recipient = [
+    d.employer.managerName.trim() && `To ${d.employer.managerName.trim()}`,
+    d.employer.companyName.trim(),
+    d.employer.companyAddress.trim(),
+  ].filter(Boolean) as string[];
+  const body = htmlToText(d.letter.body).trim() || previewOpeningLine(d.lastWorkingDay);
+  return {
+    id: rec.id,
+    title: rec.title,
+    name: d.fullName.trim() || "Your Name",
+    updatedAt: formatUpdated(rec.updatedAt),
+    theme: d.design.theme,
+    preview: {
+      date: formatLetterDate(d.submissionDate) || "",
+      recipient: recipient.length ? recipient : undefined,
+      body,
+      email: d.contacts.email.trim(),
+    },
+  };
+}
+
+export function ResignationDashboardBody() {
   const router = useRouter();
-  const [docs, setDocs] = useState(initialDocs);
-
-  // Draft detection — only after mount (persisted store is hydrated client-side).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const hasBody = useResignationLetterStore((s) => s.letter.body.trim().length > 0);
-  const step = useResignationLetterStore((s) => s.step);
-  const managerName = useResignationLetterStore((s) => s.employer.managerName);
-  const position = useResignationLetterStore((s) => s.position);
+  const letters = useResignationLetterDocumentsStore((s) => s.letters);
+  const removeLetter = useResignationLetterDocumentsStore((s) => s.removeLetter);
+  const upsertLetter = useResignationLetterDocumentsStore((s) => s.upsertLetter);
+  const loadDocument = useResignationLetterStore((s) => s.loadDocument);
   const reset = useResignationLetterStore((s) => s.reset);
-  // "Started" = progressed beyond the prefilled first step.
-  const hasDraft = mounted && (hasBody || step !== "heading" || !!managerName || !!position);
 
-  function continueDraft() {
-    router.push(hasBody ? "/resignation-letter/preview" : "/resignation-letters/write/heading");
-  }
+  // Drafts live in localStorage (client only) — avoid SSR/client mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // Backfill: a letter created/edited but never saved into the drafts list
+    // still lives in the active store — surface it as a draft card here.
+    saveActiveResignationLetter();
+    setMounted(true);
+  }, []);
 
   function createNew() {
     reset();
     router.push("/resignation-letters/write/heading");
   }
 
-  function copyDoc(id: string) {
-    setDocs((list) => {
-      const i = list.findIndex((d) => d.id === id);
-      if (i < 0) return list;
-      const src = list[i];
-      const copy: ResignationLetterDoc = {
-        ...src,
-        id: `copy-${id}-${list.length}`,
-        title: `${src.title} (Copy)`,
-        updatedAt: "Updated just now",
-      };
-      return [...list.slice(0, i + 1), copy, ...list.slice(i + 1)];
-    });
+  function open(rec: ResignationLetterRecord) {
+    loadDocument(rec.id, rec.data);
+    const hasBody = rec.data.letter.body.trim().length > 0;
+    router.push(hasBody ? "/resignation-letter/preview" : "/resignation-letters/write/heading");
   }
 
-  function deleteDoc(id: string) {
-    setDocs((list) => list.filter((d) => d.id !== id));
+  if (!mounted || letters.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-10 text-center">
+        <Image
+          src="/illustration.png"
+          alt="Diverse professionals"
+          width={544}
+          height={379}
+          className="w-[420px] max-w-full"
+          unoptimized
+          priority
+        />
+        <h1 className="max-w-md font-heading text-2xl font-extrabold leading-snug text-foreground">
+          If you don&apos;t have a resignation letter yet, it&apos;s a great time to create one!
+        </h1>
+        <PrimaryButton onClick={createNew}>
+          <Plus className="size-4" />
+          Build my resignation letter
+        </PrimaryButton>
+      </div>
+    );
   }
 
   return (
     <>
-      {hasDraft && (
+      <div className="space-y-6">
+        {letters.map((rec) => (
+          <ResignationLetterCard
+            key={rec.id}
+            doc={toDoc(rec)}
+            onEdit={() => open(rec)}
+            onDownload={() => open(rec)}
+            onCopy={() => {
+              const id = newResignationLetterId();
+              upsertLetter({
+                ...rec,
+                id,
+                title: `${rec.title} (copy)`,
+                updatedAt: Date.now(),
+              });
+            }}
+            onDelete={() => removeLetter(rec.id)}
+          />
+        ))}
+      </div>
+
+      {/* Create new */}
+      <div className="mt-8 flex justify-center">
         <button
           type="button"
-          onClick={continueDraft}
-          className="mb-6 flex w-full items-center gap-3 rounded-2xl bg-card px-5 py-4 text-left shadow-card ring-1 ring-border transition-colors hover:ring-primary/40"
+          onClick={createNew}
+          className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-            <RotateCcw className="size-4" />
-          </span>
-          <span className="flex-1">
-            <span className="block text-sm font-semibold text-foreground">Continue your draft</span>
-            <span className="block text-xs text-muted-foreground">Pick up where you left off</span>
-          </span>
-          <ChevronRight className="size-4 text-muted-foreground" />
+          <Plus className="size-4" />
+          Create new resignation letter
         </button>
-      )}
-
-      {docs.length > 0 ? (
-        <>
-          <div className="space-y-6">
-            {docs.map((doc) => (
-              <ResignationLetterCard
-                key={doc.id}
-                doc={doc}
-                onCopy={() => copyDoc(doc.id)}
-                onDelete={() => deleteDoc(doc.id)}
-              />
-            ))}
-          </div>
-
-          {/* Create new */}
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={createNew}
-              className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
-            >
-              <Plus className="size-4" />
-              Create new resignation letter
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-6 py-10 text-center">
-          <Image
-            src="/illustration.png"
-            alt="Diverse professionals"
-            width={544}
-            height={379}
-            className="w-[420px] max-w-full"
-            unoptimized
-            priority
-          />
-          <h1 className="max-w-md font-heading text-2xl font-extrabold leading-snug text-foreground">
-            If you don&apos;t have a resignation letter yet, it&apos;s a great time to create one!
-          </h1>
-          <PrimaryButton onClick={createNew}>
-            <Plus className="size-4" />
-            Build my resignation letter
-          </PrimaryButton>
-        </div>
-      )}
+      </div>
     </>
   );
 }

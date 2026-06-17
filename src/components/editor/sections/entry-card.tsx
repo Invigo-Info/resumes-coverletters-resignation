@@ -11,6 +11,7 @@ export function EntryCard({
   defaultOpen = true,
   open: openProp,
   onToggle,
+  onActivate,
   children,
 }: {
   title: string;
@@ -20,6 +21,9 @@ export function EntryCard({
   /** Controlled open state (for accordion behaviour). Omit for self-managed. */
   open?: boolean;
   onToggle?: () => void;
+  /** Fired when this entry is interacted with — used to highlight it in the
+   *  preview. */
+  onActivate?: () => void;
   children: React.ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -31,7 +35,11 @@ export function EntryCard({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div
+      className="rounded-xl border border-border bg-card"
+      onFocusCapture={onActivate}
+      onPointerDownCapture={onActivate}
+    >
       <div className="flex items-center gap-2 px-4 py-3">
         <button
           onClick={toggle}

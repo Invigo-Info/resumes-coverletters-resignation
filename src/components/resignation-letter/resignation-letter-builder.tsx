@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { StepShell } from "@/components/resignation-letter/step-shell";
@@ -25,6 +25,7 @@ import {
   RESIGNATION_WRITE_BASE,
   isResignationSlug,
 } from "@/lib/section-routes";
+import { useResignationLetterAutosave } from "@/lib/store/resignation-letter-documents-store";
 
 function StepBody({ step }: { step: RLStep }) {
   switch (step) {
@@ -57,6 +58,9 @@ export function ResignationLetterBuilder({ routedStep }: { routedStep?: string }
   const s = useResignationLetterStore();
   const { step } = s;
 
+  // Persist the working resignation letter into the dashboard's drafts list.
+  useResignationLetterAutosave();
+
   // Prefill account-style defaults on a fresh start (matches the screenshots'
   // pre-filled name / email / two-weeks-notice dates).
   useEffect(() => {
@@ -73,10 +77,15 @@ export function ResignationLetterBuilder({ routedStep }: { routedStep?: string }
     }
   }, []);
 
+  // True for the one render where `step` changed because the URL synced it, so
+  // the store->URL effect doesn't fire a stale router.replace (page flip/blink).
+  const syncingFromUrl = useRef(false);
+
   // URL -> store: the slug in the path selects the active step.
   useEffect(() => {
     if (!routedStep || !isResignationSlug(routedStep)) return;
     if (routedStep !== useResignationLetterStore.getState().step) {
+      syncingFromUrl.current = true;
       s.setStep(routedStep as RLStep);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,6 +96,10 @@ export function ResignationLetterBuilder({ routedStep }: { routedStep?: string }
   useEffect(() => {
     if (!routedStep) return;
     if (step === "generate" || step === "preview") return;
+    if (syncingFromUrl.current) {
+      syncingFromUrl.current = false;
+      return;
+    }
     if (step !== routedStep) {
       router.replace(`${RESIGNATION_WRITE_BASE}/${step}`);
     }

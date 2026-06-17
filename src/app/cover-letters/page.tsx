@@ -1,7 +1,7 @@
 import { TopNav } from "@/components/dashboard/top-nav";
-import { EmptyState } from "@/components/dashboard/empty-state";
 import { SiteFooter } from "@/components/dashboard/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
+import { DashboardCoverLetters } from "@/components/cover-letter/dashboard-cover-letters";
 
 export default function CoverLettersPage() {
   return (
@@ -9,12 +9,8 @@ export default function CoverLettersPage() {
       <TopNav active="Cover letters" />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-          <EmptyState
-            heading="If you don't have a cover letter yet, it's a great time to create one!"
-            buttonLabel="Build my cover letter"
-            href="/cover-letter/new"
-          />
+        <div className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
+          <DashboardCoverLetters />
         </div>
       </main>
 

@@ -9,12 +9,12 @@ import {
   Loader2,
   Download,
   Share2,
-  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
 import { downloadResume } from "@/lib/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
+import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 
 export type EditorTab = "write" | "design" | "improve";
 
@@ -38,8 +38,9 @@ export function TopBar({
   onTabChange: (t: EditorTab) => void;
 }) {
   const progress = useResumeStore(getProgress);
+  const resumeId = useResumeStore((s) => s.id);
   const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
@@ -50,43 +51,29 @@ export function TopBar({
     }
   }
 
-  async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "My resume", url });
-        return;
-      }
-      await navigator.clipboard?.writeText(url);
-    } catch {
-      /* user dismissed share / clipboard blocked — ignore */
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
-  }
-
   return (
     <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
       {/* Home */}
       <HomeButton className="size-13" />
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border">
+      <div className="flex shrink-0 items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border">
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
             <button
               key={t.key}
               onClick={() => onTabChange(t.key)}
+              aria-label={t.label}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+                "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:px-4",
                 active
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t.icon}
-              {t.label}
+              <span className="hidden sm:inline">{t.label}</span>
             </button>
           );
         })}
@@ -126,18 +113,19 @@ export function TopBar({
       {/* Share + Download */}
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
         <button
-          onClick={handleShare}
+          onClick={() => setShareOpen(true)}
           className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
         >
-          {copied ? (
-            <Check className="size-4" />
-          ) : (
-            <Share2 className="size-4" />
-          )}
-          <span className="hidden sm:inline">
-            {copied ? "Link copied" : "Share"}
-          </span>
+          <Share2 className="size-4" />
+          <span className="hidden sm:inline">Share</span>
         </button>
+
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          shareUrl={buildShareUrl(resumeId)}
+          label="resume"
+        />
 
         <button
           onClick={handleDownload}

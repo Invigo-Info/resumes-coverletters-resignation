@@ -57,6 +57,8 @@ export interface RLContacts {
 }
 
 export interface ResignationLetterState {
+  /** Stable id for the saved draft (assigned on first content / reset). */
+  id: string;
   fullName: string;
   employer: RLEmployer;
   /** Auto-derived from employer.managerName unless the user edits it. */
@@ -84,7 +86,7 @@ export interface ResignationLetterState {
   contacts: RLContacts;
 
   letter: { body: string };
-  design: { font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme };
+  design: { font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme; bg: string };
 
   /** wizard control */
   step: RLStep;
@@ -108,13 +110,18 @@ export interface ResignationLetterState {
   setAssistanceText: (value: string) => void;
   patchContacts: (patch: Partial<RLContacts>) => void;
   setLetter: (patch: Partial<{ body: string }>) => void;
-  setDesign: (patch: Partial<{ font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme }>) => void;
+  setDesign: (patch: Partial<{ font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme; bg: string }>) => void;
 
   goNext: () => void;
   goBack: () => void;
   hydrate: (data: Partial<ResignationLetterState>) => void;
+  loadDocument: (id: string, data: Partial<ResignationLetterState>) => void;
   reset: () => void;
 }
+
+/** Generate a unique resignation-letter draft id. */
+export const newResignationLetterId = () =>
+  `rl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 /* ------------------------------------------------------------------ */
 /* Defaults                                                           */
@@ -123,6 +130,7 @@ export interface ResignationLetterState {
 const MAX_GRATITUDE = 3;
 
 const initial = {
+  id: "",
   fullName: "",
   employer: { managerName: "", companyName: "", companyAddress: "" },
   salutation: "",
@@ -142,7 +150,7 @@ const initial = {
   assistanceTextTouched: false,
   contacts: { email: "", phone: "", address: "" },
   letter: { body: "" },
-  design: { font: "georgia" as RLFontId, accent: "#111827", fontSize: "M" as RLFontSize, theme: "light" as RLTheme },
+  design: { font: "georgia" as RLFontId, accent: "#111827", fontSize: "M" as RLFontSize, theme: "light" as RLTheme, bg: "" },
   step: "heading" as RLStep,
   mode: "onboarding" as const,
 };
@@ -354,7 +362,8 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
       },
 
       hydrate: (data) => set((s) => ({ ...s, ...data })),
-      reset: () => set({ ...initial }),
+      loadDocument: (id, data) => set((s) => ({ ...s, ...data, id })),
+      reset: () => set({ ...initial, id: newResignationLetterId() }),
     }),
     {
       name: "resume-co:resignation-letter",

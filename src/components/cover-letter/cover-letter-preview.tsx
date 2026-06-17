@@ -2,6 +2,7 @@
 
 import { useCoverLetterStore, type CLFontId } from "@/lib/store/cover-letter-store";
 import { bodyToHtml } from "@/lib/cover-letter/format";
+import { spaceBlocks } from "@/lib/html-spacing";
 import { cn } from "@/lib/utils";
 
 const FONT_STACK: Record<CLFontId, string> = {
@@ -11,9 +12,11 @@ const FONT_STACK: Record<CLFontId, string> = {
 };
 
 const SPACING = {
-  dense: { pad: "px-12 py-12", body: "[&_p]:mb-2.5 leading-snug", gap: "mt-5" },
-  normal: { pad: "px-14 py-16", body: "[&_p]:mb-4 leading-relaxed", gap: "mt-6" },
-  loose: { pad: "px-16 py-20", body: "[&_p]:mb-6 leading-loose", gap: "mt-8" },
+  // `em` is the inline paragraph gap baked into the body HTML so it survives the
+  // PDF export (html2canvas drops class-based `space-y`/`[&_p]:mb` spacing).
+  dense: { pad: "px-12 py-12", body: "leading-snug", gap: "mt-5", em: 0.65 },
+  normal: { pad: "px-14 py-16", body: "leading-relaxed", gap: "mt-6", em: 1.0 },
+  loose: { pad: "px-16 py-20", body: "leading-loose", gap: "mt-8", em: 1.5 },
 } as const;
 
 /**
@@ -33,16 +36,15 @@ export function CoverLetterPreview() {
   const company = letter.companyName || jobDetails.companyName;
   const hiringManager = letter.hiringManagerName || jobDetails.hiringManagerName;
   const recipient = [hiringManager, company].filter(Boolean).join(", ");
-  // Replace any leftover signature placeholder ("[Candidate's Full Name]") with
-  // the real name, so a not-yet-regenerated letter never shows a placeholder.
-  const bodyHtml = bodyToHtml(letter.body || "").replace(
-    /\[[^\]]*name[^\]]*\]/gi,
-    fullName
-  );
-
   const dark = !!design.dark;
   const layout = design.layout ?? "accent-top";
   const sp = SPACING[design.spacing ?? "normal"];
+  // Replace any leftover signature placeholder ("[Candidate's Full Name]") with
+  // the real name, then bake the paragraph gap inline so it survives the PDF.
+  const bodyHtml = spaceBlocks(
+    bodyToHtml(letter.body || "").replace(/\[[^\]]*name[^\]]*\]/gi, fullName),
+    sp.em
+  );
   const pageBg = design.bg || (dark ? "#0e4b5a" : "#ffffff");
   const nameColor = dark ? "#ffffff" : design.accent;
   const ruleColor = dark ? "rgba(255,255,255,0.35)" : design.accent;
@@ -110,7 +112,7 @@ export function CoverLetterPreview() {
 
       {/* Body */}
       <div className={cn("text-[13px]", sp.gap, sp.body)} style={{ color: bodyColor }}>
-        {recipient && <p>{recipient}</p>}
+        {recipient && <p style={{ marginBottom: `${sp.em}em` }}>{recipient}</p>}
         {bodyHtml ? (
           <div
             className="[&_li]:ml-4 [&_li]:list-disc"

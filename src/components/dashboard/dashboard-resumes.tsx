@@ -8,7 +8,7 @@ import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
-import { useDocumentsStore } from "@/lib/store/documents-store";
+import { useDocumentsStore, saveActiveResume } from "@/lib/store/documents-store";
 import { getTemplate } from "@/lib/templates";
 import type { ResumeDoc } from "@/lib/mock-data";
 
@@ -28,7 +28,13 @@ export function DashboardResumes() {
 
   // Avoid SSR/client mismatch — drafts live in localStorage (client only).
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // Backfill: a resume that was created/edited but never reached the drafts
+    // list (e.g. the user navigated away before autosave fired) still lives in
+    // the active resume store — surface it as a draft card here.
+    saveActiveResume();
+    setMounted(true);
+  }, []);
 
   if (!mounted || resumes.length === 0) {
     return <EmptyState />;

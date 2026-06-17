@@ -7,6 +7,7 @@ import { Download, Sparkles, Trash2 } from "lucide-react";
 import type { ResumeDoc } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { TailorDialog } from "./tailor-dialog";
+import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ export function ResumeCard({
   const router = useRouter();
   const [tailorOpen, setTailorOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
@@ -91,7 +93,7 @@ export function ResumeCard({
             <ActionButton onClick={onCopy} disabled={!onCopy}>
               Copy
             </ActionButton>
-            <ActionButton>Share</ActionButton>
+            <ActionButton onClick={() => setShareOpen(true)}>Share</ActionButton>
             <ActionButton
               onClick={onDelete ? () => setConfirmOpen(true) : undefined}
               disabled={!onDelete}
@@ -122,6 +124,13 @@ export function ResumeCard({
         open={tailorOpen}
         onClose={() => setTailorOpen(false)}
         resumeTitle={resume.title}
+      />
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        shareUrl={buildShareUrl(resume.id)}
+        label="resume"
       />
 
       {/* Delete confirmation */}

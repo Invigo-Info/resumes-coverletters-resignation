@@ -46,6 +46,29 @@ export function GoogleDriveIcon({ className }: { className?: string }) {
   );
 }
 
+export function TwitterIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
+      <path
+        fill="#1DA1F2"
+        d="M23 4.94c-.81.36-1.68.6-2.6.71a4.52 4.52 0 0 0 1.98-2.5 9.04 9.04 0 0 1-2.86 1.1A4.51 4.51 0 0 0 11.7 8.3 12.8 12.8 0 0 1 2.4 3.6a4.51 4.51 0 0 0 1.4 6.02c-.73-.02-1.42-.22-2.02-.56v.06a4.51 4.51 0 0 0 3.62 4.42c-.66.18-1.36.2-2.04.08a4.52 4.52 0 0 0 4.22 3.13A9.05 9.05 0 0 1 1 20.29 12.77 12.77 0 0 0 7.92 22.3c8.3 0 12.84-6.88 12.84-12.84l-.01-.58A9.18 9.18 0 0 0 23 4.94Z"
+      />
+    </svg>
+  );
+}
+
+export function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
+      <rect width="24" height="24" rx="4" fill="#1877F2" />
+      <path
+        fill="#fff"
+        d="M16.5 8.2h-1.7c-.32 0-.6.36-.6.82V10.4h2.3l-.34 2.4h-1.96V19h-2.5v-6.2H9.5v-2.4h2.2V8.7c0-1.78 1.1-2.9 2.72-2.9h2.08v2.4Z"
+      />
+    </svg>
+  );
+}
+
 export function LinkedInIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">

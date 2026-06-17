@@ -30,7 +30,7 @@ export default async function PaymentSuccessPage({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="px-5 py-6 sm:px-8">
-        <Link href="/dashboard" aria-label="resume.co home" className="inline-block">
+        <Link href="/" aria-label="resume.co home" className="inline-block">
           <LogoMark />
         </Link>
       </div>
@@ -50,7 +50,7 @@ export default async function PaymentSuccessPage({
         </p>
 
         <div className="mt-8">
-          <Link href="/dashboard">
+          <Link href="/">
             <PrimaryButton>Go to dashboard</PrimaryButton>
           </Link>
         </div>

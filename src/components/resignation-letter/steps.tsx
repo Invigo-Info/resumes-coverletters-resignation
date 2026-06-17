@@ -5,6 +5,7 @@ import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useResignationLetterStore, isValidEmail } from "@/lib/store/resignation-letter-store";
 import { RL_REASONS, RL_OTHER_REASON, RL_GRATITUDE } from "@/lib/resignation-letter/suggestions";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { RLDatePicker } from "@/components/resignation-letter/date-picker";
 import { bodyToHtml, htmlToText } from "@/lib/resignation-letter/format";
 import { improveLetterBody } from "@/lib/resignation-letter/ai";
 import {
@@ -164,19 +165,21 @@ export function PositionStep() {
           placeholder="Account Manager"
         />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <RLField
-            label="Letter submission date"
-            value={submissionDate}
-            onChange={setSubmissionDate}
-            type="date"
-          />
-          <RLField
-            label="Last working day"
-            value={lastWorkingDay}
-            onChange={setLastWorkingDay}
-            type="date"
-            error={dateError}
-          />
+          <div>
+            <span className="mb-1.5 block text-sm text-muted-foreground">
+              Letter submission date
+            </span>
+            <RLDatePicker value={submissionDate} onChange={setSubmissionDate} />
+          </div>
+          <div>
+            <span className="mb-1.5 block text-sm text-muted-foreground">Last working day</span>
+            <RLDatePicker
+              value={lastWorkingDay}
+              onChange={setLastWorkingDay}
+              min={submissionDate || undefined}
+              error={dateError}
+            />
+          </div>
         </div>
       </div>
     </div>

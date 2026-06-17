@@ -1,11 +1,13 @@
 "use client";
 
+import { Children } from "react";
 import {
   useResumeStore,
   type SectionKey,
   type AdditionalSection,
   type DesignOptions,
 } from "@/lib/store/resume-store";
+import { spaceBlocks } from "@/lib/html-spacing";
 
 function dateRange(start: string, end: string) {
   if (!start && !end) return "";
@@ -20,11 +22,13 @@ const FONT_STACK: Record<DesignOptions["font"], string> = {
 
 const SPACING: Record<
   DesignOptions["spacing"],
-  { section: string; gap: string; lead: string }
+  { section: string; gapEm: number; lead: string }
 > = {
-  dense: { section: "mt-3", gap: "space-y-1", lead: "leading-snug" },
-  normal: { section: "mt-4", gap: "space-y-2", lead: "leading-normal" },
-  loose: { section: "mt-6", gap: "space-y-3", lead: "leading-relaxed" },
+  // gapEm is the per-entry gap, applied INLINE so it survives the PDF export
+  // (html2canvas drops class-based `space-y` spacing).
+  dense: { section: "mt-3", gapEm: 0.25, lead: "leading-snug" },
+  normal: { section: "mt-4", gapEm: 0.5, lead: "leading-normal" },
+  loose: { section: "mt-6", gapEm: 0.75, lead: "leading-relaxed" },
 };
 
 /** Sections that live in the sidebar when a two-column layout is selected. */
@@ -51,22 +55,78 @@ export function LivePreview() {
     .filter(Boolean)
     .join("  •  ");
 
+  // Per-entry highlight: wraps a single inner entry (one job, one degree…) so
+  // only that entry lights up when it's the one being edited. Excluded from the
+  // PDF via `data-html2canvas-ignore`, same as the section highlight.
+  function EntryHighlight({
+    id,
+    children,
+  }: {
+    id: string;
+    children: React.ReactNode;
+  }) {
+    const active = id === s.activeEntryId;
+    return (
+      <div className="relative">
+        {active && (
+          <span
+            aria-hidden
+            data-html2canvas-ignore
+            className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
+          />
+        )}
+        <div className="relative">{children}</div>
+      </div>
+    );
+  }
+
   function PreviewSection({
     title,
+    sectionKey,
+    entryIds,
     children,
   }: {
     title: string;
+    /** Maps this block to its editor section, so it highlights when active. */
+    sectionKey?: string;
+    /** Inner entry ids — when one is the active entry, the per-entry highlight
+     *  takes over and the whole-section box is suppressed. */
+    entryIds?: string[];
     children: React.ReactNode;
   }) {
+    // Space entries with an inline top margin (not Tailwind `space-y`, which the
+    // PDF rasterizer drops) so the gaps appear in the downloaded PDF too.
+    const items = Children.toArray(children);
+    const innerActive =
+      s.activeEntryId != null && (entryIds?.includes(s.activeEntryId) ?? false);
+    const isActive =
+      sectionKey != null && sectionKey === s.activeSection && !innerActive;
     return (
-      <section className={sp.section}>
-        <h2
-          className="border-b pb-1 text-[11px] font-bold uppercase tracking-wide"
-          style={{ color: accent, borderColor: accent }}
-        >
-          {title}
-        </h2>
-        <div className={`mt-2 ${sp.gap} ${sp.lead}`}>{children}</div>
+      <section className={`relative ${sp.section}`}>
+        {/* Active-section highlight. `data-html2canvas-ignore` keeps it out of
+            the downloaded PDF — it's an editor-only affordance. */}
+        {isActive && (
+          <span
+            aria-hidden
+            data-html2canvas-ignore
+            className="pointer-events-none absolute -inset-x-3 -inset-y-2 rounded-lg bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
+          />
+        )}
+        <div className="relative">
+          <h2
+            className="border-b pb-1 text-[11px] font-bold uppercase tracking-wide"
+            style={{ color: accent, borderColor: accent }}
+          >
+            {title}
+          </h2>
+          <div className={`mt-2 ${sp.lead}`}>
+            {items.map((child, i) => (
+              <div key={i} style={i === 0 ? undefined : { marginTop: `${sp.gapEm}em` }}>
+                {child}
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     );
   }
@@ -80,51 +140,65 @@ export function LivePreview() {
       case "internships":
         if (!has("jobTitle") && !has("company")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection
+            title={sec.title}
+            key={sec.id}
+            sectionKey={sec.id}
+            entryIds={sec.entries.map((e) => e.id)}
+          >
             {sec.entries.map((e) => (
-              <div key={e.id} className="text-[11px] text-neutral-700">
-                <div className="flex justify-between font-semibold text-neutral-900">
-                  <span>{e.jobTitle || "Job title"}</span>
-                  <span className="font-normal text-neutral-500">
-                    {dateRange(e.startDate, e.endDate)}
-                  </span>
+              <EntryHighlight id={e.id} key={e.id}>
+                <div className="text-[11px] text-neutral-700">
+                  <div className="flex justify-between font-semibold text-neutral-900">
+                    <span>{e.jobTitle || "Job title"}</span>
+                    <span className="font-normal text-neutral-500">
+                      {dateRange(e.startDate, e.endDate)}
+                    </span>
+                  </div>
+                  {(e.company || e.location) && (
+                    <p className="italic text-neutral-500">
+                      {[e.company, e.location].filter(Boolean).join(", ")}
+                    </p>
+                  )}
+                  {(e.description ?? "").replace(/<[^>]*>/g, "").trim() && (
+                    <div
+                      className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
+                      dangerouslySetInnerHTML={{ __html: spaceBlocks(e.description, 0.5) }}
+                    />
+                  )}
                 </div>
-                {(e.company || e.location) && (
-                  <p className="italic text-neutral-500">
-                    {[e.company, e.location].filter(Boolean).join(", ")}
-                  </p>
-                )}
-                {(e.description ?? "").replace(/<[^>]*>/g, "").trim() && (
-                  <div
-                    className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
-                    dangerouslySetInnerHTML={{ __html: e.description }}
-                  />
-                )}
-              </div>
+              </EntryHighlight>
             ))}
           </PreviewSection>
         );
       case "courses":
         if (!has("institution") && !has("course")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection
+            title={sec.title}
+            key={sec.id}
+            sectionKey={sec.id}
+            entryIds={sec.entries.map((e) => e.id)}
+          >
             {sec.entries.map((e) => (
-              <div key={e.id} className="text-[11px] text-neutral-700">
-                <div className="flex justify-between font-semibold text-neutral-900">
-                  <span>{e.institution}</span>
-                  <span className="font-normal text-neutral-500">
-                    {dateRange(e.startDate, e.endDate)}
-                  </span>
+              <EntryHighlight id={e.id} key={e.id}>
+                <div className="text-[11px] text-neutral-700">
+                  <div className="flex justify-between font-semibold text-neutral-900">
+                    <span>{e.institution}</span>
+                    <span className="font-normal text-neutral-500">
+                      {dateRange(e.startDate, e.endDate)}
+                    </span>
+                  </div>
+                  {e.course && <p className="italic text-neutral-500">{e.course}</p>}
                 </div>
-                {e.course && <p className="italic text-neutral-500">{e.course}</p>}
-              </div>
+              </EntryHighlight>
             ))}
           </PreviewSection>
         );
       case "references":
         if (!has("name")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
             <p className="text-[11px] text-neutral-700">
               {sec.entries
                 .filter((e) => e.name)
@@ -136,7 +210,7 @@ export function LivePreview() {
       case "languages":
         if (!has("language")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
             <p className="text-[11px] text-neutral-700">
               {sec.entries
                 .filter((e) => e.language)
@@ -150,48 +224,62 @@ export function LivePreview() {
       case "links":
         if (!has("title") && !has("url")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection
+            title={sec.title}
+            key={sec.id}
+            sectionKey={sec.id}
+            entryIds={sec.entries.map((e) => e.id)}
+          >
             {sec.entries
               .filter((e) => e.title || e.url)
               .map((e) => (
-                <p key={e.id} className="text-[11px] text-neutral-700">
-                  {e.title && <span className="font-semibold">{e.title}: </span>}
-                  <span className="underline" style={{ color: accent }}>
-                    {e.url}
-                  </span>
-                </p>
+                <EntryHighlight id={e.id} key={e.id}>
+                  <p className="text-[11px] break-words text-neutral-700">
+                    {e.title && <span className="font-semibold">{e.title}: </span>}
+                    <span className="underline" style={{ color: accent }}>
+                      {e.url}
+                    </span>
+                  </p>
+                </EntryHighlight>
               ))}
           </PreviewSection>
         );
       case "hobbies":
         if (!htmlHas("body")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
             <div
               className="text-[11px] text-neutral-700"
-              dangerouslySetInnerHTML={{ __html: sec.entries[0]?.body ?? "" }}
+              dangerouslySetInnerHTML={{ __html: spaceBlocks(sec.entries[0]?.body ?? "", 0.5) }}
             />
           </PreviewSection>
         );
       case "custom":
         if (!has("header") && !htmlHas("body")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id}>
+          <PreviewSection
+            title={sec.title}
+            key={sec.id}
+            sectionKey={sec.id}
+            entryIds={sec.entries.map((e) => e.id)}
+          >
             {sec.entries.map((e) => (
-              <div key={e.id} className="text-[11px] text-neutral-700">
-                {e.header && (
-                  <p className="font-semibold text-neutral-900">{e.header}</p>
-                )}
-                {e.subheader && (
-                  <p className="italic text-neutral-500">{e.subheader}</p>
-                )}
-                {(e.body ?? "").replace(/<[^>]*>/g, "").trim() && (
-                  <div
-                    className="mt-0.5 [&_li]:ml-4 [&_li]:list-disc"
-                    dangerouslySetInnerHTML={{ __html: e.body }}
-                  />
-                )}
-              </div>
+              <EntryHighlight id={e.id} key={e.id}>
+                <div className="text-[11px] text-neutral-700">
+                  {e.header && (
+                    <p className="font-semibold text-neutral-900">{e.header}</p>
+                  )}
+                  {e.subheader && (
+                    <p className="italic text-neutral-500">{e.subheader}</p>
+                  )}
+                  {(e.body ?? "").replace(/<[^>]*>/g, "").trim() && (
+                    <div
+                      className="mt-0.5 [&_li]:ml-4 [&_li]:list-disc"
+                      dangerouslySetInnerHTML={{ __html: spaceBlocks(e.body, 0.5) }}
+                    />
+                  )}
+                </div>
+              </EntryHighlight>
             ))}
           </PreviewSection>
         );
@@ -207,42 +295,49 @@ export function LivePreview() {
     switch (key) {
       case "summary":
         return s.summary.replace(/<[^>]*>/g, "").trim() ? (
-          <PreviewSection title="Professional summary" key={key}>
+          <PreviewSection title="Professional summary" key={key} sectionKey={key}>
             <div
               className="text-[11px] text-neutral-700 [&_li]:ml-4 [&_li]:list-disc"
-              dangerouslySetInnerHTML={{ __html: s.summary }}
+              dangerouslySetInnerHTML={{ __html: spaceBlocks(s.summary, 0.5) }}
             />
           </PreviewSection>
         ) : null;
       case "employment":
         return s.employment.some((e) => e.jobTitle || e.company) ? (
-          <PreviewSection title="Employment history" key={key}>
+          <PreviewSection
+            title="Employment history"
+            key={key}
+            sectionKey={key}
+            entryIds={s.employment.map((e) => e.id)}
+          >
             {s.employment.map((e) => (
-              <div key={e.id} className="text-[11px] text-neutral-700">
-                <div className="flex justify-between font-semibold text-neutral-900">
-                  <span>{e.jobTitle || "Job title"}</span>
-                  <span className="font-normal text-neutral-500">
-                    {dateRange(e.startDate, e.endDate)}
-                  </span>
+              <EntryHighlight id={e.id} key={e.id}>
+                <div className="text-[11px] text-neutral-700">
+                  <div className="flex justify-between font-semibold text-neutral-900">
+                    <span>{e.jobTitle || "Job title"}</span>
+                    <span className="font-normal text-neutral-500">
+                      {dateRange(e.startDate, e.endDate)}
+                    </span>
+                  </div>
+                  {(e.company || e.location) && (
+                    <p className="italic text-neutral-500">
+                      {[e.company, e.location].filter(Boolean).join(", ")}
+                    </p>
+                  )}
+                  {e.description.replace(/<[^>]*>/g, "").trim() && (
+                    <div
+                      className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
+                      dangerouslySetInnerHTML={{ __html: spaceBlocks(e.description, 0.5) }}
+                    />
+                  )}
                 </div>
-                {(e.company || e.location) && (
-                  <p className="italic text-neutral-500">
-                    {[e.company, e.location].filter(Boolean).join(", ")}
-                  </p>
-                )}
-                {e.description.replace(/<[^>]*>/g, "").trim() && (
-                  <div
-                    className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
-                    dangerouslySetInnerHTML={{ __html: e.description }}
-                  />
-                )}
-              </div>
+              </EntryHighlight>
             ))}
           </PreviewSection>
         ) : null;
       case "skills":
         return s.skills.some((sk) => sk.name) ? (
-          <PreviewSection title={s.skillsTitle?.trim() || "Skills"} key={key}>
+          <PreviewSection title={s.skillsTitle?.trim() || "Skills"} key={key} sectionKey={key}>
             <p className="text-[11px] text-neutral-700">
               {s.skills
                 .filter((sk) => sk.name)
@@ -253,21 +348,28 @@ export function LivePreview() {
         ) : null;
       case "education":
         return s.education.some((e) => e.institution || e.degree) ? (
-          <PreviewSection title="Education" key={key}>
+          <PreviewSection
+            title="Education"
+            key={key}
+            sectionKey={key}
+            entryIds={s.education.map((e) => e.id)}
+          >
             {s.education.map((e) => (
-              <div key={e.id} className="text-[11px] text-neutral-700">
-                <div className="flex justify-between font-semibold text-neutral-900">
-                  <span>{e.degree || e.institution}</span>
-                  <span className="font-normal text-neutral-500">
-                    {dateRange(e.startDate, e.endDate)}
-                  </span>
+              <EntryHighlight id={e.id} key={e.id}>
+                <div className="text-[11px] text-neutral-700">
+                  <div className="flex justify-between font-semibold text-neutral-900">
+                    <span>{e.degree || e.institution}</span>
+                    <span className="font-normal text-neutral-500">
+                      {dateRange(e.startDate, e.endDate)}
+                    </span>
+                  </div>
+                  {(e.institution || e.location) && (
+                    <p className="italic text-neutral-500">
+                      {[e.institution, e.location].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                 </div>
-                {(e.institution || e.location) && (
-                  <p className="italic text-neutral-500">
-                    {[e.institution, e.location].filter(Boolean).join(", ")}
-                  </p>
-                )}
-              </div>
+              </EntryHighlight>
             ))}
           </PreviewSection>
         ) : null;
@@ -289,28 +391,39 @@ export function LivePreview() {
     ? s.sectionOrder.filter((k) => isSidebar(k, s.additional))
     : [];
 
+  const headerActive =
+    s.activeSection === "personal" || s.activeSection === "contact";
   const header = (
-    <header className="flex items-start gap-4">
-      {s.personal.photo && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={s.personal.photo}
-          alt=""
-          className="size-17 shrink-0 rounded-full object-cover"
+    <header className="relative">
+      {headerActive && (
+        <span
+          aria-hidden
+          data-html2canvas-ignore
+          className="pointer-events-none absolute -inset-x-3 -inset-y-2 rounded-lg bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
         />
       )}
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-          {fullName}
-        </h1>
-        {s.personal.jobTitle && (
-          <p className="text-sm" style={{ color: accent }}>
-            {s.personal.jobTitle}
-          </p>
+      <div className="relative flex items-start gap-4">
+        {s.personal.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.personal.photo}
+            alt=""
+            className="size-17 shrink-0 rounded-full object-cover"
+          />
         )}
-        {contactLine && (
-          <p className="mt-1.5 text-[11px] text-neutral-600">{contactLine}</p>
-        )}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+            {fullName}
+          </h1>
+          {s.personal.jobTitle && (
+            <p className="text-sm" style={{ color: accent }}>
+              {s.personal.jobTitle}
+            </p>
+          )}
+          {contactLine && (
+            <p className="mt-1.5 text-[11px] text-neutral-600">{contactLine}</p>
+          )}
+        </div>
       </div>
     </header>
   );

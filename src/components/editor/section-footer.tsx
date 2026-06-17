@@ -21,6 +21,7 @@ export function EditorFooter({
 }) {
   return (
     <div className="mt-8 border-t border-border pt-6">
+      {/* Mobile shows Back (left) + Next (right); Reorder is added on sm+. */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           {onBack && (
@@ -34,7 +35,7 @@ export function EditorFooter({
         {onReorder && (
           <button
             onClick={onReorder}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            className="hidden items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
           >
             <AlignJustify className="size-4" />
             Reorder sections

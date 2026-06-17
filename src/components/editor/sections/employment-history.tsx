@@ -270,6 +270,7 @@ export function EmploymentHistoryForm() {
   const addEmployment = useResumeStore((s) => s.addEmployment);
   const updateEmployment = useResumeStore((s) => s.updateEmployment);
   const removeEmployment = useResumeStore((s) => s.removeEmployment);
+  const setActiveEntryId = useResumeStore((s) => s.setActiveEntryId);
 
   // Accordion: only one entry open at a time. null = all collapsed.
   const [openId, setOpenId] = useState<string | null>(null);
@@ -287,6 +288,13 @@ export function EmploymentHistoryForm() {
       setOpenId(employment[0].id);
     }
   }, [employment]);
+
+  // Mirror the open entry to the store so the preview highlights it; clear the
+  // cursor when leaving the section.
+  useEffect(() => {
+    setActiveEntryId(openId);
+    return () => setActiveEntryId(null);
+  }, [openId, setActiveEntryId]);
 
   // Add a new entry and open it (collapsing the others).
   function handleAdd() {
@@ -311,6 +319,7 @@ export function EmploymentHistoryForm() {
             onDelete={() => removeEmployment(e.id)}
             open={openId === e.id}
             onToggle={() => setOpenId((prev) => (prev === e.id ? null : e.id))}
+            onActivate={() => setActiveEntryId(e.id)}
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FieldWrap label="Job title">

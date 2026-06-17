@@ -24,6 +24,7 @@ import {
 } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { downloadResume } from "@/lib/download-pdf";
+import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { cn } from "@/lib/utils";
 
 const ITEM_ICON: Record<string, LucideIcon> = {
@@ -57,7 +58,7 @@ export function ImprovePanel({
   const complete = todo.length === 0;
 
   const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [done, setDone] = useState<Set<number>>(new Set());
 
   async function handleDownload() {
@@ -67,21 +68,6 @@ export function ImprovePanel({
     } finally {
       setDownloading(false);
     }
-  }
-
-  async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "My resume", url });
-        return;
-      }
-      await navigator.clipboard?.writeText(url);
-    } catch {
-      /* dismissed / blocked — ignore */
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
   }
 
   function toggleStep(i: number) {
@@ -118,13 +104,20 @@ export function ImprovePanel({
             {downloading ? "Preparing…" : "Download"}
           </button>
           <button
-            onClick={handleShare}
+            onClick={() => setShareOpen(true)}
             className="inline-flex items-center gap-2 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border transition-colors hover:bg-muted"
           >
-            {copied ? <Check className="size-4" /> : <Share2 className="size-4" />}
-            {copied ? "Link copied" : "Share"}
+            <Share2 className="size-4" />
+            Share
           </button>
         </div>
+
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          shareUrl={buildShareUrl(s.id)}
+          label="resume"
+        />
 
         <div className="my-6 border-t border-border" />
 

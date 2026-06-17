@@ -115,6 +115,9 @@ export interface ResumeState {
   sectionOrder: SectionKey[];
   /** Currently edited section. */
   activeSection: SectionKey;
+  /** Currently focused inner entry (employment/education/etc.), for preview
+   *  highlighting. null = highlight the whole active section instead. */
+  activeEntryId: string | null;
 
   /* setters */
   setTemplate: (id: string) => void;
@@ -152,6 +155,8 @@ export interface ResumeState {
   removeAdditionalEntry: (sectionId: string, entryId: string) => void;
 
   setActiveSection: (key: SectionKey) => void;
+  /** Mark the inner entry being edited (null clears it). */
+  setActiveEntryId: (id: string | null) => void;
   setSectionOrder: (order: SectionKey[]) => void;
 
   /** Replace the whole resume (used by upload-parse in Phase 12). */
@@ -218,6 +223,7 @@ type ResumeData = Pick<
   | "design"
   | "sectionOrder"
   | "activeSection"
+  | "activeEntryId"
 >;
 
 const emptyResume = (): ResumeData => ({
@@ -248,6 +254,7 @@ const emptyResume = (): ResumeData => ({
   },
   sectionOrder: [...DEFAULT_SECTION_ORDER],
   activeSection: "personal",
+  activeEntryId: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -368,7 +375,10 @@ export const useResumeStore = create<ResumeState>()(
       ),
     })),
 
-  setActiveSection: (key) => set({ activeSection: key }),
+  // Switching sections clears the inner-entry cursor so the new section
+  // highlights as a whole until the user focuses one of its entries.
+  setActiveSection: (key) => set({ activeSection: key, activeEntryId: null }),
+  setActiveEntryId: (id) => set({ activeEntryId: id }),
   setSectionOrder: (order) => set({ sectionOrder: order }),
 
   hydrate: (data) => set((s) => ({ ...s, ...data })),
@@ -379,7 +389,11 @@ export const useResumeStore = create<ResumeState>()(
       name: "resume-co:resume",
       storage: createJSONStorage(() => localStorage),
       // Don't restore the transient UI cursor — always open on the first section.
-      partialize: ({ activeSection: _activeSection, ...rest }) => rest,
+      partialize: ({
+        activeSection: _activeSection,
+        activeEntryId: _activeEntryId,
+        ...rest
+      }) => rest,
       // v1: normalise built-in order (summary last) for resumes saved earlier.
       // v2: re-pin summary to the very end (fixes orders where an additional
       //     section or a reorder pushed it out of last place).

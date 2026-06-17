@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Loader2 } from "lucide-react";
 import { StepShell } from "@/components/cover-letter/step-shell";
@@ -29,6 +29,7 @@ import {
   COVER_LETTER_WRITE_BASE,
   isCoverLetterSlug,
 } from "@/lib/section-routes";
+import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 
 function StepBody({ step }: { step: CLStep }) {
   const setIntent = useCoverLetterStore((s) => s.setJobIntent);
@@ -90,10 +91,18 @@ export function CoverLetterBuilder({ routedStep }: { routedStep?: string }) {
   const s = useCoverLetterStore();
   const { step } = s;
 
+  // Persist the working cover letter into the dashboard's drafts list.
+  useCoverLetterAutosave();
+
+  // True for the one render where `step` changed because the URL synced it, so
+  // the store->URL effect doesn't fire a stale router.replace (page flip/blink).
+  const syncingFromUrl = useRef(false);
+
   // URL -> store: the slug in the path selects the active step.
   useEffect(() => {
     if (!routedStep || !isCoverLetterSlug(routedStep)) return;
     if (routedStep !== useCoverLetterStore.getState().step) {
+      syncingFromUrl.current = true;
       s.setStep(routedStep as CLStep);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +113,10 @@ export function CoverLetterBuilder({ routedStep }: { routedStep?: string }) {
   useEffect(() => {
     if (!routedStep) return;
     if (step === "generate" || step === "preview") return;
+    if (syncingFromUrl.current) {
+      syncingFromUrl.current = false;
+      return;
+    }
     if (step !== routedStep) {
       router.replace(`${COVER_LETTER_WRITE_BASE}/${step}`);
     }

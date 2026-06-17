@@ -62,6 +62,8 @@ export interface CLPersonal {
 }
 
 export interface CoverLetterState {
+  /** Stable id for the saved draft (assigned on first content / reset). */
+  id: string;
   flow: CLFlow;
   sourceResumeId?: string;
   uploadedFileName?: string;
@@ -102,8 +104,13 @@ export interface CoverLetterState {
   goNext: () => void;
   goBack: () => void;
   hydrate: (data: Partial<CoverLetterState>) => void;
+  loadDocument: (id: string, data: Partial<CoverLetterState>) => void;
   reset: () => void;
 }
+
+/** Generate a unique cover-letter draft id. */
+export const newCoverLetterId = () =>
+  `cl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 /* ------------------------------------------------------------------ */
 /* Defaults                                                           */
@@ -112,6 +119,7 @@ export interface CoverLetterState {
 const MAX_SELECT = 3;
 
 const initial = {
+  id: "",
   flow: "scratch" as CLFlow,
   sourceResumeId: undefined,
   uploadedFileName: undefined,
@@ -319,7 +327,8 @@ export const useCoverLetterStore = create<CoverLetterState>()(
       },
 
       hydrate: (data) => set((s) => ({ ...s, ...data })),
-      reset: () => set({ ...initial }),
+      loadDocument: (id, data) => set((s) => ({ ...s, ...data, id })),
+      reset: () => set({ ...initial, id: newCoverLetterId() }),
     }),
     {
       name: "resume-co:cover-letter",
