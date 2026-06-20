@@ -4,12 +4,16 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Sparkles, ScanLine, FileUp, ChevronRight, Loader2, X } from "lucide-react";
+import { Sparkles, ScanLine, FileUp, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { StartOptionCard } from "@/components/creation/start-option-card";
+import {
+  UploadingResume,
+  type UploadPhase,
+} from "@/components/creation/uploading-resume";
 import {
   DropboxIcon,
   GoogleDriveIcon,
@@ -34,7 +38,7 @@ import {
 export function ResumeOnboarding() {
   const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [showSave, setShowSave] = useState(false);
   const [googleOpen, setGoogleOpen] = useState(false);
   const [linkedInOpen, setLinkedInOpen] = useState(false);
@@ -43,14 +47,18 @@ export function ResumeOnboarding() {
   const reset = useResumeStore((s) => s.reset);
 
   async function handleUpload(file?: File) {
-    setAnalyzing(true);
+    setPhase("uploading");
     try {
       const parsed = await parseResume(file);
       reset(); // start a fresh draft (new id) so we don't overwrite another
       hydrate(parsed);
+      // Show the parsed resume briefly while we "fill" the fields, then open
+      // the editor.
+      setPhase("filling");
+      await new Promise((r) => setTimeout(r, 2200));
       router.push("/resumes/write/personal?source=upload");
     } catch {
-      setAnalyzing(false);
+      setPhase(null);
       toast.error("We couldn't read that resume", {
         description: "Please try uploading the file again (PDF works best).",
       });
@@ -215,16 +223,8 @@ export function ResumeOnboarding() {
         )}
       </div>
 
-      {/* Analyzing overlay */}
-      {analyzing && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 rounded-2xl bg-card px-10 py-12 shadow-card-lg ring-1 ring-border">
-            <Loader2 className="size-9 animate-spin text-primary" />
-            <p className="text-lg font-semibold text-foreground">Analyzing your resume…</p>
-            <p className="text-sm text-muted-foreground">Extracting your details with AI</p>
-          </div>
-        </div>
-      )}
+      {/* Full-screen uploading / filling loader */}
+      {phase && <UploadingResume phase={phase} />}
 
       <GoogleConsentDialog
         open={googleOpen}

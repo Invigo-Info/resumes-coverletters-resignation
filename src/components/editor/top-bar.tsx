@@ -52,28 +52,27 @@ export function TopBar({
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4">
       {/* Home */}
       <HomeButton className="size-13" />
 
-      {/* Tabs */}
-      <div className="flex shrink-0 items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border">
+      {/* Tabs — full-width text row on mobile (wraps below), compact on desktop */}
+      <div className="order-last flex w-full items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border sm:order-none sm:w-auto sm:shrink-0">
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
             <button
               key={t.key}
               onClick={() => onTabChange(t.key)}
-              aria-label={t.label}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:px-4",
+                "inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:flex-none sm:px-4",
                 active
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {t.icon}
-              <span className="hidden sm:inline">{t.label}</span>
+              <span className="hidden sm:inline-flex">{t.icon}</span>
+              {t.label}
             </button>
           );
         })}

@@ -109,6 +109,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter email"
             autoComplete="email"
+            // Autofill/password-manager extensions inject attributes (e.g.
+            // wfd-id) before hydration; ignore those server/client diffs.
+            suppressHydrationWarning
             className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
@@ -122,6 +125,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder={isSignup ? "Create a password (min 8 characters)" : "Enter password"}
             autoComplete={isSignup ? "new-password" : "current-password"}
+            suppressHydrationWarning
             className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
@@ -136,6 +140,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Re-enter your password"
               autoComplete="new-password"
+              suppressHydrationWarning
               className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
             />
           </label>

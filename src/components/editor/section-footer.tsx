@@ -21,8 +21,9 @@ export function EditorFooter({
 }) {
   return (
     <div className="mt-8 border-t border-border pt-6">
-      {/* Mobile shows Back (left) + Next (right); Reorder is added on sm+. */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Back (left, hidden on the first section) · Reorder sections · Next. The
+          sections menu (Reorder) stays visible on mobile, matching resume.co. */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1">
           {onBack && (
             <GhostButton onClick={onBack}>
@@ -35,10 +36,11 @@ export function EditorFooter({
         {onReorder && (
           <button
             onClick={onReorder}
-            className="hidden items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+            className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
             <AlignJustify className="size-4" />
-            Reorder sections
+            <span className="sm:hidden">Reorder</span>
+            <span className="hidden sm:inline">Reorder sections</span>
           </button>
         )}
 

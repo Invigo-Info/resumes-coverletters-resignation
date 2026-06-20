@@ -13,6 +13,28 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Index of the bullet/paragraph the caret sits in, counting list items and
+ * top-level paragraphs in document order — matching how the preview enumerates
+ * blocks. Returns -1 when nothing relevant is focused.
+ */
+function blockIndexAtSelection(editor: ReturnType<typeof useEditor>): number {
+  if (!editor) return -1;
+  const { from } = editor.state.selection;
+  let idx = -1;
+  let found = -1;
+  editor.state.doc.descendants((node, pos) => {
+    const name = node.type.name;
+    if (name === "listItem" || name === "paragraph") {
+      idx++;
+      if (from >= pos && from <= pos + node.nodeSize) found = idx;
+      return false; // don't double-count the paragraph inside a list item
+    }
+    return true; // descend into lists / blockquotes
+  });
+  return found;
+}
+
 function ToolbarButton({
   active,
   onClick,
@@ -47,12 +69,15 @@ export function RichTextEditor({
   /** Optional slot rendered at the top-right of the toolbar (e.g. an AI button). */
   toolbarRight,
   minHeight = 120,
+  /** Reports the bullet/paragraph the caret is in (for preview highlighting). */
+  onActiveBlockChange,
 }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   toolbarRight?: React.ReactNode;
   minHeight?: number;
+  onActiveBlockChange?: (index: number | null) => void;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -67,6 +92,10 @@ export function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onFocus: ({ editor }) =>
+      onActiveBlockChange?.(blockIndexAtSelection(editor)),
+    onSelectionUpdate: ({ editor }) =>
+      onActiveBlockChange?.(blockIndexAtSelection(editor)),
   });
 
   // Reflect external value changes (AI inject, bullet insert) into the editor.

@@ -8,6 +8,7 @@ import {
   newResumeId,
   type ResumeState,
 } from "./resume-store";
+import { pushServerDocument, deleteServerDocument } from "./documents-sync";
 
 /** The resume fields persisted in a saved draft (no transient UI state). */
 export type ResumeDocData = Pick<
@@ -44,7 +45,8 @@ export const useDocumentsStore = create<DocumentsState>()(
   persist(
     (set, get) => ({
       resumes: [],
-      upsertResume: (record) =>
+      upsertResume: (record) => {
+        pushServerDocument("resumes", record);
         set((s) => {
           const i = s.resumes.findIndex((r) => r.id === record.id);
           if (i >= 0) {
@@ -53,9 +55,12 @@ export const useDocumentsStore = create<DocumentsState>()(
             return { resumes: next };
           }
           return { resumes: [record, ...s.resumes] };
-        }),
-      removeResume: (id) =>
-        set((s) => ({ resumes: s.resumes.filter((r) => r.id !== id) })),
+        });
+      },
+      removeResume: (id) => {
+        deleteServerDocument("resumes", id);
+        set((s) => ({ resumes: s.resumes.filter((r) => r.id !== id) }));
+      },
       getResume: (id) => get().resumes.find((r) => r.id === id),
     }),
     {
@@ -66,10 +71,44 @@ export const useDocumentsStore = create<DocumentsState>()(
 );
 
 /* ------------------------------------------------------------------ */
+/* Save status (for the "Saving… / Saved" pill on the preview)        */
+/* ------------------------------------------------------------------ */
+
+export type SaveStatus = "saving" | "saved";
+
+interface SaveStatusState {
+  status: SaveStatus;
+  setStatus: (status: SaveStatus) => void;
+}
+
+export const useSaveStatusStore = create<SaveStatusState>((set) => ({
+  status: "saved",
+  setStatus: (status) => set({ status }),
+}));
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+/** A signature of the resume's CONTENT only — excludes transient UI cursor
+ *  state (active section/entry/block) so moving the caret isn't seen as an edit. */
+function contentSignature(s: ResumeState): string {
+  return JSON.stringify({
+    templateId: s.templateId,
+    personal: s.personal,
+    contact: s.contact,
+    summary: s.summary,
+    employment: s.employment,
+    skills: s.skills,
+    skillsTitle: s.skillsTitle,
+    education: s.education,
+    additional: s.additional,
+    design: s.design,
+    sectionOrder: s.sectionOrder,
+  });
+}
 
 /** Human title for a draft: "First Last, Job title" (falls back gracefully). */
 export function resumeTitle(s: ResumeState): string {
@@ -144,16 +183,27 @@ export function saveActiveResume(): string | null {
 export function useResumeAutosave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastSig = contentSignature(useResumeStore.getState());
 
-    const save = () => saveActiveResume();
+    const save = () => {
+      saveActiveResume();
+      useSaveStatusStore.getState().setStatus("saved");
+    };
 
     const schedule = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(save, 700);
     };
 
-    const unsub = useResumeStore.subscribe(schedule);
-    schedule(); // capture the current state on mount too
+    saveActiveResume(); // capture the current state on mount (no "saving" flash)
+
+    const unsub = useResumeStore.subscribe((state) => {
+      const sig = contentSignature(state);
+      if (sig === lastSig) return; // caret / section change, not a content edit
+      lastSig = sig;
+      useSaveStatusStore.getState().setStatus("saving");
+      schedule();
+    });
     return () => {
       if (timer) clearTimeout(timer);
       unsub();

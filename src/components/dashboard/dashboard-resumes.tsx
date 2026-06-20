@@ -8,7 +8,16 @@ import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
-import { useDocumentsStore, saveActiveResume } from "@/lib/store/documents-store";
+import {
+  useDocumentsStore,
+  saveActiveResume,
+  type ResumeRecord,
+  type ResumeDocData,
+} from "@/lib/store/documents-store";
+import {
+  fetchServerDocuments,
+  pushServerDocument,
+} from "@/lib/store/documents-sync";
 import { getTemplate } from "@/lib/templates";
 import type { ResumeDoc } from "@/lib/mock-data";
 
@@ -29,11 +38,46 @@ export function DashboardResumes() {
   // Avoid SSR/client mismatch — drafts live in localStorage (client only).
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    let alive = true;
     // Backfill: a resume that was created/edited but never reached the drafts
     // list (e.g. the user navigated away before autosave fired) still lives in
     // the active resume store — surface it as a draft card here.
     saveActiveResume();
-    setMounted(true);
+    // Pull this user's saved resumes from the server (works across devices),
+    // back up any local-only drafts to the account, then merge newest-wins.
+    (async () => {
+      const server = await fetchServerDocuments();
+      if (alive && server) {
+        const serverIds = new Set(server.resumes.map((r) => r.id));
+        for (const r of useDocumentsStore.getState().resumes) {
+          if (!serverIds.has(r.id)) pushServerDocument("resumes", r);
+        }
+        useDocumentsStore.setState((s) => {
+          const byId = new Map(s.resumes.map((r) => [r.id, r]));
+          for (const rec of server.resumes) {
+            const existing = byId.get(rec.id);
+            if (!existing || rec.updatedAt >= existing.updatedAt) {
+              byId.set(rec.id, {
+                id: rec.id,
+                title: rec.title,
+                updatedAt: rec.updatedAt,
+                templateId: rec.templateId ?? "",
+                data: rec.data as ResumeDocData,
+              } satisfies ResumeRecord);
+            }
+          }
+          return {
+            resumes: Array.from(byId.values()).sort(
+              (a, b) => b.updatedAt - a.updatedAt
+            ),
+          };
+        });
+      }
+      if (alive) setMounted(true);
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   if (!mounted || resumes.length === 0) {

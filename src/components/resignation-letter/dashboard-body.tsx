@@ -14,7 +14,12 @@ import {
   useResignationLetterDocumentsStore,
   saveActiveResignationLetter,
   type ResignationLetterRecord,
+  type ResignationLetterDocData,
 } from "@/lib/store/resignation-letter-documents-store";
+import {
+  fetchServerDocuments,
+  pushServerDocument,
+} from "@/lib/store/documents-sync";
 import { formatLetterDate, htmlToText, previewOpeningLine } from "@/lib/resignation-letter/format";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
 
@@ -60,10 +65,44 @@ export function ResignationDashboardBody() {
   // Drafts live in localStorage (client only) — avoid SSR/client mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    let alive = true;
     // Backfill: a letter created/edited but never saved into the drafts list
     // still lives in the active store — surface it as a draft card here.
     saveActiveResignationLetter();
-    setMounted(true);
+    // Pull this user's saved resignation letters from the server, back up
+    // local-only drafts, then merge them.
+    (async () => {
+      const server = await fetchServerDocuments();
+      if (alive && server) {
+        const serverIds = new Set(server.resignationLetters.map((r) => r.id));
+        for (const r of useResignationLetterDocumentsStore.getState().letters) {
+          if (!serverIds.has(r.id)) pushServerDocument("resignationLetters", r);
+        }
+        useResignationLetterDocumentsStore.setState((s) => {
+          const byId = new Map(s.letters.map((r) => [r.id, r]));
+          for (const rec of server.resignationLetters) {
+            const existing = byId.get(rec.id);
+            if (!existing || rec.updatedAt >= existing.updatedAt) {
+              byId.set(rec.id, {
+                id: rec.id,
+                title: rec.title,
+                updatedAt: rec.updatedAt,
+                data: rec.data as ResignationLetterDocData,
+              } satisfies ResignationLetterRecord);
+            }
+          }
+          return {
+            letters: Array.from(byId.values()).sort(
+              (a, b) => b.updatedAt - a.updatedAt
+            ),
+          };
+        });
+      }
+      if (alive) setMounted(true);
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   function createNew() {

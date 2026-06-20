@@ -9,6 +9,8 @@ import {
   GraduationCap,
   Plus,
   AlignJustify,
+  ChevronUp,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,7 @@ export function SectionNav({
   const active = useResumeStore((s) => s.activeSection);
   const additional = useResumeStore((s) => s.additional);
   const setActive = useResumeStore((s) => s.setActiveSection);
+  const moveSection = useResumeStore((s) => s.moveSection);
   const activeIdx = order.indexOf(active);
 
   const metaFor = (key: SectionKey) => {
@@ -53,6 +56,9 @@ export function SectionNav({
     return null;
   };
 
+  // Reorderable sections in order — used to enable/disable the up/down buttons.
+  const movableKeys = order.filter((k) => metaFor(k)?.reorderable);
+
   return (
     <nav className="rounded-2xl bg-card p-2 shadow-card ring-1 ring-border">
       <ul className="relative space-y-0.5">
@@ -67,8 +73,11 @@ export function SectionNav({
           const Icon = meta.icon;
           const isActive = key === active;
           const isDone = idx < activeIdx;
+          const movableIdx = meta.reorderable ? movableKeys.indexOf(key) : -1;
+          const canUp = movableIdx > 0;
+          const canDown = movableIdx >= 0 && movableIdx < movableKeys.length - 1;
           return (
-            <li key={key} className="relative">
+            <li key={key} className="group relative">
               <button
                 onClick={() => setActive(key)}
                 className={cn(
@@ -88,6 +97,30 @@ export function SectionNav({
                   )}
                 />
               </button>
+
+              {/* Up/down reorder controls — shown on hover for reorderable rows */}
+              {meta.reorderable && (
+                <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col overflow-hidden rounded-md bg-card opacity-0 shadow-sm ring-1 ring-border transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    aria-label={`Move ${meta.label} up`}
+                    disabled={!canUp}
+                    onClick={() => moveSection(key, "up")}
+                    className="grid size-5 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Move ${meta.label} down`}
+                    disabled={!canDown}
+                    onClick={() => moveSection(key, "down")}
+                    className="grid size-5 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-3.5" />
+                  </button>
+                </div>
+              )}
             </li>
           );
         })}

@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheck, Eye, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { useResumeAutosave } from "@/lib/store/documents-store";
+import { SaveStatusPill } from "./save-status-pill";
 import {
   RESUME_WRITE_BASE,
   resumeKeyFromSlug,
@@ -14,7 +15,6 @@ import {
 import { HelpPill } from "@/components/layout/help-pill";
 import { TopBar, type EditorTab } from "./top-bar";
 import { SectionNav } from "./section-nav";
-import { MobileSectionBar } from "./mobile-section-bar";
 import { SectionFooter } from "./section-footer";
 import { LivePreview } from "./live-preview";
 import { PersonalDetailsForm } from "./sections/personal-details";
@@ -143,7 +143,6 @@ export function EditorShell({
 
             {/* Center form */}
             <main className="min-w-0 flex-1">
-              <MobileSectionBar onAdd={() => setActive("additional")} />
               <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border sm:p-9">
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -169,10 +168,7 @@ export function EditorShell({
             <section className="hidden min-w-0 flex-1 xl:block">
               <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
                 <LivePreview />
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  <CircleCheck className="size-3.5" />
-                  Saved
-                </span>
+                <SaveStatusPill />
               </div>
             </section>
           </div>
@@ -186,10 +182,7 @@ export function EditorShell({
             <section className="hidden min-w-0 flex-1 lg:block">
               <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
                 <LivePreview />
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  <CircleCheck className="size-3.5" />
-                  Saved
-                </span>
+                <SaveStatusPill />
               </div>
             </section>
           </div>
@@ -210,10 +203,7 @@ export function EditorShell({
             <section className="hidden min-w-0 flex-1 xl:block">
               <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-[#EFF4FF] shadow-card-lg ring-1 ring-border">
                 <LivePreview />
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  <CircleCheck className="size-3.5" />
-                  Saved
-                </span>
+                <SaveStatusPill className="bg-white/70" />
               </div>
             </section>
           </div>

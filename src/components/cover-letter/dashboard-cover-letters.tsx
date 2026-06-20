@@ -11,7 +11,13 @@ import { useCoverLetterStore, newCoverLetterId } from "@/lib/store/cover-letter-
 import {
   useCoverLetterDocumentsStore,
   saveActiveCoverLetter,
+  type CoverLetterRecord,
+  type CoverLetterDocData,
 } from "@/lib/store/cover-letter-documents-store";
+import {
+  fetchServerDocuments,
+  pushServerDocument,
+} from "@/lib/store/documents-sync";
 
 function formatUpdated(ts: number): string {
   const d = new Date(ts);
@@ -30,10 +36,45 @@ export function DashboardCoverLetters() {
   // Drafts live in localStorage (client only) — avoid SSR/client mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    let alive = true;
     // Backfill: a cover letter created/edited but never saved into the drafts
     // list still lives in the active store — surface it as a draft card here.
     saveActiveCoverLetter();
-    setMounted(true);
+    // Pull this user's saved cover letters from the server, back up local-only
+    // drafts, then merge them in.
+    (async () => {
+      const server = await fetchServerDocuments();
+      if (alive && server) {
+        const serverIds = new Set(server.coverLetters.map((r) => r.id));
+        for (const r of useCoverLetterDocumentsStore.getState().letters) {
+          if (!serverIds.has(r.id)) pushServerDocument("coverLetters", r);
+        }
+        useCoverLetterDocumentsStore.setState((s) => {
+          const byId = new Map(s.letters.map((r) => [r.id, r]));
+          for (const rec of server.coverLetters) {
+            const existing = byId.get(rec.id);
+            if (!existing || rec.updatedAt >= existing.updatedAt) {
+              byId.set(rec.id, {
+                id: rec.id,
+                title: rec.title,
+                updatedAt: rec.updatedAt,
+                templateId: rec.templateId ?? "",
+                data: rec.data as CoverLetterDocData,
+              } satisfies CoverLetterRecord);
+            }
+          }
+          return {
+            letters: Array.from(byId.values()).sort(
+              (a, b) => b.updatedAt - a.updatedAt
+            ),
+          };
+        });
+      }
+      if (alive) setMounted(true);
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   if (!mounted || letters.length === 0) {

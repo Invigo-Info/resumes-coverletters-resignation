@@ -196,6 +196,14 @@
     );
   }
 
+  /* Active bullet/paragraph highlight in the live resume preview. Editor-only —
+     the PDF exporter strips the attribute on clone so it never reaches the PDF. */
+  [data-active-block] {
+    background-color: #e6eeff;
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px #e6eeff, 0 0 0 3px #9cb9f2;
+  }
+
   /* soft elevated card shadows used across the app */
   .shadow-card {
     box-shadow:

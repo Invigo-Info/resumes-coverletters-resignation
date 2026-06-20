@@ -8,6 +8,7 @@ import {
   newCoverLetterId,
   type CoverLetterState,
 } from "./cover-letter-store";
+import { pushServerDocument, deleteServerDocument } from "./documents-sync";
 
 /** The cover-letter fields persisted in a saved draft (no transient UI state). */
 export type CoverLetterDocData = Pick<
@@ -46,7 +47,8 @@ export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
   persist(
     (set, get) => ({
       letters: [],
-      upsertLetter: (record) =>
+      upsertLetter: (record) => {
+        pushServerDocument("coverLetters", record);
         set((s) => {
           const i = s.letters.findIndex((r) => r.id === record.id);
           if (i >= 0) {
@@ -55,9 +57,12 @@ export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
             return { letters: next };
           }
           return { letters: [record, ...s.letters] };
-        }),
-      removeLetter: (id) =>
-        set((s) => ({ letters: s.letters.filter((r) => r.id !== id) })),
+        });
+      },
+      removeLetter: (id) => {
+        deleteServerDocument("coverLetters", id);
+        set((s) => ({ letters: s.letters.filter((r) => r.id !== id) }));
+      },
       getLetter: (id) => get().letters.find((r) => r.id === id),
     }),
     {

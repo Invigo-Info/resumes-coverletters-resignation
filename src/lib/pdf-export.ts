@@ -73,6 +73,12 @@ export async function exportElementToPdf(
       useCORS: true,
       logging: false,
       windowWidth: target === el ? undefined : captureWidth,
+      // Drop the editor-only active-bullet highlight from the exported PDF.
+      onclone: (doc: Document) => {
+        doc
+          .querySelectorAll("[data-active-block]")
+          .forEach((node) => node.removeAttribute("data-active-block"));
+      },
     });
   } finally {
     cleanup?.();

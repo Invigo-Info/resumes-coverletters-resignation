@@ -14,6 +14,38 @@ function dateRange(start: string, end: string) {
   return [start, end].filter(Boolean).join(" – ");
 }
 
+/**
+ * Mark the Nth block with `data-active-block` so the editor-only CSS rule
+ * highlights just that bullet/paragraph. "Blocks" are counted the same way the
+ * editor counts them: each list item, plus each top-level (non-list) element, in
+ * document order. The PDF exporter strips the attribute on clone, so it never
+ * reaches the PDF. Client-only (DOM); returns the html unchanged on the server.
+ */
+function highlightBlockHtml(html: string, index: number | null): string {
+  if (index == null || index < 0 || typeof window === "undefined") return html;
+  const doc = new DOMParser().parseFromString(
+    `<div id="rt-root">${html}</div>`,
+    "text/html"
+  );
+  const root = doc.getElementById("rt-root");
+  if (!root) return html;
+
+  const blocks: Element[] = [];
+  root.childNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+    if (tag === "ul" || tag === "ol") {
+      el.querySelectorAll(":scope > li").forEach((li) => blocks.push(li));
+    } else {
+      blocks.push(el);
+    }
+  });
+
+  blocks[index]?.setAttribute("data-active-block", "");
+  return root.innerHTML;
+}
+
 const FONT_STACK: Record<DesignOptions["font"], string> = {
   roboto: "Verdana, Geneva, Tahoma, sans-serif",
   georgia: "Georgia, 'Times New Roman', serif",
@@ -46,6 +78,10 @@ export function LivePreview() {
 
   const fullName =
     `${s.personal.firstName} ${s.personal.lastName}`.trim() || "Your Name";
+  // Initials for the "you are editing here" presence badge on the active entry.
+  const initials =
+    ((s.personal.firstName[0] ?? "") + (s.personal.lastName[0] ?? ""))
+      .toUpperCase() || "•";
   const contactLine = [
     s.contact.email,
     s.contact.phone,
@@ -66,14 +102,29 @@ export function LivePreview() {
     children: React.ReactNode;
   }) {
     const active = id === s.activeEntryId;
+    // When the caret is in a specific bullet/paragraph, that block highlights on
+    // its own — so suppress the whole-entry box (keep just the presence badge).
+    const showBox = active && s.activeBlockIndex == null;
     return (
       <div className="relative">
         {active && (
-          <span
-            aria-hidden
-            data-html2canvas-ignore
-            className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
-          />
+          <>
+            {showBox && (
+              <span
+                aria-hidden
+                data-html2canvas-ignore
+                className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
+              />
+            )}
+            {/* Presence badge — "you're editing here", like resume.co. */}
+            <span
+              aria-hidden
+              data-html2canvas-ignore
+              className="pointer-events-none absolute -left-5 top-0 z-10 grid size-4 place-items-center rounded-full bg-[#2563EB] text-[8px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
+            >
+              {initials}
+            </span>
+          </>
         )}
         <div className="relative">{children}</div>
       </div>
@@ -327,7 +378,15 @@ export function LivePreview() {
                   {e.description.replace(/<[^>]*>/g, "").trim() && (
                     <div
                       className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
-                      dangerouslySetInnerHTML={{ __html: spaceBlocks(e.description, 0.5) }}
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          e.id === s.activeEntryId
+                            ? highlightBlockHtml(
+                                spaceBlocks(e.description, 0.5),
+                                s.activeBlockIndex
+                              )
+                            : spaceBlocks(e.description, 0.5),
+                      }}
                     />
                   )}
                 </div>

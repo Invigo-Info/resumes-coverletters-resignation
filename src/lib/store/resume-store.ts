@@ -118,6 +118,9 @@ export interface ResumeState {
   /** Currently focused inner entry (employment/education/etc.), for preview
    *  highlighting. null = highlight the whole active section instead. */
   activeEntryId: string | null;
+  /** Index of the bullet/paragraph the caret is in within the active entry's
+   *  rich-text body, for per-paragraph preview highlighting. null = none. */
+  activeBlockIndex: number | null;
 
   /* setters */
   setTemplate: (id: string) => void;
@@ -157,7 +160,12 @@ export interface ResumeState {
   setActiveSection: (key: SectionKey) => void;
   /** Mark the inner entry being edited (null clears it). */
   setActiveEntryId: (id: string | null) => void;
+  /** Mark the bullet/paragraph being edited within the active entry. */
+  setActiveBlockIndex: (index: number | null) => void;
   setSectionOrder: (order: SectionKey[]) => void;
+  /** Move a reorderable section up/down within the movable range (personal &
+   *  contact stay pinned at the top, summary at the bottom). */
+  moveSection: (key: SectionKey, dir: "up" | "down") => void;
 
   /** Replace the whole resume (used by upload-parse in Phase 12). */
   hydrate: (data: Partial<ResumeState>) => void;
@@ -224,6 +232,7 @@ type ResumeData = Pick<
   | "sectionOrder"
   | "activeSection"
   | "activeEntryId"
+  | "activeBlockIndex"
 >;
 
 const emptyResume = (): ResumeData => ({
@@ -255,6 +264,7 @@ const emptyResume = (): ResumeData => ({
   sectionOrder: [...DEFAULT_SECTION_ORDER],
   activeSection: "personal",
   activeEntryId: null,
+  activeBlockIndex: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -377,9 +387,33 @@ export const useResumeStore = create<ResumeState>()(
 
   // Switching sections clears the inner-entry cursor so the new section
   // highlights as a whole until the user focuses one of its entries.
-  setActiveSection: (key) => set({ activeSection: key, activeEntryId: null }),
-  setActiveEntryId: (id) => set({ activeEntryId: id }),
+  setActiveSection: (key) =>
+    set({ activeSection: key, activeEntryId: null, activeBlockIndex: null }),
+  // (Re)activating an entry resets the paragraph cursor; the rich-text editor
+  // sets it again from the caret position.
+  setActiveEntryId: (id) => set({ activeEntryId: id, activeBlockIndex: null }),
+  setActiveBlockIndex: (index) => set({ activeBlockIndex: index }),
   setSectionOrder: (order) => set({ sectionOrder: order }),
+  moveSection: (key, dir) =>
+    set((s) => {
+      // personal/contact are pinned to the top, summary to the bottom; only the
+      // sections between them reorder.
+      const LEADING: SectionKey[] = ["personal", "contact"];
+      const TRAILING: SectionKey[] = ["summary"];
+      const order = s.sectionOrder;
+      const movable = order.filter(
+        (k) => !LEADING.includes(k) && !TRAILING.includes(k)
+      );
+      const i = movable.indexOf(key);
+      if (i < 0) return {};
+      const j = dir === "up" ? i - 1 : i + 1;
+      if (j < 0 || j >= movable.length) return {};
+      const next = [...movable];
+      [next[i], next[j]] = [next[j], next[i]];
+      const leading = order.filter((k) => LEADING.includes(k));
+      const trailing = order.filter((k) => TRAILING.includes(k));
+      return { sectionOrder: [...leading, ...next, ...trailing] };
+    }),
 
   hydrate: (data) => set((s) => ({ ...s, ...data })),
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
@@ -392,6 +426,7 @@ export const useResumeStore = create<ResumeState>()(
       partialize: ({
         activeSection: _activeSection,
         activeEntryId: _activeEntryId,
+        activeBlockIndex: _activeBlockIndex,
         ...rest
       }) => rest,
       // v1: normalise built-in order (summary last) for resumes saved earlier.

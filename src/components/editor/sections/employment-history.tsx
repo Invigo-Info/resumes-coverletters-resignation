@@ -58,6 +58,7 @@ function bulletsToUl(bullets: string[]): string {
  */
 function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   const updateEmployment = useResumeStore((s) => s.updateEmployment);
+  const setActiveBlockIndex = useResumeStore((s) => s.setActiveBlockIndex);
   const [ideas, setIdeas] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -158,6 +159,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       <RichTextEditor
         value={entry.description}
         onChange={(html) => updateEmployment(entry.id, { description: html })}
+        onActiveBlockChange={setActiveBlockIndex}
         placeholder="• Describe numbers or concrete outcomes when you can"
         toolbarRight={
           hasContent ? (

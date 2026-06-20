@@ -8,6 +8,7 @@ import {
   newResignationLetterId,
   type ResignationLetterState,
 } from "./resignation-letter-store";
+import { pushServerDocument, deleteServerDocument } from "./documents-sync";
 
 /** The resignation-letter fields persisted in a saved draft (no UI state). */
 export type ResignationLetterDocData = Pick<
@@ -53,7 +54,8 @@ export const useResignationLetterDocumentsStore =
     persist(
       (set, get) => ({
         letters: [],
-        upsertLetter: (record) =>
+        upsertLetter: (record) => {
+          pushServerDocument("resignationLetters", record);
           set((s) => {
             const i = s.letters.findIndex((r) => r.id === record.id);
             if (i >= 0) {
@@ -62,9 +64,12 @@ export const useResignationLetterDocumentsStore =
               return { letters: next };
             }
             return { letters: [record, ...s.letters] };
-          }),
-        removeLetter: (id) =>
-          set((s) => ({ letters: s.letters.filter((r) => r.id !== id) })),
+          });
+        },
+        removeLetter: (id) => {
+          deleteServerDocument("resignationLetters", id);
+          set((s) => ({ letters: s.letters.filter((r) => r.id !== id) }));
+        },
         getLetter: (id) => get().letters.find((r) => r.id === id),
       }),
       {
