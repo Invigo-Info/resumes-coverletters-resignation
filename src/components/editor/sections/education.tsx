@@ -9,6 +9,10 @@ import { AutocompleteInput } from "./autocomplete-input";
 import { MonthYearPicker, isEndBeforeStart } from "./month-year-picker";
 import { INSTITUTIONS, LOCATIONS } from "@/lib/suggestions";
 
+/**
+ * Editor section for education entries — repeatable cards with institution,
+ * degree, date range, location and a description.
+ */
 export function EducationForm() {
   const education = useResumeStore((s) => s.education);
   const addEducation = useResumeStore((s) => s.addEducation);
@@ -16,6 +20,7 @@ export function EducationForm() {
   const removeEducation = useResumeStore((s) => s.removeEducation);
   const setActiveEntryId = useResumeStore((s) => s.setActiveEntryId);
 
+  // Start with one empty entry so the form isn't blank.
   useEffect(() => {
     if (useResumeStore.getState().education.length === 0) addEducation();
   }, [addEducation]);

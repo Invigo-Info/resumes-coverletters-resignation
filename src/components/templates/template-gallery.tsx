@@ -10,6 +10,7 @@ import {
   type TemplateCategory,
 } from "@/lib/templates";
 
+/** Per-tab leading glyph keyed by category label. */
 const TAB_ICON: Record<string, string> = {
   "All templates": "🖌️",
   "ATS-friendly": "✨",
@@ -18,12 +19,18 @@ const TAB_ICON: Record<string, string> = {
   Student: "🎓",
 };
 
+/**
+ * Template picker grid with category tabs. Selecting a template routes into the
+ * editor pre-seeded with that template id.
+ */
 export function TemplateGallery() {
   const router = useRouter();
   const [active, setActive] = useState<(typeof templateTabs)[number]>(
     "All templates"
   );
 
+  // Templates shown for the active tab ("All" shows everything; otherwise
+  // filter by category). Memoized so the list only recomputes when the tab changes.
   const visible = useMemo(() => {
     if (active === "All templates") return templates;
     return templates.filter((t) =>

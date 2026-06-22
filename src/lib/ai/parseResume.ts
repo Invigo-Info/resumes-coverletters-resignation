@@ -6,6 +6,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /* Shape returned by the `extractResume` AI task                      */
 /* ------------------------------------------------------------------ */
 
+/** One employment entry as returned by the AI (all fields optional/loose). */
 interface AiEmployment {
   jobTitle?: string;
   company?: string;
@@ -14,6 +15,7 @@ interface AiEmployment {
   endDate?: string;
   bullets?: string[];
 }
+/** One education entry as returned by the AI (all fields optional/loose). */
 interface AiEducation {
   institution?: string;
   degree?: string;
@@ -22,6 +24,7 @@ interface AiEducation {
   endDate?: string;
   description?: string;
 }
+/** The full loose shape the `extractResume` AI task returns before mapping. */
 interface AiResume {
   firstName?: string;
   lastName?: string;
@@ -40,6 +43,7 @@ interface AiResume {
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+// Escape user/AI text before embedding it in the rich-text HTML body.
 const escapeHtml = (s: string) =>
   s
     .replace(/&/g, "&amp;")
@@ -179,6 +183,7 @@ export async function parseResume(file?: File): Promise<Partial<ResumeState>> {
 
 /* ------------------------------ fallback ----------------------------- */
 
+/** Canned sample resume used when no real file is parsed (cloud-import demo). */
 const MOCK_RESUME: Partial<ResumeState> = {
   personal: {
     firstName: "Sophia",

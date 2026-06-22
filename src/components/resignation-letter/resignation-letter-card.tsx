@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
 import { cn } from "@/lib/utils";
 
+/** Pill-style action button used for the card's Download/Edit/Copy/Delete row. */
 function ActionButton({
   children,
   className,
@@ -60,6 +61,10 @@ function MiniLetter({ doc }: { doc: ResignationLetterDoc }) {
   );
 }
 
+/**
+ * Dashboard list item for a saved resignation letter: mini letterhead preview,
+ * metadata, and the Download/Edit/Copy/Delete action row.
+ */
 export function ResignationLetterCard({
   doc,
   onEdit,

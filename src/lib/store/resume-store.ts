@@ -271,6 +271,10 @@ const emptyResume = (): ResumeData => ({
 /* Store                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The single source of truth for the resume currently being edited. Persisted to
+ * localStorage (key `resume-co:resume`) so an in-progress resume survives reload.
+ */
 export const useResumeStore = create<ResumeState>()(
   persist(
     (set) => ({
@@ -460,6 +464,7 @@ export const useResumeStore = create<ResumeState>()(
 /* Progress (shared by the top bar + the Improve tab)                 */
 /* ------------------------------------------------------------------ */
 
+/** One weighted completion item shown in the progress checklist. */
 export interface ProgressItem {
   key: string;
   label: string;
@@ -467,8 +472,10 @@ export interface ProgressItem {
   done: boolean;
 }
 
+// True when stripping HTML tags leaves non-empty text (a rich field has content).
 const hasText = (html: string) => html.replace(/<[^>]*>/g, "").trim().length > 0;
 
+/** The weighted checklist of resume fields and whether each is filled in. */
 export function getProgressItems(s: ResumeState): ProgressItem[] {
   return [
     { key: "firstName", label: "Add your first name", weight: 8, done: !!s.personal.firstName.trim() },
@@ -485,10 +492,12 @@ export function getProgressItems(s: ResumeState): ProgressItem[] {
   ];
 }
 
+/** Overall completion percentage (sum of weights for the done items). */
 export function getProgress(s: ResumeState): number {
   return getProgressItems(s).reduce((acc, i) => acc + (i.done ? i.weight : 0), 0);
 }
 
+/** One actionable suggestion on the Improve page (weight = points it adds). */
 export interface ImproveSuggestion {
   key: string;
   label: string;

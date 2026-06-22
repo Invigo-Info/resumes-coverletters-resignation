@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/dashboard/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 import { ResignationDashboardBody } from "@/components/resignation-letter/dashboard-body";
 
+// Resignation letters dashboard: lists the user's saved resignation-letter drafts.
 export default function ResignationLettersPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">

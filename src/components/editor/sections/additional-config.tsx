@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { AdditionalType } from "@/lib/store/resume-store";
 
+/** Which control renders an additional-section field. */
 export type FieldType =
   | "text"
   | "rich"
@@ -17,6 +18,7 @@ export type FieldType =
   | "monthYear"
   | "autocomplete";
 
+/** Declarative spec for one field in an additional section's form. */
 export interface FieldDef {
   key: string;
   label: string;
@@ -31,6 +33,7 @@ export interface FieldDef {
   suggest?: "jobTitle" | "location" | "institution";
 }
 
+/** Per-section-type configuration: label, icon, copy, and its field layout. */
 export interface AdditionalConfig {
   label: string;
   icon: LucideIcon;
@@ -41,6 +44,7 @@ export interface AdditionalConfig {
   fields: FieldDef[];
 }
 
+/** Language proficiency options for the Languages section's select field. */
 export const PROFICIENCY_LEVELS = [
   "Not applicable",
   "Novice (A1-A2)",
@@ -49,6 +53,10 @@ export const PROFICIENCY_LEVELS = [
   "Native",
 ];
 
+/**
+ * Single source of truth for every additional section type — drives the picker,
+ * the rendered form fields, and the default titles/copy.
+ */
 export const ADDITIONAL_CONFIG: Record<AdditionalType, AdditionalConfig> = {
   internships: {
     label: "Internships",

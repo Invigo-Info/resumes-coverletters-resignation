@@ -1,5 +1,7 @@
+/** Footer link labels, rendered as dot-separated placeholder links. */
 const LINKS = ["Support", "Privacy policy", "Terms of use"];
 
+/** Site-wide footer: copyright line plus the secondary navigation links. */
 export function SiteFooter() {
   return (
     <footer className="py-8 text-center text-sm text-muted-foreground">

@@ -6,8 +6,10 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
+/** Root of a select dropdown (Base UI Select primitive). */
 const Select = SelectPrimitive.Root
 
+/** Groups related select options under an optional label. */
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -18,6 +20,7 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
+/** Displays the currently selected value inside the trigger. */
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
@@ -28,6 +31,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   )
 }
 
+/** Button that opens the select dropdown; shows value and chevron. */
 function SelectTrigger({
   className,
   size = "default",
@@ -56,6 +60,7 @@ function SelectTrigger({
   )
 }
 
+/** Portalled, positioned popup listing the select options. */
 function SelectContent({
   className,
   children,
@@ -95,6 +100,7 @@ function SelectContent({
   )
 }
 
+/** Non-interactive heading for a select group. */
 function SelectLabel({
   className,
   ...props
@@ -108,6 +114,7 @@ function SelectLabel({
   )
 }
 
+/** Selectable option; shows a check when chosen. */
 function SelectItem({
   className,
   children,
@@ -136,6 +143,7 @@ function SelectItem({
   )
 }
 
+/** Divider line between select sections. */
 function SelectSeparator({
   className,
   ...props
@@ -149,6 +157,7 @@ function SelectSeparator({
   )
 }
 
+/** Top scroll affordance shown when the option list overflows upward. */
 function SelectScrollUpButton({
   className,
   ...props
@@ -168,6 +177,7 @@ function SelectScrollUpButton({
   )
 }
 
+/** Bottom scroll affordance shown when the option list overflows downward. */
 function SelectScrollDownButton({
   className,
   ...props

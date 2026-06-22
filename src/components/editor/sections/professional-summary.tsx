@@ -9,6 +9,7 @@ import { EditWithAiMenu, LengthBadge } from "./ai-edit";
 import { SectionHeading } from "./field";
 import { RichTextEditor } from "../rich-text-editor";
 
+/** Escape user text before embedding it in summary HTML. */
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -34,6 +35,10 @@ function textToHtml(text: string): string {
   return blocks.length ? blocks.map((b) => `<p>${b}</p>`).join("") : "";
 }
 
+/**
+ * Editor section for the professional summary: a rich-text editor plus an
+ * "Edit with AI" flow that previews a rewritten version before applying it.
+ */
 export function ProfessionalSummaryForm() {
   const summary = useResumeStore((s) => s.summary);
   const setSummary = useResumeStore((s) => s.setSummary);
@@ -82,6 +87,7 @@ export function ProfessionalSummaryForm() {
 
   const runAiEdit = (instruction: string) => generate(instruction, false);
 
+  // Apply the previewed AI rewrite as the new summary and close the panel.
   function usePreview() {
     if (!preview) return;
     setSummary(textToHtml(preview));

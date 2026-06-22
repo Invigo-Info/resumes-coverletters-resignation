@@ -8,8 +8,10 @@ import {
 } from "@/lib/store/resignation-letter-store";
 import { cn } from "@/lib/utils";
 
+// Selectable text-size options for the toolbar.
 const SIZES: RLFontSize[] = ["S", "M", "L"];
 
+// Selectable letter fonts, each mapping a font id to its CSS family stack.
 const FONTS: { id: RLFontId; label: string; family: string }[] = [
   { id: "georgia", label: "Georgia", family: "Georgia, serif" },
   { id: "inter", label: "Inter", family: "var(--font-sans), sans-serif" },

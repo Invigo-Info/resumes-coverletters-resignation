@@ -16,14 +16,17 @@ import { HelpPill } from "@/components/layout/help-pill";
 import { PLANS, type PlanId } from "@/lib/stripe/plans";
 import { cn } from "@/lib/utils";
 
+// Icons paired positionally with a plan's feature list (extra features fall back to a check).
 const FEATURE_ICONS = [InfinityIcon, Sparkles, FileText, Briefcase];
 
+// Reassurance bullets shown alongside the plan pitch.
 const GUARANTEES = [
   "14-day money-back guarantee",
   "Cancel anytime online, by email, or phone",
   "Trusted by thousands of job seekers, 4.7 rating",
 ];
 
+// Static social-proof testimonials rendered in the reviews section.
 const REVIEWS = [
   {
     name: "Maria S.",
@@ -39,6 +42,7 @@ const REVIEWS = [
   },
 ];
 
+// Row of filled star icons used for the Trustpilot-style rating display.
 function Stars({ count = 5, className }: { count?: number; className?: string }) {
   return (
     <div className={cn("flex gap-0.5", className)}>
@@ -51,10 +55,15 @@ function Stars({ count = 5, className }: { count?: number; className?: string })
   );
 }
 
+/**
+ * Pricing / plan-selection page. Lets the user pick a trial or annual plan, then
+ * forwards the chosen plan to the checkout page via the ?plan query param.
+ */
 export default function PaymentPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<PlanId>("trial");
 
+  // Carry the selected plan into checkout.
   function onContinue() {
     router.push(`/payment/checkout?plan=${selected}`);
   }

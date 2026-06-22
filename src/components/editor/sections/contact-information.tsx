@@ -3,6 +3,7 @@
 import { useResumeStore } from "@/lib/store/resume-store";
 import { Field, SectionHeading } from "./field";
 
+/** Editor section for the resume's contact details (email, phone, LinkedIn, location). */
 export function ContactInformationForm() {
   const contact = useResumeStore((s) => s.contact);
   const setContact = useResumeStore((s) => s.setContact);

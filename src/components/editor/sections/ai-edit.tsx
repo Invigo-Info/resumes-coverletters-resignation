@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Strip HTML tags to plain text (used for word-count length checks). */
 const strip = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 /** The shared AI rewrite presets (Improve · More human · Shorter). */
@@ -95,6 +96,7 @@ export function EditWithAiMenu({
   const [ask, setAsk] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
+  // Close the dropdown (and any "Ask AI" input) when clicking outside it.
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
@@ -107,6 +109,7 @@ export function EditWithAiMenu({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  // Close the menu and fire the chosen instruction up to the parent.
   function run(instruction: string) {
     setOpen(false);
     setAsking(false);

@@ -80,6 +80,7 @@ function ImproveWithAIMenu({
 }
 
 /* --- Step 1: Heading / Full name — Step 2.png ---------------------- */
+/** Step 1: capture the resigner's full name (top of the letter). */
 export function HeadingStep() {
   const fullName = useResignationLetterStore((s) => s.fullName);
   const setFullName = useResignationLetterStore((s) => s.setFullName);
@@ -95,6 +96,7 @@ export function HeadingStep() {
 }
 
 /* --- Step 2: Recipient / Employer — Step 3.png --------------------- */
+/** Step 2: capture the employer/manager the letter is addressed to. */
 export function RecipientStep() {
   const employer = useResignationLetterStore((s) => s.employer);
   const patch = useResignationLetterStore((s) => s.patchEmployer);
@@ -130,6 +132,10 @@ export function RecipientStep() {
 }
 
 /* --- Step 3: Position & Dates — Step 4.png ------------------------- */
+/**
+ * Step 3: salutation, position being left, and submission / last-working-day
+ * dates. Validates that the last day is not before the submission date.
+ */
 export function PositionStep() {
   const salutation = useResignationLetterStore((s) => s.salutation);
   const setSalutation = useResignationLetterStore((s) => s.setSalutation);
@@ -187,6 +193,7 @@ export function PositionStep() {
 }
 
 /* --- Step 4: Reason — Step 5.png ----------------------------------- */
+/** Step 4 (optional): pick a resignation reason, then edit/AI-refine the paragraph. */
 export function ReasonStep() {
   const reason = useResignationLetterStore((s) => s.reason);
   const setReason = useResignationLetterStore((s) => s.setReason);
@@ -236,6 +243,7 @@ export function ReasonStep() {
 }
 
 /* --- Step 5: Gratitude — Step 6.png -------------------------------- */
+/** Step 5 (optional): pick gratitude highlights, then edit/AI-refine the paragraph. */
 export function GratitudeStep() {
   const gratitude = useResignationLetterStore((s) => s.gratitude);
   const toggle = useResignationLetterStore((s) => s.toggleGratitude);
@@ -271,6 +279,7 @@ export function GratitudeStep() {
 }
 
 /* --- Step 6: Assistance — Step 7.png ------------------------------- */
+/** Step 6 (optional): offer transition help; opting in reveals an AI-refinable paragraph. */
 export function AssistanceStep() {
   const assistance = useResignationLetterStore((s) => s.assistance);
   const setAssistance = useResignationLetterStore((s) => s.setAssistance);
@@ -313,6 +322,7 @@ export function AssistanceStep() {
 }
 
 /* --- Step 7: Contacts — step 8.png --------------------------------- */
+/** Step 7 (optional): the resigner's email (validated), phone, and address. */
 export function ContactsStep() {
   const contacts = useResignationLetterStore((s) => s.contacts);
   const patch = useResignationLetterStore((s) => s.patchContacts);

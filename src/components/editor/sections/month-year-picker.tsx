@@ -52,6 +52,7 @@ export function MonthYearPicker({
   const selYear = parsed ? parseInt(parsed[2], 10) : new Date().getFullYear();
   const [year, setYear] = useState(selYear);
 
+  // Close the popover on any click outside it.
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -60,6 +61,7 @@ export function MonthYearPicker({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
+  // When reopening, jump the year view back to the selected value.
   useEffect(() => {
     if (open && parsed) setYear(selYear);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -100,6 +102,7 @@ export function MonthYearPicker({
           <div className="grid grid-cols-3 gap-1.5">
             {MONTHS.map((m, mi) => {
               const active = m === selMonth && year === selYear && !!parsed;
+              // Disable months earlier than `min` (e.g. before the start date).
               const disabled =
                 minVal != null &&
                 Number.isFinite(minVal) &&

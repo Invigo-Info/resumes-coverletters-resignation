@@ -4,6 +4,11 @@ import { useState } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Collapsible card wrapping one repeatable entry (a job, school, etc.) with a
+ * title/subtitle header, delete and expand/collapse controls. Open state can be
+ * controlled (for accordion behaviour) or self-managed.
+ */
 export function EntryCard({
   title,
   subtitle,
@@ -27,6 +32,7 @@ export function EntryCard({
   children: React.ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  // Controlled if `open` prop is passed; otherwise track open state internally.
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
   const toggle = () => {
@@ -77,6 +83,7 @@ export function EntryCard({
   );
 }
 
+/** Full-width "add another entry" button shown beneath a list of entry cards. */
 export function AddMoreButton({
   label,
   onClick,

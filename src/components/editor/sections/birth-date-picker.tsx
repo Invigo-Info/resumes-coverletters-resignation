@@ -11,6 +11,7 @@ const MONTHS = [
 const DOW = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const NOW_YEAR = new Date().getFullYear();
+// Selectable years: the last 90, newest first.
 const YEARS = Array.from({ length: 90 }, (_, i) => NOW_YEAR - i);
 
 /** Calendar date picker. Emits "DD MMM YYYY" (e.g. "03 Feb 1996"). */
@@ -34,6 +35,7 @@ export function BirthDatePicker({
   const [month, setMonth] = useState(initMonth < 0 ? 0 : initMonth);
   const [year, setYear] = useState(initYear);
 
+  // Close the calendar popover on any click outside it.
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -42,6 +44,8 @@ export function BirthDatePicker({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
+  // Build the month grid: pad leading blanks for the weekday the 1st falls on,
+  // then one cell per day of the month.
   const firstDow = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells: (number | null)[] = [

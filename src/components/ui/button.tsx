@@ -40,6 +40,7 @@ const buttonVariants = cva(
   }
 )
 
+/** Styled button primitive (Base UI) with cva variant/size styling. */
 function Button({
   className,
   variant = "default",

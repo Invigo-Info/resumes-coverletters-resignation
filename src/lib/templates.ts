@@ -1,3 +1,4 @@
+/** Filter buckets a template can belong to in the gallery. */
 export type TemplateCategory =
   | "ATS-friendly"
   | "Simple"
@@ -42,10 +43,12 @@ export const templates: ResumeTemplate[] = [
   { id: "executive", name: "Executive", used: 2891, categories: ["Professional"], image: "/templates/curie.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#1e3a8a" } },
 ];
 
+/** Look up a template by id (undefined if unknown). */
 export function getTemplate(id: string): ResumeTemplate | undefined {
   return templates.find((t) => t.id === id);
 }
 
+/** Tab labels for the gallery filter bar ("All" plus each category). */
 export const templateTabs: ("All templates" | TemplateCategory)[] = [
   "All templates",
   "ATS-friendly",

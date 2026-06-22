@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 
+/** Google brand "G" mark, inline SVG (an icon, not an emoji). */
 function GoogleGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
@@ -16,8 +17,14 @@ function GoogleGlyph() {
   );
 }
 
+/** Whether the form is in sign-in or sign-up mode. */
 type Mode = "signin" | "signup";
 
+/**
+ * Combined sign-in / sign-up form. Toggles between modes, validates email and
+ * password client-side, registers via /api/register on sign-up, then signs in
+ * with NextAuth credentials. Offers Google OAuth when configured.
+ */
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -29,6 +36,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   const isSignup = mode === "signup";
 
+  /** Sign in with the email/password credentials provider; returns success. */
   async function credentialsSignIn() {
     const res = await signIn("credentials", { email, password, redirect: false });
     if (res?.error) {
@@ -38,10 +46,15 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     return true;
   }
 
+  /**
+   * Validate the form, create the account first when signing up, then sign in
+   * and redirect home. Surfaces field/server errors inline.
+   */
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    // Client-side guards before hitting the network.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Enter a valid email address");
       return;
@@ -78,6 +91,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     }
   }
 
+  /** Start Google OAuth, or explain that it isn't configured. */
   function onGoogle() {
     setError(null);
     if (!googleEnabled) {

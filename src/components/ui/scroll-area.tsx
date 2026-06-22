@@ -5,6 +5,7 @@ import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 
 import { cn } from "@/lib/utils"
 
+/** Scrollable region with custom styled scrollbars (Base UI). */
 function ScrollArea({
   className,
   children,
@@ -28,6 +29,7 @@ function ScrollArea({
   )
 }
 
+/** The custom scrollbar (with draggable thumb) for a ScrollArea. */
 function ScrollBar({
   className,
   orientation = "vertical",

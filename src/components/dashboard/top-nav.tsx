@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/** Primary section tabs shown in the top navigation bar. */
 const TABS = [
   { label: "Resumes", href: "/" },
   { label: "Cover letters", href: "/cover-letters" },
@@ -21,6 +22,10 @@ const TABS = [
   { label: "Jobs", href: "#" },
 ];
 
+/**
+ * Sticky dashboard header: logo, section tabs, subscribe link, the account
+ * dropdown (settings/support/sign-out) and the Create document menu.
+ */
 export function TopNav({ active = "Resumes" }: { active?: string }) {
   const router = useRouter();
   const { data: session } = useSession();

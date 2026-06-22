@@ -14,6 +14,7 @@ import {
 } from "@/lib/store/resignation-letter-store";
 import { cn } from "@/lib/utils";
 
+/** Pick a reaction glyph for the header progress display based on percent complete. */
 function emojiFor(p: number) {
   if (p < 25) return "🤔";
   if (p < 60) return "🙂";
@@ -50,6 +51,11 @@ function Stepper({ step }: { step: RLStep }) {
   );
 }
 
+/**
+ * Shared layout for every resignation-letter wizard step: header with logo,
+ * stepper and progress, a two-pane body (form + live preview), and a fixed
+ * Back / Next footer.
+ */
 export function StepShell({
   step,
   progress,

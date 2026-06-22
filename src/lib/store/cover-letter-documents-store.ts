@@ -28,6 +28,7 @@ export type CoverLetterDocData = Pick<
   | "design"
 >;
 
+/** A saved cover-letter draft as listed on the dashboard. */
 export interface CoverLetterRecord {
   id: string;
   title: string;
@@ -43,11 +44,16 @@ interface CoverLetterDocumentsState {
   getLetter: (id: string) => CoverLetterRecord | undefined;
 }
 
+/**
+ * The dashboard's list of saved cover-letter drafts, persisted to localStorage
+ * and mirrored to the server so drafts follow the user across devices.
+ */
 export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
   persist(
     (set, get) => ({
       letters: [],
       upsertLetter: (record) => {
+        // Mirror the write to the server (best-effort) before updating local state.
         pushServerDocument("coverLetters", record);
         set((s) => {
           const i = s.letters.findIndex((r) => r.id === record.id);
@@ -76,6 +82,7 @@ export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+// Strip HTML tags to test whether the letter body has real text.
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 /** Human title for a draft: "First Last, Desired title" (falls back gracefully). */
@@ -102,6 +109,7 @@ function hasContent(s: CoverLetterState): boolean {
   );
 }
 
+/** Build a savable draft record from the live cover-letter state. */
 function snapshot(s: CoverLetterState): CoverLetterRecord {
   return {
     id: s.id,

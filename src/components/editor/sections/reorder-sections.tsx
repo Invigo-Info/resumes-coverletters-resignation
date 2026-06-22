@@ -30,6 +30,11 @@ import { ADDITIONAL_CONFIG } from "./additional-config";
 import { SectionHeading } from "./field";
 import { PrimaryButton, GhostButton } from "@/components/brand/brand-buttons";
 
+/**
+ * Returns a lookup that resolves any section key to its display meta
+ * (label/icon/reorderable), covering both fixed sections and user-added
+ * additional sections.
+ */
 function useMeta() {
   const additional = useResumeStore((s) => s.additional);
   return (key: SectionKey) => {
@@ -48,6 +53,7 @@ function useMeta() {
 /** Sections that can't be dragged and are pinned to the very end (e.g. summary). */
 const PINNED_END: SectionKey[] = ["summary"];
 
+/** Non-draggable row with a lock icon for sections pinned in place. */
 function LockedRow({
   label,
   Icon,
@@ -64,6 +70,10 @@ function LockedRow({
   );
 }
 
+/**
+ * Draggable section row (dnd-kit sortable) with a grip handle, up/down move
+ * buttons as a keyboard-friendly alternative, and a delete action.
+ */
 function SortableRow({
   id,
   label,
@@ -139,6 +149,11 @@ function SortableRow({
   );
 }
 
+/**
+ * Drag-and-drop screen to reorder resume sections. Leading sections (personal,
+ * contact) are locked at the top, summary is pinned at the bottom, and the
+ * middle reorders freely; also supports deleting and adding sections.
+ */
 export function ReorderSections({
   onAddSection,
   onDone,
@@ -165,6 +180,8 @@ export function ReorderSections({
   const movable = order.filter(isMovable);
   const trailingLocked = order.filter((k) => PINNED_END.includes(k));
 
+  // Reorder within the movable group only, then splice locked groups back
+  // around it so pinned sections keep their positions.
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -174,6 +191,8 @@ export function ReorderSections({
     setOrder([...leadingLocked, ...next, ...trailingLocked]);
   }
 
+  // Additional sections are removed from the store; built-in ones are just
+  // dropped from the order list.
   function remove(key: SectionKey) {
     const isAdditional = !SECTION_META[key];
     if (isAdditional) removeAdditional(key);

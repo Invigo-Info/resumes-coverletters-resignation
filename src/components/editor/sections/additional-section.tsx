@@ -23,12 +23,14 @@ import { MonthYearPicker, isEndBeforeStart } from "./month-year-picker";
 import { ADDITIONAL_CONFIG, type FieldDef } from "./additional-config";
 import { JOB_TITLES, LOCATIONS, INSTITUTIONS } from "@/lib/suggestions";
 
+/** Maps a field's `suggest` kind to its static autocomplete list. */
 const SUGGEST_LISTS = {
   jobTitle: JOB_TITLES,
   location: LOCATIONS,
   institution: INSTITUTIONS,
 };
 
+/** Renders the right input control for a field based on its declared `type`. */
 function FieldControl({
   field,
   value,
@@ -101,6 +103,7 @@ function FieldControl({
   );
 }
 
+/** Lays out one entry's fields on a 12-col grid per the section's config. */
 function EntryFields({
   section,
   entry,
@@ -140,6 +143,11 @@ function EntryFields({
   );
 }
 
+/**
+ * Generic editor for any additional section (internships, languages, hobbies…).
+ * Config-driven: a renamable/deletable title plus either a single body
+ * (hobbies) or a list of repeatable entry cards.
+ */
 export function AdditionalSectionForm({
   section,
 }: {

@@ -17,6 +17,11 @@ import { cn } from "@/lib/utils";
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { ADDITIONAL_CONFIG } from "./sections/additional-config";
 
+/**
+ * Display metadata (label + icon) for the built-in resume sections. `reorderable`
+ * marks sections whose order the user can shuffle via the up/down controls.
+ * Additional (user-added) sections aren't here — their meta is derived at runtime.
+ */
 export const SECTION_META: Record<
   string,
   { label: string; icon: LucideIcon; reorderable?: boolean }
@@ -29,6 +34,11 @@ export const SECTION_META: Record<
   education: { label: "Education", icon: GraduationCap, reorderable: true },
 };
 
+/**
+ * Sidebar (desktop) section navigation: lists every section in order with a
+ * progress rail, lets the user switch the active section, reorder movable ones,
+ * and open the "add section" / "reorder sections" flows.
+ */
 export function SectionNav({
   onAddSection,
   onReorder,
@@ -43,6 +53,8 @@ export function SectionNav({
   const moveSection = useResumeStore((s) => s.moveSection);
   const activeIdx = order.indexOf(active);
 
+  // Resolve label/icon/reorderable for a key: built-in sections come from
+  // SECTION_META; user-added ones derive theirs from the additional-section config.
   const metaFor = (key: SectionKey) => {
     if (SECTION_META[key]) return SECTION_META[key];
     const sec = additional.find((a) => a.id === key);

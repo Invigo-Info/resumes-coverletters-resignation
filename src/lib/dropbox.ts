@@ -7,6 +7,7 @@
 
 const APP_KEY = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY;
 
+/** True when a Dropbox app key is present, so the real chooser can open. */
 export function isDropboxConfigured(): boolean {
   return !!APP_KEY;
 }
@@ -27,6 +28,8 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 
+// Lazy-inject the Dropbox dropins script once; the promise is cached so
+// concurrent callers share a single load.
 function loadDropins(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if (window.Dropbox) return Promise.resolve();

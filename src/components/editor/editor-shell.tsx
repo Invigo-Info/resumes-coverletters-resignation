@@ -29,6 +29,11 @@ import { ReorderSections } from "./sections/reorder-sections";
 import { DesignPanel } from "./design-panel";
 import { ImprovePanel } from "./improve-panel";
 
+/**
+ * Renders the form for the currently active write step. Routes the special
+ * "reorder" and "additional" keys to their flows, then matches user-added
+ * sections by id, and finally the built-in section forms — defaulting to Personal.
+ */
 function ActiveSectionForm({ onFinish }: { onFinish: () => void }) {
   const active = useResumeStore((s) => s.activeSection);
   const additional = useResumeStore((s) => s.additional);
@@ -73,6 +78,11 @@ function ActiveSectionForm({ onFinish }: { onFinish: () => void }) {
   }
 }
 
+/**
+ * Top-level editor layout. Owns the active tab (Write/Design/Improve) and the
+ * mobile preview sheet, wires up autosave, optionally applies a starter template,
+ * and keeps the active write section in two-way sync with the URL when routed.
+ */
 export function EditorShell({
   templateId,
   routedSection,

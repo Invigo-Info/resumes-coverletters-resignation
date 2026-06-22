@@ -5,12 +5,14 @@ import { formatLetterDate, previewOpeningLine, htmlToText } from "@/lib/resignat
 import { spaceBlocks } from "@/lib/html-spacing";
 import { cn } from "@/lib/utils";
 
+// Maps each selectable font id to its CSS family stack.
 const FONT_STACK: Record<RLFontId, string> = {
   georgia: "Georgia, 'Times New Roman', serif",
   inter: "var(--font-sans), system-ui, sans-serif",
   garamond: "'EB Garamond', Garamond, Georgia, serif",
 };
 
+// Font-size presets expressed as a multiplier on the base rem size.
 const SIZE_SCALE: Record<RLFontSize, number> = { S: 0.92, M: 1, L: 1.12 };
 
 /**

@@ -11,6 +11,8 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
 import { getPlan } from "@/lib/stripe/plans";
 
+// Initialize Stripe.js once at module load; null when the publishable key is absent
+// so the page can render a "not configured" state instead of crashing.
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : null;
 
@@ -23,10 +25,17 @@ const GUARANTEES = [
 const CARD_BRANDS = ["AMEX", "VISA", "Mastercard", "Discover"];
 
 /* ---- Right-side payment card (embedded Stripe form) --------------- */
+/**
+ * Renders the embedded Stripe Checkout form for the given plan. Requests a
+ * client secret from /api/checkout/session on mount, then mounts Stripe's
+ * embedded checkout; falls back to a config notice or error message.
+ */
 function PaymentCard({ plan }: { plan: string }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Create a Checkout Session for this plan and capture its client secret.
+  // `active` guards against setting state after unmount or a fast plan switch.
   useEffect(() => {
     if (!stripePromise) return;
     let active = true;
@@ -109,6 +118,11 @@ function PaymentCard({ plan }: { plan: string }) {
 }
 
 /* ---- Page --------------------------------------------------------- */
+/**
+ * Checkout page body: reads the selected plan from the URL, shows an order
+ * summary plus the signed-in account details, and renders the embedded Stripe
+ * payment card. Split out so it can sit inside a Suspense boundary.
+ */
 function CheckoutInner() {
   const params = useSearchParams();
   const planId = params.get("plan") || "trial";
@@ -194,6 +208,7 @@ function CheckoutInner() {
   );
 }
 
+// Checkout route entry: wraps the body in Suspense because it reads search params.
 export default function CheckoutPage() {
   return (
     <Suspense fallback={null}>

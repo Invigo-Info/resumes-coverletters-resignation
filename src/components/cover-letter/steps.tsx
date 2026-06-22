@@ -65,6 +65,7 @@ import {
 } from "./widgets";
 
 /* --- Job details (YES) — step 3/26 --------------------------------- */
+/** Step for users targeting a specific job: title, company, manager, and pasted JD. */
 export function JobDetailsStep() {
   const jd = useCoverLetterStore((s) => s.jobDetails);
   const patch = useCoverLetterStore((s) => s.patchJobDetails);
@@ -113,6 +114,7 @@ export function JobDetailsStep() {
 }
 
 /* --- Desired job title (NO) — step 12/27 --------------------------- */
+/** Step for users without a specific job: pick/type the desired role from suggestions. */
 export function DesiredTitleStep() {
   const value = useCoverLetterStore((s) => s.jobDetails.desiredJobTitle);
   const patch = useCoverLetterStore((s) => s.patchJobDetails);
@@ -130,6 +132,7 @@ export function DesiredTitleStep() {
 }
 
 /* --- Skills — step 4/13 -------------------------------------------- */
+/** Pick up to 3 skills; chips are AI-ranked by relevance to the desired role. */
 export function SkillsStep() {
   const skills = useCoverLetterStore((s) => s.skills);
   const toggle = useCoverLetterStore((s) => s.toggleSkill);
@@ -144,6 +147,7 @@ export function SkillsStep() {
 }
 
 /* --- Experience — step 5 ------------------------------------------- */
+/** Pick years-of-experience bucket; shows a friendly label for the selection. */
 export function ExperienceStep() {
   const value = useCoverLetterStore((s) => s.experience);
   const setExperience = useCoverLetterStore((s) => s.setExperience);
@@ -180,6 +184,7 @@ export function ExperienceStep() {
 }
 
 /* --- Recent job — step 6 ------------------------------------------- */
+/** Capture the user's most recent job title and (optional) company. */
 export function RecentJobStep() {
   const rj = useCoverLetterStore((s) => s.recentJob);
   const patch = useCoverLetterStore((s) => s.patchRecentJob);
@@ -205,6 +210,7 @@ export function RecentJobStep() {
 }
 
 /* --- Education level — step 7/19 ----------------------------------- */
+// Selectable education levels; the chosen level drives whether degree/field steps appear.
 const EDUCATION_OPTIONS: { level: EducationLevel; label: string; icon: React.ReactNode }[] = [
   { level: "college", label: "College graduate or higher", icon: <GraduationCap className="size-4" /> },
   { level: "highschool", label: "High school graduate", icon: <School className="size-4" /> },
@@ -212,6 +218,7 @@ const EDUCATION_OPTIONS: { level: EducationLevel; label: string; icon: React.Rea
   { level: "none", label: "Prefer not to mention", icon: <SquareX className="size-4" /> },
 ];
 
+/** Choose highest education level; selection conditionally branches the wizard. */
 export function EducationStep() {
   const level = useCoverLetterStore((s) => s.education.level);
   const setLevel = useCoverLetterStore((s) => s.setEducationLevel);
@@ -234,6 +241,7 @@ export function EducationStep() {
 }
 
 /* --- Degree (graduate) — step 8 ------------------------------------ */
+/** Graduate-only step: where the degree was earned (university suggestions). */
 export function DegreeStep() {
   const value = useCoverLetterStore((s) => s.education.university);
   const patch = useCoverLetterStore((s) => s.patchEducation);
@@ -251,6 +259,7 @@ export function DegreeStep() {
 }
 
 /* --- Field of study (graduate) — step 9 ---------------------------- */
+/** Graduate-only step: the user's field of study (field suggestions). */
 export function FieldStep() {
   const value = useCoverLetterStore((s) => s.education.field);
   const patch = useCoverLetterStore((s) => s.patchEducation);
@@ -268,6 +277,7 @@ export function FieldStep() {
 }
 
 /* --- Strengths — step 10 ------------------------------------------- */
+/** Pick up to 3 personal strengths; chips are AI-ranked by relevance to the role. */
 export function StrengthsStep() {
   const strengths = useCoverLetterStore((s) => s.strengths);
   const toggle = useCoverLetterStore((s) => s.toggleStrength);
@@ -282,6 +292,7 @@ export function StrengthsStep() {
 }
 
 /* --- Personal details — step 11 ------------------------------------ */
+/** Final input step: name, email (validated), phone, and address for the letter header. */
 export function PersonalStep() {
   const p = useCoverLetterStore((s) => s.personal);
   const patch = useCoverLetterStore((s) => s.patchPersonal);

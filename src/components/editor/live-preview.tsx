@@ -9,6 +9,7 @@ import {
 } from "@/lib/store/resume-store";
 import { spaceBlocks } from "@/lib/html-spacing";
 
+/** Format a start/end pair as "start - end", omitting empty sides; "" if both blank. */
 function dateRange(start: string, end: string) {
   if (!start && !end) return "";
   return [start, end].filter(Boolean).join(" – ");
@@ -46,6 +47,8 @@ function highlightBlockHtml(html: string, index: number | null): string {
   return root.innerHTML;
 }
 
+// Maps each selectable font id to the concrete CSS font-family stack applied to
+// the rendered resume (with web-safe fallbacks).
 const FONT_STACK: Record<DesignOptions["font"], string> = {
   roboto: "Verdana, Geneva, Tahoma, sans-serif",
   georgia: "Georgia, 'Times New Roman', serif",
@@ -70,6 +73,12 @@ function isSidebar(key: SectionKey, additional: AdditionalSection[]) {
   return sec ? ["languages", "links", "hobbies"].includes(sec.type) : false;
 }
 
+/**
+ * Live, paper-styled render of the resume that mirrors the store in real time and
+ * doubles as the PDF source. Applies the chosen design (font, spacing, color,
+ * one/two-column + dark-sidebar layout), reorders sections, and overlays
+ * editor-only highlights (active section/entry/block) that are stripped from export.
+ */
 export function LivePreview() {
   const s = useResumeStore();
   const { design } = s;
@@ -182,7 +191,11 @@ export function LivePreview() {
     );
   }
 
+  // Render a user-added ("additional") section, branching on its type. Returns
+  // null when the section has no meaningful content yet so it stays hidden.
   const renderAdditional = (sec: AdditionalSection) => {
+    // `has` checks a plain-text field; `htmlHas` strips tags first so empty rich
+    // text (e.g. "<p></p>") doesn't count as content.
     const has = (k: string) => sec.entries.some((e) => (e[k] ?? "").trim());
     const htmlHas = (k: string) =>
       sec.entries.some((e) => (e[k] ?? "").replace(/<[^>]*>/g, "").trim());
@@ -339,6 +352,9 @@ export function LivePreview() {
     }
   };
 
+  // Render any section by key: dispatch to renderAdditional for user-added
+  // sections, otherwise render the matching built-in section (each hidden until
+  // it has content).
   const renderSection = (key: SectionKey) => {
     const addSec = s.additional.find((a) => a.id === key);
     if (addSec) return renderAdditional(addSec);
@@ -378,6 +394,8 @@ export function LivePreview() {
                   {e.description.replace(/<[^>]*>/g, "").trim() && (
                     <div
                       className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
+                      // For the entry being edited, mark the caret's block so the
+                      // exact bullet/paragraph highlights; other entries render plain.
                       dangerouslySetInnerHTML={{
                         __html:
                           e.id === s.activeEntryId

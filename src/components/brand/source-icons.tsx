@@ -4,6 +4,7 @@
  * emoji — so they stay crisp and themeable in size.
  */
 
+/** Dropbox brand logo as an inline SVG icon. */
 export function DropboxIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
@@ -15,6 +16,7 @@ export function DropboxIcon({ className }: { className?: string }) {
   );
 }
 
+/** Google Drive brand logo as an inline SVG icon. */
 export function GoogleDriveIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 87.3 78" className={className} aria-hidden focusable="false">
@@ -46,6 +48,7 @@ export function GoogleDriveIcon({ className }: { className?: string }) {
   );
 }
 
+/** Twitter (X) brand logo as an inline SVG icon. */
 export function TwitterIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
@@ -57,6 +60,7 @@ export function TwitterIcon({ className }: { className?: string }) {
   );
 }
 
+/** Facebook brand logo as an inline SVG icon. */
 export function FacebookIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
@@ -69,6 +73,7 @@ export function FacebookIcon({ className }: { className?: string }) {
   );
 }
 
+/** LinkedIn brand logo as an inline SVG icon. */
 export function LinkedInIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">

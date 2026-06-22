@@ -9,6 +9,7 @@ function visiblePreview(): HTMLElement | null {
   return els.find((e) => e.getBoundingClientRect().width > 0) ?? els[0] ?? null;
 }
 
+/** Build the download filename from the candidate's name ("First_Last.pdf"). */
 function fileName() {
   const { firstName, lastName } = useResumeStore.getState().personal;
   const base = [firstName, lastName].filter(Boolean).join("_").trim();

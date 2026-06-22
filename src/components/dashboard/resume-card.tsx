@@ -15,6 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+/** Pill-shaped action button used for the per-card row (Download, Edit, etc.). */
 function ActionButton({
   children,
   className,
@@ -42,6 +43,11 @@ function ActionButton({
   );
 }
 
+/**
+ * A single resume entry on the dashboard: thumbnail, metadata, the row of
+ * document actions, the AI "tailor" banner, and the share/delete dialogs.
+ * Action handlers are optional so the same card works for mock and real data.
+ */
 export function ResumeCard({
   resume,
   onEdit,
@@ -56,6 +62,7 @@ export function ResumeCard({
   onDelete?: () => void;
 }) {
   const router = useRouter();
+  // Local open/close state for each of the card's dialogs.
   const [tailorOpen, setTailorOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);

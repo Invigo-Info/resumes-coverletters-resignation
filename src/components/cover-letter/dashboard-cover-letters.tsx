@@ -19,6 +19,7 @@ import {
   pushServerDocument,
 } from "@/lib/store/documents-sync";
 
+/** Format a timestamp as a human "Updated D Mon YYYY" label for the card. */
 function formatUpdated(ts: number): string {
   const d = new Date(ts);
   const day = d.getDate();
@@ -26,6 +27,11 @@ function formatUpdated(ts: number): string {
   return `Updated ${day} ${month} ${d.getFullYear()}`;
 }
 
+/**
+ * Dashboard list of the user's saved cover letters. Merges local drafts with the
+ * server copy on mount, then renders a card per letter (with open/copy/delete) or
+ * an empty state.
+ */
 export function DashboardCoverLetters() {
   const router = useRouter();
   const letters = useCoverLetterDocumentsStore((s) => s.letters);

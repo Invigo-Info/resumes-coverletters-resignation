@@ -27,6 +27,7 @@ const badgeVariants = cva(
   }
 )
 
+/** Small status/label pill with cva variants; renders as span by default. */
 function Badge({
   className,
   variant = "default",

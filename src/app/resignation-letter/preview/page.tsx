@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 type Mode = "write" | "design";
 
+// Premium upsell bullet points shown in the resignation-letter download paywall.
 const PAYWALL_PERKS = [
   "Unlimited resignation letter downloads (PDF & Word)",
   "AI-written letters with the perfect professional tone",
@@ -24,6 +25,10 @@ const PAYWALL_PERKS = [
   "Resume, cover letter & resignation letter in one place",
 ];
 
+/**
+ * Final resignation-letter screen: Write/Design toggle, autosave to the
+ * dashboard, AI body generation on first load, and paywalled Download.
+ */
 export default function ResignationLetterPreviewPage() {
   const [mode, setMode] = useState<Mode>("design");
   const [generating, setGenerating] = useState(false);
@@ -58,6 +63,7 @@ export default function ResignationLetterPreviewPage() {
       .finally(() => setGenerating(false));
   }, []);
 
+  // Gate the download through the paywall; the callback runs only when permitted.
   function handleDownload() {
     requestDownload(async () => {
       setDownloading(true);

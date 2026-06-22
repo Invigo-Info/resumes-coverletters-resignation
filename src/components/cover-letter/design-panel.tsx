@@ -26,12 +26,14 @@ import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
 
+// Selectable letter fonts, each mapping a font id to its CSS family stack.
 const FONTS: { id: CLFontId; label: string; sub: string; family: string }[] = [
   { id: "georgia", label: "Georgia", sub: "Georgia", family: "Georgia, serif" },
   { id: "inter", label: "Inter", sub: "Inter", family: "var(--font-sans), sans-serif" },
   { id: "garamond", label: "Garamond", sub: "Garamond", family: "'EB Garamond', Garamond, serif" },
 ];
 
+// Selectable paragraph-density presets for the letter body.
 const SPACINGS: { id: CLSpacingId; label: string; icon: LucideIcon }[] = [
   { id: "dense", label: "Compact", icon: Rows4 },
   { id: "normal", label: "Standard", icon: Rows3 },
@@ -52,6 +54,7 @@ const COLORS: Swatch[] = [
   { accent: "#374151", bg: "#eef0f2" },
 ];
 
+/** Titled group with a leading icon used to section the design panel. */
 function PanelGroup({
   icon: Icon,
   title,
@@ -72,6 +75,10 @@ function PanelGroup({
   );
 }
 
+/**
+ * Right-hand design controls for the cover-letter preview: template carousel,
+ * font + spacing, and color/theme swatches, plus the paywalled download action.
+ */
 export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
   const design = useCoverLetterStore((s) => s.design);
   const setDesign = useCoverLetterStore((s) => s.setDesign);
@@ -85,6 +92,7 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
 
   const spacing = design.spacing ?? "normal";
 
+  // Route download through the paywall: it runs the export only once unlocked.
   function handleDownload() {
     requestDownload(async () => {
       setDownloading(true);

@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/** Root tabs container (Base UI Tabs primitive). */
 function Tabs({
   className,
   orientation = "horizontal",
@@ -38,6 +39,7 @@ const tabsListVariants = cva(
   }
 )
 
+/** Row/column container for the tab triggers; default or line variant. */
 function TabsList({
   className,
   variant = "default",
@@ -53,6 +55,7 @@ function TabsList({
   )
 }
 
+/** Clickable tab that activates its associated panel. */
 function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
@@ -69,6 +72,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
   )
 }
 
+/** Panel shown when its matching tab is active. */
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel

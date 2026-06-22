@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/dashboard/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 import { DashboardCoverLetters } from "@/components/cover-letter/dashboard-cover-letters";
 
+// Cover letters dashboard: lists the user's saved cover-letter drafts.
 export default function CoverLettersPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">

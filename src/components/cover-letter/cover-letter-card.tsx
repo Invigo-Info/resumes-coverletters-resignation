@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+/** Pill-style action button used for the card's Download/Edit/Copy/Share/Delete row. */
 function ActionButton({
   children,
   className,
@@ -40,6 +41,10 @@ function ActionButton({
   );
 }
 
+/**
+ * Dashboard list item for a saved cover letter: thumbnail, metadata, action row,
+ * share dialog, and a delete-confirmation dialog.
+ */
 export function CoverLetterCard({
   id,
   title,

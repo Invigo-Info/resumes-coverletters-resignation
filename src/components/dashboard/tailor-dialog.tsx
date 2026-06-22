@@ -5,6 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Loader2, Copy, Check } from "lucide-react";
 import { tailorResume } from "@/lib/ai/mock";
 
+/**
+ * AI "tailor this resume" modal: takes a pasted job description and returns an
+ * optimized summary plus suggested keywords (via a mock AI helper), with a
+ * copy-to-clipboard affordance for the generated summary.
+ */
 export function TailorDialog({
   open,
   onClose,
@@ -21,16 +26,19 @@ export function TailorDialog({
   );
   const [copied, setCopied] = useState(false);
 
+  /** Send the job description to the AI helper and show the tailored result. */
   async function run() {
     if (!jd.trim()) return;
     setLoading(true);
     setResult(null);
+    // Resume titles are "Name, Job title" — pull the title half for context.
     const jobTitle = resumeTitle.split(",")[1]?.trim();
     const res = await tailorResume({ jobDescription: jd, jobTitle });
     setResult(res);
     setLoading(false);
   }
 
+  /** Copy the tailored summary and flash a transient "Copied" confirmation. */
   function copySummary() {
     if (result) {
       navigator.clipboard.writeText(result.summary);

@@ -30,18 +30,22 @@ import {
 } from "@/lib/store/resume-store";
 import { templates } from "@/lib/templates";
 
+// Font choices offered in the Design panel. `family` is the CSS stack used to
+// preview the option; `label`/`sub` are the display text on the swatch button.
 const FONTS: { id: FontId; label: string; sub: string; family: string }[] = [
   { id: "roboto", label: "Verdana", sub: "Verdana", family: "Verdana, Geneva, sans-serif" },
   { id: "georgia", label: "Georgia", sub: "Arial", family: "Georgia, serif" },
   { id: "garamond", label: "Garamond", sub: "Garamond", family: "'EB Garamond', Garamond, serif" },
 ];
 
+// Density presets controlling per-entry spacing in the resume preview.
 const SPACINGS: { id: SpacingId; label: string; icon: LucideIcon }[] = [
   { id: "dense", label: "Compact", icon: Rows4 },
   { id: "normal", label: "Standard", icon: Rows3 },
   { id: "loose", label: "Spacious", icon: Rows2 },
 ];
 
+// Layout options: which side the sidebar column sits on, or a single column.
 const COLUMNS: { id: ColumnsId; label: string; icon: LucideIcon }[] = [
   { id: "left", label: "Left", icon: PanelLeft },
   { id: "centered", label: "Single", icon: RectangleVertical },
@@ -62,6 +66,7 @@ const COLORS: Swatch[] = [
   { accent: "#374151", bg: "#eef0f2" },
 ];
 
+/** Labelled section wrapper (icon + title + content) for one Design panel group. */
 function PanelGroup({
   icon: Icon,
   title,
@@ -82,18 +87,26 @@ function PanelGroup({
   );
 }
 
+/**
+ * The Design tab's control panel: pick a template style (paged carousel), font,
+ * density, column layout, and color theme — each writing straight into the resume
+ * store so the live preview updates — plus Back and Download actions.
+ */
 export function DesignPanel({ onBack }: { onBack: () => void }) {
   const design = useResumeStore((s) => s.design);
   const setDesign = useResumeStore((s) => s.setDesign);
   const templateId = useResumeStore((s) => s.templateId);
   const applyTemplate = useResumeStore((s) => s.applyTemplate);
 
+  // Template carousel: `start` is the index of the first of the 3 visible
+  // thumbnails; prev/next shift the window while keeping it in bounds.
   const [start, setStart] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const visible = templates.slice(start, start + 3);
   const canPrev = start > 0;
   const canNext = start < templates.length - 3;
 
+  // Trigger the PDF export, showing a spinner on the button until it resolves.
   async function handleDownload() {
     setDownloading(true);
     try {

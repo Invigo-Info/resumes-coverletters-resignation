@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 const DATA_DIR = path.join(process.cwd(), ".data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
+/** A user as persisted on disk — includes the bcrypt password hash. */
 interface StoredUser {
   id: string;
   email: string;
@@ -19,12 +20,14 @@ interface StoredUser {
   passwordHash: string;
 }
 
+/** A user safe to expose to the client — no password hash. */
 export interface PublicUser {
   id: string;
   email: string;
   name: string;
 }
 
+/** Read all users from the file; returns [] if the file is missing. */
 async function readUsers(): Promise<StoredUser[]> {
   try {
     return JSON.parse(await fs.readFile(USERS_FILE, "utf8")) as StoredUser[];
@@ -33,11 +36,13 @@ async function readUsers(): Promise<StoredUser[]> {
   }
 }
 
+/** Persist all users (creating the .data dir if needed). */
 async function writeUsers(users: StoredUser[]): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 }
 
+// Email is the unique key; normalize so case/whitespace variants match one user.
 function normalize(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -48,6 +53,7 @@ function nameFromEmail(email: string): string {
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
+/** Find a user by email (case-insensitive), or undefined if none. */
 export async function findUserByEmail(email: string): Promise<StoredUser | undefined> {
   const users = await readUsers();
   const target = normalize(email);

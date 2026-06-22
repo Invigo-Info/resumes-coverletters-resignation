@@ -4,6 +4,11 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { getStripe } from "@/lib/stripe/server";
 
+/**
+ * Post-checkout confirmation page. Reads the Stripe session_id from the URL,
+ * verifies the Checkout Session status server-side, and shows a success or
+ * "processing" message accordingly.
+ */
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
@@ -25,6 +30,8 @@ export default async function PaymentSuccessPage({
     }
   }
 
+  // Treat a completed session as success; also show success when no session_id
+  // was supplied (e.g. a direct visit) rather than a scary error.
   const ok = status === "complete" || !session_id;
 
   return (

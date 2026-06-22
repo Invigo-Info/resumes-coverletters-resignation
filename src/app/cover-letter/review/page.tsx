@@ -7,12 +7,18 @@ import { StepHeading } from "@/components/cover-letter/widgets";
 import { useCoverLetterStore, type CLStep } from "@/lib/store/cover-letter-store";
 import { experienceLabel } from "@/lib/cover-letter/suggestions";
 
+/**
+ * Review screen summarizing the parsed cover-letter inputs (education, recent
+ * job, experience, skills, strengths, personal details) before generation, with
+ * per-row edit shortcuts back into the relevant wizard step.
+ */
 export default function CoverLetterReviewPage() {
   const router = useRouter();
   const s = useCoverLetterStore();
   const setStep = useCoverLetterStore((st) => st.setStep);
   const setMode = useCoverLetterStore((st) => st.setMode);
 
+  // Jump back into edit mode for a specific step from the review table.
   function edit(step: CLStep) {
     setMode("edit");
     setStep(step);
@@ -47,6 +53,7 @@ export default function CoverLetterReviewPage() {
     },
   ];
 
+  // Proceed from review into the onboarding wizard starting at the intent step.
   function continueFlow() {
     setMode("onboarding");
     setStep("intent");

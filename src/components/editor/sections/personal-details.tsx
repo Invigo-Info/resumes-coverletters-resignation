@@ -8,18 +8,25 @@ import { BirthDatePicker } from "./birth-date-picker";
 import { AutocompleteInput } from "./autocomplete-input";
 import { JOB_TITLES } from "@/lib/suggestions";
 
+/**
+ * Editor section for name, job title, photo and optional extra details
+ * (nationality, license, birth date behind a "show more" toggle).
+ */
 export function PersonalDetailsForm() {
   const personal = useResumeStore((s) => s.personal);
   const setPersonal = useResumeStore((s) => s.setPersonal);
+  // Toggle for the collapsible "additional details" block.
   const [showMore, setShowMore] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Read the picked image as a data URL and store it as the profile photo.
   function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setPersonal({ photo: reader.result as string });
     reader.readAsDataURL(file);
+    // Reset so picking the same file again still fires onChange.
     e.target.value = "";
   }
 

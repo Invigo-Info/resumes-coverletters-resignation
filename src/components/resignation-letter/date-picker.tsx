@@ -5,6 +5,7 @@ import { Calendar, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "luc
 import { formatLetterDate } from "@/lib/resignation-letter/format";
 import { cn } from "@/lib/utils";
 
+// Month/day labels for the calendar header, quick-pick grid, and weekday row.
 const MONTHS_FULL = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",

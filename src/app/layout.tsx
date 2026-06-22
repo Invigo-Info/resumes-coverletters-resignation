@@ -22,11 +22,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Default document <head> metadata applied to every route unless a page overrides it.
 export const metadata: Metadata = {
   title: "Resume.co — Build your resume",
   description: "Create, edit and tailor resumes with AI assistance.",
 };
 
+/**
+ * Root layout wrapping every page: sets up fonts (sans/heading/mono CSS vars),
+ * global app providers (session, theme), tooltips, and the toast container.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

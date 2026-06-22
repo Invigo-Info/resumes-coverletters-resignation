@@ -42,6 +42,7 @@ function GoogleGlyph({ className }: { className?: string }) {
   );
 }
 
+/** Accessible on/off switch (role="switch") used for the email opt-in. */
 function Toggle({
   checked,
   onChange,
@@ -89,6 +90,7 @@ function DetailRow({
   );
 }
 
+/** Rounded surface that groups one settings section. */
 function SectionCard({
   children,
   className,
@@ -103,6 +105,11 @@ function SectionCard({
   );
 }
 
+/**
+ * Account settings page: subscription CTA, editable personal details (name),
+ * email opt-in toggle, and permanent account deletion. Reads/refreshes the live
+ * NextAuth session and persists changes through the /api/account route.
+ */
 export function AccountSettings() {
   const router = useRouter();
   const { data: session, update } = useSession();
@@ -127,6 +134,7 @@ export function AccountSettings() {
     setLast(rest.join(" "));
   }, [fullName]);
 
+  /** Persist the combined first/last name and refresh the session display name. */
   async function saveName() {
     const name = [first.trim(), last.trim()].filter(Boolean).join(" ");
     if (!name) {
@@ -153,6 +161,7 @@ export function AccountSettings() {
     }
   }
 
+  /** Permanently delete the account, sign out, and return to the login page. */
   async function deleteAccount() {
     setDeleting(true);
     try {

@@ -32,6 +32,11 @@ import { mockResumes } from "@/lib/mock-data";
 import { isDropboxConfigured, chooseFromDropbox } from "@/lib/dropbox";
 import { toast } from "sonner";
 
+/**
+ * Cover-letter creation start screen. Offers four entry paths — continue draft,
+ * use a saved resume, start from scratch, or upload/import a resume (file,
+ * Dropbox, Google Drive, LinkedIn) — then routes into the wizard or review.
+ */
 export default function CoverLetterNewPage() {
   const router = useRouter();
   const [resumeOpen, setResumeOpen] = useState(true); // Use-your-resume is primary/expanded
@@ -56,11 +61,13 @@ export default function CoverLetterNewPage() {
   const draftTitle = useCoverLetterStore((s) => s.jobDetails.desiredJobTitle);
   const hasDraft = mounted && (hasBody || startedAnswers);
 
+  // Resume an existing draft: go straight to preview if a body exists, else the wizard.
   function continueDraft() {
     if (hasBody) router.push("/cover-letter/preview");
     else router.push("/cover-letters/write/intent");
   }
 
+  // Discard any prior draft and begin a fresh AI-guided cover letter.
   function startScratch() {
     reset();
     setFlow("scratch");

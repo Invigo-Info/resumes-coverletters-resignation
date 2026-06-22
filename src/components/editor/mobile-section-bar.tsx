@@ -13,6 +13,8 @@ export function MobileSectionBar({ onAdd }: { onAdd: () => void }) {
   const additional = useResumeStore((s) => s.additional);
   const setActive = useResumeStore((s) => s.setActiveSection);
 
+  // Resolve a pill's label: built-in sections use SECTION_META; user-added ones
+  // use their stored title, falling back to the raw key.
   const label = (key: SectionKey) => {
     if (SECTION_META[key]) return SECTION_META[key].label;
     const sec = additional.find((a) => a.id === key);

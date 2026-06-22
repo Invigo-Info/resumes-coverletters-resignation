@@ -23,6 +23,7 @@ import {
 import { formatLetterDate, htmlToText, previewOpeningLine } from "@/lib/resignation-letter/format";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
 
+/** Format a timestamp as a human "Updated D Mon YYYY" label for the card. */
 function formatUpdated(ts: number): string {
   const d = new Date(ts);
   const day = d.getDate();
@@ -54,6 +55,11 @@ function toDoc(rec: ResignationLetterRecord): ResignationLetterDoc {
   };
 }
 
+/**
+ * Dashboard list of the user's saved resignation letters. Merges local drafts
+ * with the server copy on mount, then renders a card per letter (open/copy/delete)
+ * or an empty state.
+ */
 export function ResignationDashboardBody() {
   const router = useRouter();
   const letters = useResignationLetterDocumentsStore((s) => s.letters);

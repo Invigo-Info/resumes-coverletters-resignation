@@ -19,6 +19,11 @@ import { cn } from "@/lib/utils";
 
 type Mode = "write" | "design";
 
+/**
+ * Final cover-letter screen: toggles between Write and Design modes, autosaves
+ * to the dashboard, generates the body on first load, and gates Download behind
+ * the paywall.
+ */
 export default function CoverLetterPreviewPage() {
   const s = useCoverLetterStore();
   const [mode, setMode] = useState<Mode>("design");
@@ -55,6 +60,7 @@ export default function CoverLetterPreviewPage() {
       .finally(() => setGenerating(false));
   }, []);
 
+  // Route the download through the paywall, which runs the callback only if allowed.
   function handleDownload() {
     requestDownload(async () => {
       setDownloading(true);

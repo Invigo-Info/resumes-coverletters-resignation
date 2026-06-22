@@ -26,6 +26,7 @@ export type ResumeDocData = Pick<
   | "sectionOrder"
 >;
 
+/** A saved resume draft as listed on the dashboard. */
 export interface ResumeRecord {
   id: string;
   title: string;
@@ -41,11 +42,16 @@ interface DocumentsState {
   getResume: (id: string) => ResumeRecord | undefined;
 }
 
+/**
+ * The dashboard's list of saved resume drafts, persisted to localStorage and
+ * mirrored to the server so drafts follow the user across devices.
+ */
 export const useDocumentsStore = create<DocumentsState>()(
   persist(
     (set, get) => ({
       resumes: [],
       upsertResume: (record) => {
+        // Mirror the write to the server (best-effort) before updating local state.
         pushServerDocument("resumes", record);
         set((s) => {
           const i = s.resumes.findIndex((r) => r.id === record.id);
@@ -74,6 +80,7 @@ export const useDocumentsStore = create<DocumentsState>()(
 /* Save status (for the "Saving… / Saved" pill on the preview)        */
 /* ------------------------------------------------------------------ */
 
+/** State of the autosave pill: actively saving vs. settled. */
 export type SaveStatus = "saving" | "saved";
 
 interface SaveStatusState {
@@ -81,6 +88,7 @@ interface SaveStatusState {
   setStatus: (status: SaveStatus) => void;
 }
 
+/** Tiny store driving the "Saving… / Saved" indicator on the preview. */
 export const useSaveStatusStore = create<SaveStatusState>((set) => ({
   status: "saved",
   setStatus: (status) => set({ status }),
@@ -90,6 +98,7 @@ export const useSaveStatusStore = create<SaveStatusState>((set) => ({
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+// Strip HTML tags to inspect the underlying plain text of a rich field.
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 /** A signature of the resume's CONTENT only — excludes transient UI cursor
@@ -134,6 +143,7 @@ function hasContent(s: ResumeState): boolean {
   );
 }
 
+/** Build a savable draft record from the live resume state. */
 function snapshot(s: ResumeState): ResumeRecord {
   return {
     id: s.id,

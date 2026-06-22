@@ -1,5 +1,6 @@
 /** Subscription plans shown on the payment pages (from the resume.co screenshots). */
 
+/** The two subscription plans offered at checkout. */
 export type PlanId = "trial" | "annual";
 
 export interface Plan {
@@ -60,6 +61,7 @@ export const PLANS: Record<PlanId, Plan> = {
   },
 };
 
+/** Resolve a plan by id, defaulting to the trial plan for unknown/missing ids. */
 export function getPlan(id: string | null | undefined): Plan {
   return id === "annual" ? PLANS.annual : PLANS.trial;
 }

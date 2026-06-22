@@ -16,20 +16,28 @@ import { downloadResume } from "@/lib/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 
+/** The three top-level editor stages the TopBar switches between. */
 export type EditorTab = "write" | "design" | "improve";
 
+/** Tab definitions (key, label, icon) rendered as the editor stage switcher. */
 const TABS: { key: EditorTab; label: string; icon: React.ReactNode }[] = [
   { key: "write", label: "Write", icon: <PenLine className="size-4" /> },
   { key: "design", label: "Design", icon: <Palette className="size-4" /> },
   { key: "improve", label: "Improve", icon: <BadgeCheck className="size-4" /> },
 ];
 
+// Picks the face shown beside the completion bar, escalating with progress:
+// thinking (<34%), slight smile (<67%), grinning (>=67%).
 function emojiFor(p: number) {
   if (p < 34) return "🤔";
   if (p < 67) return "🙂";
   return "😄";
 }
 
+/**
+ * Editor header: home button, the Write/Design/Improve stage tabs, a live
+ * completion progress bar, and the Share + Download actions.
+ */
 export function TopBar({
   tab,
   onTabChange,
@@ -42,6 +50,7 @@ export function TopBar({
   const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
+  // Trigger the PDF export, showing a spinner on the button until it resolves.
   async function handleDownload() {
     setDownloading(true);
     try {

@@ -1,11 +1,16 @@
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { exportElementToPdf } from "@/lib/pdf-export";
 
+/**
+ * Find the on-screen cover-letter preview node to export. Multiple previews can
+ * exist (e.g. desktop + mobile copies), so prefer the one with a visible width.
+ */
 function visiblePreview(): HTMLElement | null {
   const els = Array.from(document.querySelectorAll<HTMLElement>("[data-cl-preview]"));
   return els.find((e) => e.getBoundingClientRect().width > 0) ?? els[0] ?? null;
 }
 
+/** Build the download filename from the candidate's name (with a safe default). */
 function fileName() {
   const { firstName, lastName } = useCoverLetterStore.getState().personal;
   const base = [firstName, lastName].filter(Boolean).join("_").trim();

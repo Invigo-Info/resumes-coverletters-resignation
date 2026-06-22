@@ -21,6 +21,7 @@ import {
 import { getTemplate } from "@/lib/templates";
 import type { ResumeDoc } from "@/lib/mock-data";
 
+/** Format a timestamp into the card's "Updated 5 Jun 2026" label. */
 function formatUpdated(ts: number): string {
   const d = new Date(ts);
   const day = d.getDate();
@@ -28,6 +29,11 @@ function formatUpdated(ts: number): string {
   return `Updated ${day} ${month} ${d.getFullYear()}`;
 }
 
+/**
+ * The dashboard resume list. Merges locally-stored drafts with the account's
+ * server-saved resumes, renders a card per resume (with copy/delete/open), and
+ * falls back to the EmptyState when there is nothing to show.
+ */
 export function DashboardResumes() {
   const router = useRouter();
   const resumes = useDocumentsStore((s) => s.resumes);
@@ -55,6 +61,8 @@ export function DashboardResumes() {
         useDocumentsStore.setState((s) => {
           const byId = new Map(s.resumes.map((r) => [r.id, r]));
           for (const rec of server.resumes) {
+            // Newest-wins merge: server record replaces a local one only when it
+            // is the same age or newer, so unsynced local edits aren't clobbered.
             const existing = byId.get(rec.id);
             if (!existing || rec.updatedAt >= existing.updatedAt) {
               byId.set(rec.id, {
@@ -104,6 +112,7 @@ export function DashboardResumes() {
             onEdit={open}
             onDownload={open}
             onCopy={() => {
+              // Duplicate as a brand-new document (fresh id + timestamp).
               const id = newResumeId();
               upsertResume({
                 ...rec,

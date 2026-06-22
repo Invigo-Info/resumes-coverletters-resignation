@@ -21,10 +21,13 @@ import { AutocompleteInput } from "./autocomplete-input";
 import { MonthYearPicker, isEndBeforeStart } from "./month-year-picker";
 import { JOB_TITLES, LOCATIONS } from "@/lib/suggestions";
 
+/** Strip HTML tags to plain text. */
 const strip = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+/** Join start/end into a "start – end" range, skipping blanks. */
 const dateRange = (a: string, b: string) =>
   [a, b].filter(Boolean).join(" – ");
 
+/** Escape user text before embedding it in bullet HTML. */
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -136,6 +139,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
 
   const runAiEdit = (instruction: string) => generate(instruction, false);
 
+  // Apply the previewed AI bullets as the entry's description and close the panel.
   function usePreview() {
     if (!preview || !preview.length) return;
     updateEmployment(entry.id, { description: bulletsToUl(preview) });
@@ -143,6 +147,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
     toast.success("Bullet points updated");
   }
 
+  // Append a suggested bullet into the description's <ul> (creating one if needed).
   function insert(text: string, index: number) {
     const current = entry.description.replace(/<p><\/p>/g, "").trim();
     const li = `<li>${text}</li>`;
@@ -267,6 +272,10 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   );
 }
 
+/**
+ * Editor section for employment history — an accordion of job entries (only one
+ * open at a time), each with its own AI-assisted bullet description.
+ */
 export function EmploymentHistoryForm() {
   const employment = useResumeStore((s) => s.employment);
   const addEmployment = useResumeStore((s) => s.addEmployment);

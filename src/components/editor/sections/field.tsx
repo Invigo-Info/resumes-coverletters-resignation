@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
+/** Labeled text input — the standard single-line form field used across sections. */
 export function Field({
   label,
   value,
@@ -44,6 +45,7 @@ export function FieldWrap({
   );
 }
 
+/** Page-level heading (title + subtext) shown at the top of each editor section. */
 export function SectionHeading({
   title,
   description,

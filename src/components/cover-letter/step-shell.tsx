@@ -9,12 +9,14 @@ import { HelpPill } from "@/components/layout/help-pill";
 import { cn } from "@/lib/utils";
 import type { CLPhase } from "@/lib/store/cover-letter-store";
 
+// The three high-level wizard phases shown in the top-right step indicator.
 const PHASES: { key: CLPhase; label: string }[] = [
   { key: "add-details", label: "Add details" },
   { key: "personalize", label: "Personalize" },
   { key: "download", label: "Download" },
 ];
 
+/** Pick a reaction glyph for the footer progress bar based on percent complete. */
 function emojiFor(p: number) {
   if (p < 25) return "🤔";
   if (p < 60) return "🙂";
@@ -60,6 +62,10 @@ function StepIndicator({ phase }: { phase: CLPhase }) {
   );
 }
 
+/**
+ * Shared layout for every cover-letter wizard step: header with logo + phase
+ * indicator, centered step content, and a fixed Back / progress / Next footer.
+ */
 export function StepShell({
   phase,
   progress,

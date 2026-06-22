@@ -195,6 +195,7 @@ export const RL_STEPPER_STEPS: RLStep[] = [
   "contacts",
 ];
 
+/** The ordered wizard steps (linear — no branching for resignation letters). */
 export function stepSequence(): RLStep[] {
   return RL_SEQUENCE;
 }
@@ -242,6 +243,11 @@ export function canProceed(step: RLStep, s: ResignationLetterState): boolean {
 /* Store                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Source of truth for the resignation-letter wizard. Persisted to localStorage
+ * (`resume-co:resignation-letter`). Setters keep the seeded reason/gratitude/
+ * assistance paragraphs in sync with answers until the user edits them by hand.
+ */
 export const useResignationLetterStore = create<ResignationLetterState>()(
   persist(
     (set, get) => ({

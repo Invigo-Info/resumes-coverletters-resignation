@@ -27,6 +27,8 @@ import { downloadResume } from "@/lib/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { cn } from "@/lib/utils";
 
+// Maps each improvement-suggestion key to the icon shown beside it in the
+// "Add more details" list. Unknown keys fall back to a Plus icon.
 const ITEM_ICON: Record<string, LucideIcon> = {
   firstName: UserRound,
   lastName: UserRound,
@@ -38,6 +40,7 @@ const ITEM_ICON: Record<string, LucideIcon> = {
   education: GraduationCap,
 };
 
+// Static post-completion checklist shown once the resume is fully filled out.
 const NEXT_STEPS = [
   "Ask a trusted friend or professional to proofread your resume. You can always share your resume for free.",
   "Using this resume, improve your LinkedIn profile, and consider joining relevant professional groups to connect with potential employers.",
@@ -46,6 +49,11 @@ const NEXT_STEPS = [
   "Reach out to at least one contact in your professional network for potential job leads and referrals.",
 ];
 
+/**
+ * The Improve tab. Two modes driven by whether any suggestions remain:
+ * incomplete shows the weighted "Add more details" list (each item deep-links to
+ * its section); complete shows a congratulations screen + a next-steps checklist.
+ */
 export function ImprovePanel({
   onNavigate,
   onBack,
@@ -54,6 +62,7 @@ export function ImprovePanel({
   onBack: () => void;
 }) {
   const s = useResumeStore();
+  // Remaining improvement suggestions; an empty list means the resume is complete.
   const todo = getImproveSuggestions(s);
   const complete = todo.length === 0;
 
@@ -61,6 +70,7 @@ export function ImprovePanel({
   const [shareOpen, setShareOpen] = useState(false);
   const [done, setDone] = useState<Set<number>>(new Set());
 
+  // Trigger the PDF export, showing a spinner on the button until it resolves.
   async function handleDownload() {
     setDownloading(true);
     try {
@@ -70,6 +80,7 @@ export function ImprovePanel({
     }
   }
 
+  // Toggle a next-steps checklist item on/off (local, non-persisted UI state).
   function toggleStep(i: number) {
     setDone((prev) => {
       const next = new Set(prev);

@@ -23,6 +23,10 @@ function isPublic(pathname: string): boolean {
   return pathname === "/login" || pathname.startsWith("/login/");
 }
 
+/**
+ * Route gate (Next.js 16 "proxy", formerly middleware): redirect signed-in users
+ * away from /login and bounce signed-out users on protected routes to /login.
+ */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authed = hasSession(request);
@@ -40,6 +44,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
+/** Proxy matcher config: which paths the route gate runs on. */
 export const config = {
   // Run on everything except API routes, Next internals, and static assets
   // (images/fonts), so CSS/JS and the public/ illustration keep loading.

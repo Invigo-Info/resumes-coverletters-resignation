@@ -35,6 +35,7 @@ export function AutocompleteInput({
   const ref = useRef<HTMLDivElement>(null);
   const reqId = useRef(0);
 
+  // Close the suggestion panel on any click outside this input.
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -85,6 +86,7 @@ export function AutocompleteInput({
   aiMatches.forEach((o) => push(o, true));
   const shown = matches.slice(0, effectiveMax);
 
+  // Bold the part of a suggestion that matches the current query.
   function highlight(text: string) {
     const i = text.toLowerCase().indexOf(q);
     if (i === -1 || q.length === 0) return text;

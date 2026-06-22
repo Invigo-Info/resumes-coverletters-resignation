@@ -11,13 +11,16 @@ import { cn } from "@/lib/utils";
 import { CLField } from "./widgets";
 import { CoverLetterPreview } from "./cover-letter-preview";
 
+// The two editable sections of the write-mode editor.
 type Section = "personal" | "content";
 
+// Left-hand navigation entries, one per editor section.
 const NAV: { key: Section; label: string; icon: React.ReactNode }[] = [
   { key: "personal", label: "Personal details", icon: <UserRound className="size-4" /> },
   { key: "content", label: "Letter content", icon: <Mail className="size-4" /> },
 ];
 
+/** Editor section for the candidate's name, job title, and contact details. */
 function PersonalSection() {
   const p = useCoverLetterStore((s) => s.personal);
   const jobTitle = useCoverLetterStore((s) => s.jobDetails.desiredJobTitle);
@@ -49,6 +52,7 @@ function PersonalSection() {
   );
 }
 
+/** Editor section for the letter body and recipient (company / hiring manager). */
 function ContentSection() {
   const letter = useCoverLetterStore((s) => s.letter);
   const setLetter = useCoverLetterStore((s) => s.setLetter);
@@ -81,6 +85,10 @@ function ContentSection() {
   );
 }
 
+/**
+ * Manual edit mode: left section nav, center form (personal/content), and a live
+ * preview. Advancing past the last section hands off to design mode.
+ */
 export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }) {
   const [section, setSection] = useState<Section>("personal");
 

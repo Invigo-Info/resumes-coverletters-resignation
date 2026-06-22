@@ -7,6 +7,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 
+/** How the user started the cover letter: blank, from an upload, or from a resume. */
 export type CLFlow = "scratch" | "upload" | "use-resume";
 
 /** Wizard screen keys (see docs/cover-letter-onboarding-plan.md §2). */
@@ -150,6 +151,11 @@ const initial = {
 /* (docs §3). Upload / use-resume only run the post-Review intent path.*/
 /* ------------------------------------------------------------------ */
 
+/**
+ * Compute the ordered list of wizard steps for the current answers. The path
+ * branches on job-intent, flow, experience and education so users only see the
+ * steps relevant to them.
+ */
 export function stepSequence(s: Pick<CoverLetterState, "flow" | "jobIntent" | "experience" | "education">): CLStep[] {
   const seq: CLStep[] = ["intent"];
 
@@ -211,6 +217,7 @@ const STEP_MESSAGE: Record<CLStep, { message: string; gain: string }> = {
   preview: { message: "Your cover letter is ready", gain: "" },
 };
 
+/** Which high-level phase (add-details / personalize / download) a step belongs to. */
 export function phaseForStep(step: CLStep): CLPhase {
   return STEP_PHASE[step];
 }
@@ -274,6 +281,10 @@ export function progressForStep(
 /* Store                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Source of truth for the cover-letter wizard. Persisted to localStorage
+ * (`resume-co:cover-letter`) so an in-progress letter survives reload.
+ */
 export const useCoverLetterStore = create<CoverLetterState>()(
   persist(
     (set, get) => ({

@@ -38,6 +38,11 @@ interface Body {
   payload: Record<string, unknown>;
 }
 
+/**
+ * Calls Gemini's generateContent endpoint with an optional inline file and
+ * returns the joined text. Lowers temperature when a file is attached (faithful
+ * extraction) and requests JSON output when `json` is set.
+ */
 async function gemini(
   key: string,
   prompt: string,
@@ -68,6 +73,11 @@ async function gemini(
   return text.trim();
 }
 
+/**
+ * Maps a Task plus its payload to the Gemini prompt string and whether a JSON
+ * response is expected. One case per supported AI feature (summary, bullets,
+ * cover/resignation letters, resume extraction, autocomplete, etc.).
+ */
 function buildPrompt(task: Task, p: Record<string, unknown>): { prompt: string; json: boolean } {
   const role = (p.jobTitle as string) || "professional";
   switch (task) {
@@ -328,6 +338,11 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/ai — runs one AI task. Returns { fallback: true } whenever the key
+ * is missing or generation ultimately fails, so the client uses canned content
+ * instead of erroring. Parses JSON-mode replies (stripping ```json fences).
+ */
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ fallback: true });

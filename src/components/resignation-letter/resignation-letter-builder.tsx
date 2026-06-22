@@ -27,6 +27,7 @@ import {
 } from "@/lib/section-routes";
 import { useResignationLetterAutosave } from "@/lib/store/resignation-letter-documents-store";
 
+/** Maps the active step key to its corresponding step component (the wizard body). */
 function StepBody({ step }: { step: RLStep }) {
   switch (step) {
     case "heading":

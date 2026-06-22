@@ -6,6 +6,10 @@ import { SectionHeading } from "./field";
 import { EditorFooter } from "../section-footer";
 import { ADDITIONAL_CONFIG, ADDITIONAL_ORDER } from "./additional-config";
 
+/**
+ * Grid of buttons to add an extra resume section; each click appends a new
+ * section of that type to the store.
+ */
 export function AdditionalPicker({
   onBack,
   onReorder,

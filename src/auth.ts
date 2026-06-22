@@ -3,6 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { verifyCredentials } from "@/lib/users";
 
+// Auth providers. Email/password is always available; Google is added below
+// only when its OAuth env vars are present.
 const providers: NextAuthConfig["providers"] = [
   Credentials({
     name: "Email",
@@ -35,6 +37,8 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   );
 }
 
+// NextAuth instance: JWT sessions, custom /login page, and callbacks that carry
+// the sign-in provider + live name updates onto the session.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   session: { strategy: "jwt" },

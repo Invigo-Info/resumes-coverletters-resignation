@@ -1,3 +1,4 @@
+/** A saved resignation letter as listed on the dashboard, including the lines shown in its thumbnail. */
 export interface ResignationLetterDoc {
   id: string;
   title: string; // "John Mayer at Microsoft Corporation"

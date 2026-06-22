@@ -1,3 +1,4 @@
+/** A saved cover letter as listed on the dashboard. */
 export interface CoverLetterDoc {
   id: string;
   title: string; // "Software Developer at Acme"

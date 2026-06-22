@@ -22,14 +22,17 @@ import { ResignationLetterPreview } from "./resignation-letter-preview";
 import { RLField, IMPROVE_AI_ACTIONS } from "./widgets";
 import { cn } from "@/lib/utils";
 
+// The three editable sections of the write-mode editor.
 type Section = "personal" | "employer" | "content";
 
+// Left-hand navigation entries, one per editor section.
 const NAV: { key: Section; label: string; icon: React.ReactNode }[] = [
   { key: "personal", label: "Personal details", icon: <UserRound className="size-4" /> },
   { key: "employer", label: "Employer's info", icon: <Briefcase className="size-4" /> },
   { key: "content", label: "Letter content", icon: <Mail className="size-4" /> },
 ];
 
+/** Editor section for the resigner's name and contact details. */
 function PersonalSection() {
   const fullName = useResignationLetterStore((s) => s.fullName);
   const setFullName = useResignationLetterStore((s) => s.setFullName);
@@ -51,6 +54,7 @@ function PersonalSection() {
   );
 }
 
+/** Editor section for the addressee (manager/company) and the role being left. */
 function EmployerSection() {
   const employer = useResignationLetterStore((s) => s.employer);
   const patch = useResignationLetterStore((s) => s.patchEmployer);
@@ -72,6 +76,7 @@ function EmployerSection() {
   );
 }
 
+/** "Improve with AI" dropdown for the letter body: runs the chosen action and writes the result back. */
 function ImproveWithAI() {
   const letter = useResignationLetterStore((s) => s.letter);
   const setLetter = useResignationLetterStore((s) => s.setLetter);
@@ -123,6 +128,7 @@ function ImproveWithAI() {
   );
 }
 
+/** Editor section for the full letter body, with an inline AI-improve action. */
 function ContentSection() {
   const letter = useResignationLetterStore((s) => s.letter);
   const setLetter = useResignationLetterStore((s) => s.setLetter);
@@ -144,8 +150,13 @@ function ContentSection() {
   );
 }
 
+/**
+ * Manual edit mode: left section nav, center form (personal/employer/content),
+ * and a live preview. Advancing past the last section hands off to design mode.
+ */
 export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }) {
   const [section, setSection] = useState<Section>("personal");
+  // Linear order of the sections, driving the Back/Next buttons.
   const order: Section[] = ["personal", "employer", "content"];
   const idx = order.indexOf(section);
 

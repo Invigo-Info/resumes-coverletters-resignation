@@ -4,6 +4,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/** Styled form label that dims when its associated control is disabled. */
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label

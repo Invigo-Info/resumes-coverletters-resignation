@@ -67,6 +67,7 @@ const COVER_LETTER_STEPS = [
   "personal",
 ] as const;
 
+/** True if the slug is an editable cover-letter step (routable). */
 export function isCoverLetterSlug(slug: string): boolean {
   return (COVER_LETTER_STEPS as readonly string[]).includes(slug);
 }
@@ -86,6 +87,7 @@ const RESIGNATION_STEPS = [
   "contacts",
 ] as const;
 
+/** True if the slug is a valid resignation-letter step (routable). */
 export function isResignationSlug(slug: string): boolean {
   return (RESIGNATION_STEPS as readonly string[]).includes(slug);
 }

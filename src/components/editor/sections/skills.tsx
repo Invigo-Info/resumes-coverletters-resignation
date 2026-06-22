@@ -7,6 +7,7 @@ import { generateSkills } from "@/lib/ai/mock";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+/** A labeled row of clickable suggestion chips (e.g. "Hard skills"); hidden when empty. */
 function SuggestionGroup({
   label,
   items,
@@ -36,6 +37,10 @@ function SuggestionGroup({
   );
 }
 
+/**
+ * Editor section for skills: a renamable title, chosen-skill chips, free-form
+ * entry, and AI-generated hard/soft suggestions that can be regenerated.
+ */
 export function SkillsForm() {
   const skills = useResumeStore((s) => s.skills);
   const addSkill = useResumeStore((s) => s.addSkill);
@@ -57,6 +62,8 @@ export function SkillsForm() {
   const chosen = new Set(selected.map((sk) => sk.name.trim().toLowerCase()));
   const count = selected.length;
 
+  // Fetch fresh hard/soft suggestions for the current job title, excluding
+  // already-chosen skills; seed lets "Regenerate" produce a different set.
   const loadSuggestions = useCallback(
     async (nextSeed: number) => {
       setLoading(true);
@@ -72,6 +79,7 @@ export function SkillsForm() {
     [jobTitle]
   );
 
+  // Load an initial suggestion set once on mount.
   useEffect(() => {
     loadSuggestions(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,6 +95,7 @@ export function SkillsForm() {
     if (!exists) addSkill(clean);
   }
 
+  // Commit the free-text "add your own" draft and reset the input.
   function commitOwn() {
     add(draft);
     setDraft("");

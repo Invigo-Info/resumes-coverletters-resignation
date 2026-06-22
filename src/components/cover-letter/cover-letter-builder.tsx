@@ -31,6 +31,7 @@ import {
 } from "@/lib/section-routes";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 
+/** Maps the active step key to its corresponding step component (the wizard body). */
 function StepBody({ step }: { step: CLStep }) {
   const setIntent = useCoverLetterStore((s) => s.setJobIntent);
   const intentValue = useCoverLetterStore((s) => s.jobIntent.hasSpecificJob);

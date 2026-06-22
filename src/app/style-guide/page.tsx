@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
+// Single color/gradient swatch tile: a colored block plus its name and optional usage hint.
 function Swatch({
   name,
   className,
@@ -31,6 +32,7 @@ function Swatch({
   );
 }
 
+// Titled section wrapper grouping related style-guide examples under a heading.
 function Section({
   title,
   children,
@@ -48,6 +50,8 @@ function Section({
   );
 }
 
+// Design-system reference page showcasing brand tokens: colors, gradients,
+// typography, buttons, cards/inputs, and elevation. Documentation only.
 export default function StyleGuidePage() {
   return (
     <PageShell>

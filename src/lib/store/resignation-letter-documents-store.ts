@@ -35,6 +35,7 @@ export type ResignationLetterDocData = Pick<
   | "design"
 >;
 
+/** A saved resignation-letter draft as listed on the dashboard. */
 export interface ResignationLetterRecord {
   id: string;
   title: string;
@@ -50,11 +51,16 @@ interface ResignationLetterDocumentsState {
 }
 
 export const useResignationLetterDocumentsStore =
+  /**
+   * The dashboard's list of saved resignation-letter drafts, persisted to
+   * localStorage and mirrored to the server so drafts follow the user's account.
+   */
   create<ResignationLetterDocumentsState>()(
     persist(
       (set, get) => ({
         letters: [],
         upsertLetter: (record) => {
+          // Mirror the write to the server (best-effort) before updating local state.
           pushServerDocument("resignationLetters", record);
           set((s) => {
             const i = s.letters.findIndex((r) => r.id === record.id);
@@ -83,6 +89,7 @@ export const useResignationLetterDocumentsStore =
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+// Strip HTML tags to test whether the seeded/edited paragraphs have real text.
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
 /** Human title for a draft: "Full name at Company" (falls back gracefully). */
@@ -113,6 +120,7 @@ function hasContent(s: ResignationLetterState): boolean {
   );
 }
 
+/** Build a savable draft record from the live resignation-letter state. */
 function snapshot(s: ResignationLetterState): ResignationLetterRecord {
   return {
     id: s.id,

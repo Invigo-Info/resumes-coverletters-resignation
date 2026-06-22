@@ -8,6 +8,7 @@
  * To enable real AI: add GEMINI_API_KEY=... to resume-co/.env.local
  */
 
+/** Selectable summary tones (id + label + swatch) for the summary generator. */
 export const SUMMARY_TONES = [
   { id: "visionary", label: "Visionary", color: "#6366f1" },
   { id: "enthusiastic", label: "Enthusiastic", color: "#f97316" },
@@ -16,6 +17,7 @@ export const SUMMARY_TONES = [
   { id: "formal", label: "Formal", color: "#475569" },
 ] as const;
 
+/** One of the valid tone ids, derived from SUMMARY_TONES. */
 export type ToneId = (typeof SUMMARY_TONES)[number]["id"];
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 
+/**
+ * Dashboard empty state shown when the user has no documents yet. Illustrates
+ * the value and routes to the creation flow via a single primary call to action.
+ */
 export function EmptyState({
   heading = "If you don't have a resume yet, it's a great time to create one!",
   buttonLabel = "Build my resume",

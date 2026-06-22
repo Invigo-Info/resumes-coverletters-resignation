@@ -35,6 +35,10 @@ function blockIndexAtSelection(editor: ReturnType<typeof useEditor>): number {
   return found;
 }
 
+/**
+ * A single formatting button in the editor toolbar. Uses onMouseDown-preventDefault
+ * so clicking it doesn't blur/move the caret before the command runs.
+ */
 function ToolbarButton({
   active,
   onClick,
@@ -62,6 +66,11 @@ function ToolbarButton({
   );
 }
 
+/**
+ * Tiptap-backed rich text editor with a small formatting toolbar (bold, italic,
+ * lists, link). Emits HTML on change and reports which block the caret is in so
+ * the live preview can highlight the matching bullet/paragraph.
+ */
 export function RichTextEditor({
   value,
   onChange,
@@ -149,6 +158,7 @@ export function RichTextEditor({
           label="Link"
           active={editor.isActive("link")}
           onClick={() => {
+            // Prompt for a URL: a value sets the link; cancel/empty removes it.
             const url = window.prompt("Enter URL");
             if (url) editor.chain().focus().setLink({ href: url }).run();
             else editor.chain().focus().unsetLink().run();

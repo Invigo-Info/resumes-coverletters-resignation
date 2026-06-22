@@ -1,3 +1,4 @@
+// Escape HTML-significant characters so plain-text input can't inject markup.
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
