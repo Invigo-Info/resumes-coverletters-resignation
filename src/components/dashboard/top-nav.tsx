@@ -19,7 +19,7 @@ const TABS = [
   { label: "Resumes", href: "/" },
   { label: "Cover letters", href: "/cover-letters" },
   { label: "Resignation letters", href: "/resignation-letters" },
-  { label: "Jobs", href: "#" },
+  { label: "Jobs", href: "/jobs" },
 ];
 
 /**
