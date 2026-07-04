@@ -216,3 +216,13 @@
       0 18px 40px rgba(16, 24, 40, 0.1);
   }
 }
+
+/* Indeterminate progress bar for the Jobs re-matching loading state. */
+@keyframes jobs-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}

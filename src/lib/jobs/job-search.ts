@@ -5,7 +5,7 @@
  * the content of the user's resume: the target role drives the matching titles,
  * the listed skills feed the qualifications, and the resume's location is used
  * for on-site postings. The generator is fully deterministic (no Date.now /
- * Math.random) so the same resume always yields the same, stable list — which
+ * Math.random) so the same resume always yields the same, stable list - which
  * keeps server and client render output identical (no hydration mismatch) and
  * lets saved/dismissed job ids stay valid across sessions.
  */
@@ -20,7 +20,7 @@ export interface ResumeProfile {
   location: string;
 }
 
-/** A single generated job posting. */
+/** A single job posting (generated locally, or normalized from a live API). */
 export interface JobPosting {
   id: string;
   title: string;
@@ -32,19 +32,70 @@ export interface JobPosting {
   salaryLabel: string;
   /** Relative post age, e.g. "3h ago". */
   postedLabel: string;
-  /** 0–100 fit score derived from the role/skill overlap. */
+  /** 0-100 fit score derived from the role/skill overlap. */
   matchScore: number;
   /** One-line role summary shown atop the detail panel. */
   summary: string;
   responsibilities: string[];
   qualifications: string[];
+  /** Seniority level, e.g. "Senior", "Mid", "Lead" (best-effort). */
+  seniority?: string;
+  /** When the job was posted (epoch ms) - used for the date filter + sorting. */
+  postedAt?: number;
+  /** Where this posting came from ("live" = a real jobs API). */
+  source?: "generated" | "live";
+  /** Free-text job description (live postings only; may contain newlines). */
+  description?: string;
+  /** External link to the real posting / application (live postings only). */
+  applyUrl?: string;
 }
+
+/** How recently a job was posted (maps to the date-posted radios). */
+export type DatePosted = "24h" | "3d" | "week" | "month";
+/** Work-model filter (maps to the work-model radios). */
+export type WorkModelFilter = "remote_and_onsite" | "remote_only" | "onsite_only";
+
+/** The full set of job-search filters editable in the Edit filters modal. */
+export interface JobFilters {
+  /** One or more target job titles (OR logic in the query). */
+  jobTitles: string[];
+  /** Free-text location ("Tampa, FL (US)"); empty = anywhere. */
+  location: string;
+  datePosted: DatePosted;
+  workModel: WorkModelFilter;
+  sort: "best_match";
+}
+
+/** The product-default filter set for a resume role (used on load + Reset). */
+export function defaultFilters(role: string): JobFilters {
+  const r = role.trim();
+  return {
+    jobTitles: r ? [r] : [],
+    location: "",
+    datePosted: "month",
+    workModel: "remote_and_onsite",
+    sort: "best_match",
+  };
+}
+
+/** Human labels for the date-posted / work-model filter values. */
+export const DATE_POSTED_LABEL: Record<DatePosted, string> = {
+  "24h": "Past 24hrs",
+  "3d": "Past 3 days",
+  week: "Past week",
+  month: "Past month",
+};
+export const WORK_MODEL_LABEL: Record<WorkModelFilter, string> = {
+  remote_and_onsite: "Remote and on-site",
+  remote_only: "Remote only",
+  onsite_only: "On-site only",
+};
 
 /* ------------------------------------------------------------------ */
 /* Deterministic helpers                                              */
 /* ------------------------------------------------------------------ */
 
-/** Stable 32-bit string hash (FNV-1a) — used to seed every pseudo-random pick. */
+/** Stable 32-bit string hash (FNV-1a) - used to seed every pseudo-random pick. */
 function hashStr(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -78,7 +129,7 @@ function rotate<T>(arr: T[], seed: number, count: number): T[] {
 /* Role parsing                                                       */
 /* ------------------------------------------------------------------ */
 
-// Words that describe seniority rather than the field of work — stripped when
+// Words that describe seniority rather than the field of work - stripped when
 // finding the "head" word of a role ("Senior Marketing Manager" -> "Marketing").
 const SENIORITY = new Set([
   "senior",
@@ -223,6 +274,28 @@ const MODES: JobPosting["mode"][] = ["Remote", "Remote and on-site", "On-site"];
 /* Generator                                                          */
 /* ------------------------------------------------------------------ */
 
+/** Related job-title suggestions for a role (for the filter modal chips). */
+export function relatedTitles(role: string): string[] {
+  const parsed = parseRole(role.trim() || "Professional");
+  return buildTitles(parsed)
+    .filter((t) => t.toLowerCase() !== parsed.full.toLowerCase())
+    .slice(0, 6);
+}
+
+/**
+ * How many filter groups are "active" (differ from the product default): each
+ * selected job title, a set location, a non-default date, a non-default work
+ * model. Drives the count badge on the Edit filters button and modal header.
+ */
+export function activeFilterCount(f: JobFilters): number {
+  return (
+    f.jobTitles.length +
+    (f.location.trim() ? 1 : 0) +
+    (f.datePosted !== "month" ? 1 : 0) +
+    (f.workModel !== "remote_and_onsite" ? 1 : 0)
+  );
+}
+
 /** Build a varied set of related titles around the parsed role. */
 function buildTitles(r: ParsedRole): string[] {
   const { head, core, noun } = r;
@@ -308,6 +381,15 @@ function buildPosted(seed: number): string {
 
 const SENIOR_HINT = /(senior|director|head|vp|principal|chief|lead|staff)/i;
 
+/** Best-effort seniority label from a job title. */
+function seniorityFor(title: string): string {
+  const t = title.toLowerCase();
+  if (/(vp|vice president|chief|head of|director)/.test(t)) return "Executive";
+  if (/(senior|sr\.?|principal|staff|lead)/.test(t)) return "Senior";
+  if (/(junior|jr\.?|associate|entry)/.test(t)) return "Entry";
+  return "Mid";
+}
+
 /**
  * Generate the recommended job list for a resume profile. Deterministic: the
  * same profile (role + skills) always returns the same jobs in the same order.
@@ -343,6 +425,7 @@ export function generateJobs(profile: ResumeProfile): JobPosting[] {
       salaryLabel: buildSalary(seniorBoost, seed),
       postedLabel: buildPosted(seed),
       matchScore,
+      seniority: seniorityFor(title),
       summary: `Own and grow the ${parsed.head.toLowerCase()} function as a ${title} at ${pick(
         COMPANIES,
         seed
@@ -358,7 +441,63 @@ export function jobCountFor(role: string): number {
   return 4200 + (hashStr(role.toLowerCase()) % 14000);
 }
 
-/** Label + accent for the match-score badge. */
+/**
+ * Label + accent for a match score, on the brief's scale:
+ * 90-100 Perfect · 80-89 Strong · 75-79 Good · 50-74 Partial · <50 Low.
+ * `strong` (score >= 80) drives the green vs amber badge colour.
+ */
 export function matchMeta(score: number): { label: string; strong: boolean } {
-  return { label: score >= 80 ? "Strong match" : "Good match", strong: score >= 80 };
+  let label: string;
+  if (score >= 90) label = "Perfect match";
+  else if (score >= 80) label = "Strong match";
+  else if (score >= 75) label = "Good match";
+  else if (score >= 50) label = "Partial match";
+  else label = "Low match";
+  return { label, strong: score >= 80 };
+}
+
+/** Number of days implied by a date-posted filter value. */
+export const DATE_POSTED_DAYS: Record<DatePosted, number> = {
+  "24h": 1,
+  "3d": 3,
+  week: 7,
+  month: 30,
+};
+
+/**
+ * Whether a posting falls within `maxDays`. Uses `postedAt` (live jobs) when
+ * present, otherwise parses the deterministic `postedLabel` ("3d ago" / "5h ago")
+ * used by generated jobs - so date filtering works for both sources.
+ */
+export function postedWithinDays(job: JobPosting, maxDays: number): boolean {
+  if (typeof job.postedAt === "number") {
+    return (Date.now() - job.postedAt) / 86400000 <= maxDays;
+  }
+  const m = /^(\d+)\s*([hdmw])/.exec(job.postedLabel);
+  if (!m) return true;
+  const n = Number(m[1]);
+  const unit = m[2];
+  const days = unit === "h" ? n / 24 : unit === "d" ? n : unit === "w" ? n * 7 : n * 30;
+  return days <= maxDays;
+}
+
+/**
+ * Score a live posting's text (title + description) against the resume profile,
+ * so real postings still get a meaningful "Strong match" badge. Returns 62-96
+ * based on how many of the role/skill terms appear in the posting.
+ */
+export function scoreText(text: string, profile: ResumeProfile): number {
+  const hay = text.toLowerCase();
+  const roleWords = profile.role
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !SENIORITY.has(w));
+  const skillWords = profile.skills
+    .map((s) => s.toLowerCase().trim())
+    .filter(Boolean);
+  const terms = [...new Set([...roleWords, ...skillWords])];
+  if (!terms.length) return 75;
+  let hits = 0;
+  for (const t of terms) if (hay.includes(t)) hits++;
+  return Math.max(62, Math.min(96, Math.round(60 + (hits / terms.length) * 36)));
 }

@@ -1,0 +1,217 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Sparkles,
+  PenLine,
+  MessagesSquare,
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+} from "lucide-react";
+import { LogoMark } from "@/components/brand/logo-mark";
+import { PageShell } from "@/components/layout/page-shell";
+import { HomeButton } from "@/components/layout/home-button";
+import { HelpPill } from "@/components/layout/help-pill";
+import { TailorDialog } from "@/components/dashboard/tailor-dialog";
+import { CompanyLogo } from "@/components/jobs/company-logo";
+import { useApplyStore } from "@/lib/store/apply-store";
+import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+
+/** One improvement option card on the gateway. */
+function OptionCard({
+  icon,
+  title,
+  subtitle,
+  onClick,
+  primary,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-4 rounded-2xl border bg-card px-5 py-4 text-left shadow-card transition-colors hover:ring-2 ${
+        primary
+          ? "border-primary/30 ring-1 ring-primary/20 hover:ring-primary/40"
+          : "border-border hover:ring-border"
+      }`}
+    >
+      <span
+        className={`grid size-11 shrink-0 place-items-center rounded-xl ${
+          primary ? "bg-gradient-ai text-white" : "bg-secondary text-foreground"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-semibold text-foreground">{title}</span>
+        <span className="block text-sm text-muted-foreground">{subtitle}</span>
+      </span>
+      <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+    </button>
+  );
+}
+
+/**
+ * The application-strengthening gateway shown after Apply now on a job.
+ * "Let's make your application stronger" - offers Tailor resume, Write a cover
+ * letter, Prepare for the interview, or Continue without improvements, all
+ * carrying the same selected-job context.
+ */
+export default function ApplyGatewayPage() {
+  const router = useRouter();
+  const job = useApplyStore((s) => s.job);
+  const patchJobDetails = useCoverLetterStore((s) => s.patchJobDetails);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const [tailorOpen, setTailorOpen] = useState(false);
+
+  // Route "Write a cover letter" into the existing builder, seeded with the job.
+  const goCoverLetter = () => {
+    if (job) {
+      patchJobDetails({
+        desiredJobTitle: job.title,
+        companyName: job.company,
+        jobDescription:
+          job.description ||
+          [job.summary, ...job.responsibilities, ...job.qualifications].join("\n"),
+      });
+    }
+    router.push("/cover-letter/new");
+  };
+
+  const goInterview = () => router.push("/interview-prep");
+
+  const continueExternal = () => {
+    if (job?.applyUrl) window.open(job.applyUrl, "_blank", "noopener,noreferrer");
+  };
+
+  if (!mounted) {
+    return (
+      <PageShell>
+        <div className="mx-auto grid min-h-screen max-w-xl place-items-center px-4">
+          <div className="h-8 w-64 animate-pulse rounded-lg bg-secondary" />
+        </div>
+      </PageShell>
+    );
+  }
+
+  // Arrived without a selected job -> guide back to Jobs.
+  if (!job) {
+    return (
+      <PageShell>
+        <div className="absolute left-6 top-6 flex items-center gap-3">
+          <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
+          <Link href="/" aria-label="resume.co home">
+            <LogoMark />
+          </Link>
+        </div>
+        <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">No job selected</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pick a job from your recommendations, then choose Apply now to improve
+            your application.
+          </p>
+          <Link
+            href="/jobs"
+            className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            Browse jobs
+          </Link>
+        </div>
+        <HelpPill />
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell>
+      <div className="absolute left-6 top-6 flex items-center gap-3">
+        <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
+        <Link href="/jobs" aria-label="resume.co home">
+          <LogoMark />
+        </Link>
+      </div>
+
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4 py-16">
+        {/* Job context */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CompanyLogo
+            company={job.company}
+            className="size-6 rounded-md"
+            initialClassName="text-xs"
+          />
+          <span className="font-medium text-foreground">{job.title}</span>
+          <span>at {job.company}</span>
+        </div>
+
+        <h1 className="mt-4 text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          Let&apos;s make your application stronger
+        </h1>
+
+        <div className="mt-10 w-full space-y-4">
+          <OptionCard
+            primary
+            icon={<Sparkles className="size-5" />}
+            title="Tailor your resume"
+            subtitle="Boost your interview chances 3x"
+            onClick={() => setTailorOpen(true)}
+          />
+          <OptionCard
+            icon={<PenLine className="size-5" />}
+            title="Write a cover letter"
+            subtitle="AI will guide you step by step"
+            onClick={goCoverLetter}
+          />
+          <OptionCard
+            icon={<MessagesSquare className="size-5" />}
+            title="Prepare for the interview"
+            subtitle="Go in confident"
+            onClick={goInterview}
+          />
+        </div>
+
+        {/* Bypass */}
+        <button
+          type="button"
+          onClick={continueExternal}
+          disabled={!job.applyUrl}
+          className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+        >
+          Continue without improvements
+          {job.applyUrl ? (
+            <ExternalLink className="size-4" />
+          ) : (
+            <ArrowRight className="size-4" />
+          )}
+        </button>
+        {!job.applyUrl && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            No application link is available for this posting.
+          </p>
+        )}
+      </div>
+
+      <TailorDialog
+        open={tailorOpen}
+        onClose={() => setTailorOpen(false)}
+        resumeTitle={`Resume, ${job.title}`}
+        initialJobDescription={
+          job.description ||
+          [job.summary, ...job.responsibilities, ...job.qualifications].join("\n")
+        }
+      />
+
+      <HelpPill />
+    </PageShell>
+  );
+}

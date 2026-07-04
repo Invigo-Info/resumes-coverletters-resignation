@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Loader2, Copy, Check } from "lucide-react";
 import { tailorResume } from "@/lib/ai/mock";
@@ -9,15 +9,20 @@ import { tailorResume } from "@/lib/ai/mock";
  * AI "tailor this resume" modal: takes a pasted job description and returns an
  * optimized summary plus suggested keywords (via a mock AI helper), with a
  * copy-to-clipboard affordance for the generated summary.
+ *
+ * When `initialJobDescription` is supplied (e.g. opened from a job's Scoreboard),
+ * the description is pre-filled and the tailoring runs automatically.
  */
 export function TailorDialog({
   open,
   onClose,
   resumeTitle,
+  initialJobDescription,
 }: {
   open: boolean;
   onClose: () => void;
   resumeTitle: string;
+  initialJobDescription?: string;
 }) {
   const [jd, setJd] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,16 +32,27 @@ export function TailorDialog({
   const [copied, setCopied] = useState(false);
 
   /** Send the job description to the AI helper and show the tailored result. */
-  async function run() {
-    if (!jd.trim()) return;
+  async function run(description?: string) {
+    const text = (description ?? jd).trim();
+    if (!text) return;
     setLoading(true);
     setResult(null);
-    // Resume titles are "Name, Job title" — pull the title half for context.
+    // Resume titles are "Name, Job title" - pull the title half for context.
     const jobTitle = resumeTitle.split(",")[1]?.trim();
-    const res = await tailorResume({ jobDescription: jd, jobTitle });
+    const res = await tailorResume({ jobDescription: text, jobTitle });
     setResult(res);
     setLoading(false);
   }
+
+  // Pre-fill + auto-run when opened from a job posting's Scoreboard CTA.
+  useEffect(() => {
+    if (open && initialJobDescription) {
+      setJd(initialJobDescription);
+      setResult(null);
+      run(initialJobDescription);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialJobDescription]);
 
   /** Copy the tailored summary and flash a transient "Copied" confirmation. */
   function copySummary() {
@@ -100,7 +116,7 @@ export function TailorDialog({
               </div>
 
               <button
-                onClick={run}
+                onClick={() => run()}
                 disabled={loading || !jd.trim()}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-ai px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
               >

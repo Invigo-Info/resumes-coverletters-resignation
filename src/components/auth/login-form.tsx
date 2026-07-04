@@ -21,16 +21,47 @@ function GoogleGlyph() {
 type Mode = "signin" | "signup";
 
 /**
+ * Turn a NextAuth `?error=<code>` from a failed OAuth round-trip into a
+ * human-readable message. (redirect_uri_mismatch never reaches us - Google
+ * shows that on its own page - so it isn't listed here.)
+ */
+function messageForAuthError(code?: string): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "OAuthAccountNotLinked":
+      return "This email is already registered with a different sign-in method. Sign in with your email and password instead.";
+    case "AccessDenied":
+      return "Google sign-in was blocked. If this app is still in testing, ask the owner to add your email as a test user in the Google Cloud console.";
+    case "Configuration":
+      return "Google sign-in is misconfigured on the server. Check the Google OAuth credentials.";
+    case "OAuthCallbackError":
+    case "OAuthSignInError":
+    case "Callback":
+      return "Google sign-in didn't complete. Please try again.";
+    default:
+      return "Sign-in failed. Please try again.";
+  }
+}
+
+/**
  * Combined sign-in / sign-up form. Toggles between modes, validates email and
  * password client-side, registers via /api/register on sign-up, then signs in
  * with NextAuth credentials. Offers Google OAuth when configured.
  */
-export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function LoginForm({
+  googleEnabled,
+  initialError,
+}: {
+  googleEnabled: boolean;
+  initialError?: string;
+}) {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    messageForAuthError(initialError)
+  );
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 

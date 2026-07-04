@@ -25,7 +25,9 @@ type Task =
   | "rewriteBullets"
   | "rankChips"
   | "resignationLetter"
-  | "improveText";
+  | "improveText"
+  | "scoreJob"
+  | "interviewPrep";
 
 /** Optional file (e.g. an uploaded PDF) sent inline to the model. */
 interface InlineFile {
@@ -318,6 +320,95 @@ Job description:
 Candidate's current summary:
 """${p.summary || ""}"""`,
       };
+    case "scoreJob": {
+      const resume =
+        (p.resume as {
+          role?: string;
+          skills?: string[];
+          summary?: string;
+          experience?: string;
+        }) || {};
+      const job =
+        (p.job as { title?: string; company?: string; description?: string }) || {};
+      return {
+        json: true,
+        prompt: `You are a resume-to-job match analyst. Compare the candidate resume to the job posting and return an explainable match scoreboard as JSON with EXACTLY these keys:
+{
+  "score": number,            // 0-100 overall match
+  "label": string,            // one of "Perfect match","Strong match","Good match","Partial match","Low match"
+  "summary": string,          // 2-3 sentences: why it's a match and the main gap. Specific, not generic.
+  "categories": [
+    { "name": "Position", "items": [ { "label": string, "matched": boolean } ] },
+    { "name": "Requirements", "items": [ { "label": string, "matched": boolean } ] },
+    { "name": "Responsibilities", "items": [ { "label": string, "matched": boolean } ] }
+  ],
+  "mainGaps": [string]        // labels of the most important missing items
+}
+Rules: 4-6 items per category, drawn from the job posting. Set "matched": true only when the resume shows clear evidence (a named skill, a matching title, or described experience). Base "score" on weighted fit (Position 30%, Requirements 35%, Responsibilities 25%, bonus 10%). Keep "summary" specific to this candidate and job, never generic. Return JSON only, no markdown.
+
+CANDIDATE RESUME:
+role: ${resume.role || ""}
+skills: ${JSON.stringify(resume.skills || [])}
+summary: """${resume.summary || ""}"""
+experience: """${(resume.experience || "").slice(0, 4000)}"""
+
+JOB POSTING:
+title: ${job.title || ""}
+company: ${job.company || ""}
+description: """${(job.description || "").slice(0, 4000)}"""`,
+      };
+    }
+    case "interviewPrep": {
+      const job =
+        (p.job as {
+          title?: string;
+          company?: string;
+          location?: string;
+          salary?: string;
+          seniority?: string;
+          description?: string;
+        }) || {};
+      const resume =
+        (p.resume as {
+          role?: string;
+          skills?: string[];
+          summary?: string;
+          experience?: string;
+        }) || {};
+      const type = (p.interviewType as string) || "screening";
+      const custom = (p.customDetail as string) || "";
+      const exclude = (p.exclude as string[]) || [];
+      return {
+        json: true,
+        prompt: `Generate a job-specific interview-prep sheet as JSON with EXACTLY these keys:
+{
+  "company": { "name": string, "description": string, "bullets": [3-4 short things to know / research before the call] },
+  "role": { "title": string, "keySkills": [4-6 key skills for this role], "summary": string },
+  "values": [3-4 things the employer likely values in people],
+  "mentions": [3-4 things the candidate should be sure to mention, grounded in their resume],
+  "questions": [ { "question": string, "guidance": [2-3 short coaching lines], "sample": "optional short sample answer grounded in the resume" } ],
+  "candidateQuestions": [3-5 questions the candidate can ask the interviewer]
+}
+Interview type: "${type}"${custom ? ` (custom details: "${custom}")` : ""}.
+Tailor questions + guidance to that type: screening = basics/expectations/availability/salary framing; manager = leadership/impact/fit; technical = hard-skill proof/process/tools; other = use the custom details.
+Generate 5-6 questions.${exclude.length ? ` Do NOT repeat any of these already-shown questions: ${JSON.stringify(exclude)}.` : ""}
+Rules: Do NOT invent company facts (founded year, HQ, employees, clients, revenue) - if unknown, use research prompts like "Ask about this in the interview". Base "mentions" and any "sample" answers ONLY on the candidate resume - never fabricate experience, metrics, employers, or tools. Return JSON only, no markdown.
+
+JOB:
+title: ${job.title || ""}
+company: ${job.company || ""}
+location: ${job.location || ""}
+salary: ${job.salary || ""}
+seniority: ${job.seniority || ""}
+description: """${(job.description || "").slice(0, 3500)}"""
+
+CANDIDATE:
+role: ${resume.role || ""}
+skills: ${JSON.stringify(resume.skills || [])}
+summary: """${(resume.summary || "").slice(0, 1200)}"""
+experience: """${(resume.experience || "").slice(0, 2500)}"""`,
+      };
+    }
   }
 }
 
