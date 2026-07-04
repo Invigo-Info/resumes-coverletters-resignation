@@ -1,176 +1,151 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronUp,
-  Check,
-  X,
-  Sparkles,
-  User,
-  ClipboardCheck,
-  ListChecks,
-  Loader2,
-} from "lucide-react";
-import { matchMeta } from "@/lib/jobs/job-search";
-import type {
-  MatchScoreboard,
-  ScoreCategory,
-} from "@/lib/jobs/scoreboard";
+import { useEffect, useState } from "react";
+import { Check, X, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ringColor, type KeywordMatch } from "@/lib/jobs/keyword-match";
 
-/** Circular progress ring around the match percentage. */
-function ScoreRing({ score }: { score: number }) {
-  const { strong } = matchMeta(score);
-  const color = strong ? "#16A34A" : "#D97706";
-  const r = 34;
+/**
+ * Circular progress ring around a match percentage. Sized via `size` so it can
+ * be small on job cards and large in the detail panel.
+ */
+export function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
+  const stroke = size >= 60 ? 5 : 4;
+  const r = (size - stroke) / 2 - 1;
   const c = 2 * Math.PI * r;
-  const offset = c * (1 - Math.max(0, Math.min(100, score)) / 100);
+  const pct = Math.max(0, Math.min(100, score));
+  const offset = c * (1 - pct / 100);
+  const fontClass = size >= 84 ? "text-2xl" : size >= 60 ? "text-xl" : "text-sm";
   return (
-    <span className="relative grid size-[76px] shrink-0 place-items-center">
-      <svg width="76" height="76" viewBox="0 0 76 76" className="-rotate-90">
-        <circle cx="38" cy="38" r={r} fill="none" stroke="#E5E7EB" strokeWidth="5" />
+    <span
+      className="relative grid shrink-0 place-items-center"
+      style={{ width: size, height: size }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
         <circle
-          cx="38"
-          cy="38"
+          cx={size / 2}
+          cy={size / 2}
           r={r}
           fill="none"
-          stroke={color}
-          strokeWidth="5"
+          stroke={ringColor(score)}
+          strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
         />
       </svg>
-      <span className="absolute text-xl font-bold text-foreground">{score}</span>
+      <span className={cn("absolute font-bold text-foreground", fontClass)}>{score}</span>
     </span>
   );
 }
 
-/** Icon for each scoreboard category. */
-function CategoryIcon({ name }: { name: ScoreCategory["name"] }) {
-  const cls = "size-4 text-[#16A34A]";
-  if (name === "Requirements") return <ClipboardCheck className={cls} />;
-  if (name === "Responsibilities") return <ListChecks className={cls} />;
-  return <User className={cls} />;
-}
-
-/** One category card with its checklist rows. */
-function CategoryCard({ category }: { category: ScoreCategory }) {
+/** One keyword chip: green with a check (covered) or grey with an X (missing). */
+function KeywordChip({ label, matched }: { label: string; matched?: boolean }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-2">
-        <CategoryIcon name={category.name} />
-        <h4 className="text-sm font-semibold text-foreground">{category.name}</h4>
-      </div>
-      <div className="mt-3 space-y-2.5 border-t border-border pt-3">
-        {category.items.map((item, i) => (
-          <div key={i} className="flex items-start justify-between gap-3">
-            <span className="text-sm leading-snug text-muted-foreground">
-              {item.label}
-            </span>
-            {item.matched ? (
-              <Check className="mt-0.5 size-4 shrink-0 text-[#16A34A]" aria-label="Covered" />
-            ) : (
-              <X className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-label="Missing" />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
+        matched ? "bg-[#EAF7EE] text-[#166534]" : "bg-secondary text-muted-foreground"
+      )}
+    >
+      {matched ? (
+        <Check className="size-3.5 text-[#16A34A]" aria-hidden="true" />
+      ) : (
+        <X className="size-3.5 text-muted-foreground" aria-hidden="true" />
+      )}
+      {label}
+    </span>
   );
 }
 
+/** The "+ N more" expander for a keyword group. */
+function MoreButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center rounded-full px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+    >
+      + {count} more
+    </button>
+  );
+}
+
+const PREVIEW = 5;
+
 /**
- * The explainable match Scoreboard inside the job detail panel. Collapsed: label,
- * short explanation, score ring + chevron, and the Tailor CTA. Expanded (chevron):
- * the ring stays visible and the Position/Requirements/Responsibilities category
- * cards appear below with matched (check) / missing (X) rows.
+ * The "Job keywords in your resume" match card inside the job detail panel.
+ * Left: the score ring + label + Improve-keywords CTA. Right: the resume's
+ * matched keywords (green check) followed by the missing keywords (grey X),
+ * each group collapsed to a short preview with a "+ N more" expander.
  */
-export function MatchScoreboard({
-  scoreboard,
-  loading,
-  fallbackScore,
-  expanded,
-  onToggle,
-  onTailor,
+export function KeywordMatchCard({
+  match,
+  onImprove,
 }: {
-  scoreboard: MatchScoreboard | null;
-  loading: boolean;
-  /** Score to show in the ring before the full analysis resolves. */
-  fallbackScore: number;
-  expanded: boolean;
-  onToggle: () => void;
-  onTailor: () => void;
+  match: KeywordMatch;
+  onImprove: () => void;
 }) {
-  const score = scoreboard?.score ?? fallbackScore;
-  const label = scoreboard?.label ?? matchMeta(score).label;
-  const headline =
-    score >= 90
-      ? "Perfect match - tailor your resume to get noticed"
-      : `${label} - tailor your resume to stand out`;
+  const [allMatched, setAllMatched] = useState(false);
+  const [allMissing, setAllMissing] = useState(false);
+
+  // Collapse both groups again whenever the selected job changes.
+  useEffect(() => {
+    setAllMatched(false);
+    setAllMissing(false);
+  }, [match]);
+
+  const matchedShown = allMatched ? match.matched : match.matched.slice(0, PREVIEW);
+  const missingShown = allMissing ? match.missing : match.missing.slice(0, PREVIEW);
+  const moreMatched = match.matched.length - matchedShown.length;
+  const moreMissing = match.missing.length - missingShown.length;
+  const hasKeywords = match.matched.length > 0 || match.missing.length > 0;
 
   return (
-    <div className="rounded-2xl bg-secondary/60 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-foreground">{headline}</h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-            {loading && !scoreboard ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-3.5 animate-spin" />
-                Analysing how your resume matches this role…
-              </span>
-            ) : (
-              scoreboard?.summary
-            )}
-          </p>
-        </div>
-
-        {/* Score ring + expand chevron */}
-        <div className="flex shrink-0 flex-col items-center gap-1">
-          <ScoreRing score={score} />
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="grid gap-5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-6">
+        {/* Left: ring + label + improve CTA */}
+        <div className="flex flex-col items-center gap-2 text-center">
+          <p className="text-sm font-medium text-muted-foreground">{match.label}</p>
+          <ScoreRing score={match.score} size={96} />
           <button
             type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Collapse match details" : "Expand match details"}
-            className="grid size-6 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+            onClick={onImprove}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-foreground/20"
           >
-            {expanded ? (
-              <ChevronUp className="size-4" />
-            ) : (
-              <ChevronDown className="size-4" />
-            )}
+            <Sparkles className="size-3.5 text-[var(--ai-from)]" />
+            Improve keywords
           </button>
         </div>
-      </div>
 
-      <button
-        type="button"
-        onClick={onTailor}
-        className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-card px-4 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-background"
-      >
-        <Sparkles className="size-3.5 text-[var(--ai-from)]" />
-        Tailor resume to this job
-      </button>
-
-      {/* Expanded checklist */}
-      {expanded && (
-        <div className="mt-4 space-y-3">
-          {loading && !scoreboard ? (
-            [0, 1].map((i) => (
-              <div key={i} className="h-28 animate-pulse rounded-xl bg-card" />
-            ))
-          ) : scoreboard && scoreboard.categories.length > 0 ? (
-            scoreboard.categories.map((c) => (
-              <CategoryCard key={c.name} category={c} />
-            ))
+        {/* Right: keyword chips */}
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">
+            Job keywords in your resume
+          </h3>
+          {hasKeywords ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {matchedShown.map((k) => (
+                <KeywordChip key={`m-${k}`} label={k} matched />
+              ))}
+              {moreMatched > 0 && (
+                <MoreButton count={moreMatched} onClick={() => setAllMatched(true)} />
+              )}
+              {missingShown.map((k) => (
+                <KeywordChip key={`x-${k}`} label={k} />
+              ))}
+              {moreMissing > 0 && (
+                <MoreButton count={moreMissing} onClick={() => setAllMissing(true)} />
+              )}
+            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Detailed breakdown is unavailable for this posting.
+            <p className="mt-3 text-sm text-muted-foreground">
+              Keyword analysis is unavailable for this posting.
             </p>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

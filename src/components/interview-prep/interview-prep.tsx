@@ -214,9 +214,9 @@ export function InterviewPrepView() {
                   onClick={() =>
                     isOther ? setOtherExpanded((v) => !v) : generate(t.id)
                   }
-                  className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-card transition-colors hover:ring-2 hover:ring-border"
+                  className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-card transition-colors hover:border-primary-strong"
                 >
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary text-foreground">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-tile-strong text-white">
                     {TYPE_ICON[t.id]}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -227,7 +227,7 @@ export function InterviewPrepView() {
                       {t.subtitle}
                     </span>
                   </span>
-                  <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
+                  <ArrowRight className="size-5 shrink-0 text-primary" />
                 </button>
 
                 {isOther && otherExpanded && (

@@ -26,36 +26,26 @@ function OptionCard({
   title,
   subtitle,
   onClick,
-  primary,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   onClick: () => void;
-  primary?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-4 rounded-2xl border bg-card px-5 py-4 text-left shadow-card transition-colors hover:ring-2 ${
-        primary
-          ? "border-primary/30 ring-1 ring-primary/20 hover:ring-primary/40"
-          : "border-border hover:ring-border"
-      }`}
+      className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-card transition-colors hover:border-primary-strong"
     >
-      <span
-        className={`grid size-11 shrink-0 place-items-center rounded-xl ${
-          primary ? "bg-gradient-ai text-white" : "bg-secondary text-foreground"
-        }`}
-      >
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-tile-strong text-white">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-base font-semibold text-foreground">{title}</span>
         <span className="block text-sm text-muted-foreground">{subtitle}</span>
       </span>
-      <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      <ChevronRight className="size-5 shrink-0 text-primary" />
     </button>
   );
 }
@@ -160,7 +150,6 @@ export default function ApplyGatewayPage() {
 
         <div className="mt-10 w-full space-y-4">
           <OptionCard
-            primary
             icon={<Sparkles className="size-5" />}
             title="Tailor your resume"
             subtitle="Boost your interview chances 3x"

@@ -82,7 +82,7 @@ export function TailorDialog({
           >
             {/* Header */}
             <div className="flex items-start gap-3 border-b border-border px-6 py-5">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-ai text-white">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-tile-strong text-white">
                 <Sparkles className="size-5" />
               </span>
               <div className="flex-1">

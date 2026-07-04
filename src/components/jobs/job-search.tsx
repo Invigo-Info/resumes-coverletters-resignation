@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ChevronDown, ArrowUpDown, FileText, Undo2 } from "lucide-react";
+import { ChevronDown, ArrowUpDown, FileText, Undo2, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -16,13 +16,14 @@ import { useResumeStore } from "@/lib/store/resume-store";
 import { useJobsStore } from "@/lib/store/jobs-store";
 import {
   generateJobs,
-  jobCountFor,
   postedWithinDays,
+  postedAgeHours,
   DATE_POSTED_DAYS,
   type JobPosting,
   type ResumeProfile,
 } from "@/lib/jobs/job-search";
-import type { MatchScoreboard, ScoreResume } from "@/lib/jobs/scoreboard";
+import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
+import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { TailorDialog } from "@/components/dashboard/tailor-dialog";
 import { JobCard } from "./job-card";
 import { JobDetail } from "./job-detail";
@@ -45,15 +46,128 @@ const stripHtml = (html: string) =>
   html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 /* ------------------------------------------------------------------ */
-/* Page body                                                          */
+/* Tabs + sort                                                        */
 /* ------------------------------------------------------------------ */
 
 type Tab = "recommended" | "saved";
+type SortMode = "match" | "new" | "old";
+
+const SORT_LABEL: Record<SortMode, string> = {
+  match: "Match",
+  new: "New to old",
+  old: "Old to new",
+};
+
+/** A Search / Saved toggle pill in the list header. */
+function TabPill({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-foreground text-background"
+          : "bg-secondary text-foreground hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+/** The "Match / New to old / Old to new" sort dropdown. */
+function SortMenu({ value, onChange }: { value: SortMode; onChange: (v: SortMode) => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground outline-none transition-colors hover:border-foreground/20">
+        <ArrowUpDown className="size-4 text-muted-foreground" />
+        {SORT_LABEL[value]}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {(["match", "new", "old"] as SortMode[]).map((m) => (
+          <DropdownMenuItem key={m} onClick={() => onChange(m)}>
+            <span
+              className={cn(
+                "grid size-4 place-items-center rounded-full border",
+                value === m ? "border-primary" : "border-border"
+              )}
+            >
+              {value === m && <span className="size-2 rounded-full bg-primary" />}
+            </span>
+            {SORT_LABEL[m]}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** The list-column header: Search/Saved pills + result count + sort control. */
+function ListHeader({
+  tab,
+  onTab,
+  savedCount,
+  count,
+  sortMode,
+  onSort,
+  showMeta,
+}: {
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  savedCount: number;
+  count: number;
+  sortMode: SortMode;
+  onSort: (v: SortMode) => void;
+  showMeta: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <TabPill active={tab === "recommended"} onClick={() => onTab("recommended")}>
+          Search
+        </TabPill>
+        <TabPill
+          active={tab === "saved"}
+          onClick={() => onTab("saved")}
+          icon={<Heart className={cn("size-3.5", tab === "saved" && "fill-current")} />}
+        >
+          Saved
+          {savedCount > 0 && <span className="opacity-70">{savedCount}</span>}
+        </TabPill>
+      </div>
+      {showMeta && (
+        <div className="flex items-center gap-3">
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            {count} found
+          </span>
+          <SortMenu value={sortMode} onChange={onSort} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page body                                                          */
+/* ------------------------------------------------------------------ */
 
 /**
- * The Jobs experience: resume-matched Recommended jobs (with filters, an
- * explainable Scoreboard, save/dismiss) and a Saved jobs tab (with an undo
- * stack). All results derive from the resume the user built/uploaded.
+ * The Jobs experience: resume-matched Recommended jobs (with filters, keyword
+ * match rings, an explainable keyword match card, save/dismiss) and a Saved jobs
+ * tab (with an undo stack). All results derive from the resume the user
+ * built/uploaded.
  */
 export function JobSearch() {
   const resumes = useDocumentsStore((s) => s.resumes);
@@ -81,6 +195,7 @@ export function JobSearch() {
   useEffect(() => setMounted(true), []);
 
   const [tab, setTab] = useState<Tab>("recommended");
+  const [sortMode, setSortMode] = useState<SortMode>("match");
   const [roleIndex, setRoleIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savedSelectedId, setSavedSelectedId] = useState<string | null>(null);
@@ -94,7 +209,6 @@ export function JobSearch() {
 
   // Live results from /api/jobs (null = not loaded yet).
   const [liveJobs, setLiveJobs] = useState<JobPosting[] | null>(null);
-  const [liveCount, setLiveCount] = useState<number | null>(null);
   const [jobsLoading, setJobsLoading] = useState(false);
 
   /* ----- Build one profile per resume ----- */
@@ -186,21 +300,13 @@ export function JobSearch() {
     });
     fetch(`/api/jobs?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { jobs?: JobPosting[]; count?: number } | null) => {
+      .then((data: { jobs?: JobPosting[] } | null) => {
         if (!alive) return;
         const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
-        if (jobs.length) {
-          setLiveJobs(jobs);
-          setLiveCount(typeof data?.count === "number" ? data.count : jobs.length);
-        } else {
-          setLiveJobs(generateJobs(profile));
-          setLiveCount(jobCountFor(profile.role));
-        }
+        setLiveJobs(jobs.length ? jobs : generateJobs(profile));
       })
       .catch(() => {
-        if (!alive) return;
-        setLiveJobs(generateJobs(profile));
-        setLiveCount(jobCountFor(profile.role));
+        if (alive) setLiveJobs(generateJobs(profile));
       })
       .finally(() => {
         if (alive) setJobsLoading(false);
@@ -211,22 +317,49 @@ export function JobSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.role, filtersKey]);
 
-  /* ----- Apply work-model + date + dismissed filters client-side ----- */
+  /* ----- Keyword match score per job (drives rings + Match sort) ----- */
+  const scores = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!profile) return m;
+    for (const j of liveJobs ?? []) m.set(j.id, buildKeywordMatch(j, profile.resume).score);
+    for (const j of Object.values(saved))
+      if (!m.has(j.id)) m.set(j.id, buildKeywordMatch(j, profile.resume).score);
+    return m;
+  }, [liveJobs, saved, profile]);
+
+  const scoreOf = (job: JobPosting) => scores.get(job.id) ?? job.matchScore;
+
+  /** Sort a list by the active sort mode (Match / New to old / Old to new). */
+  const sortJobs = (jobs: JobPosting[]): JobPosting[] => {
+    const arr = [...jobs];
+    arr.sort((a, b) => {
+      if (sortMode === "match") return scoreOf(b) - scoreOf(a);
+      const ah = postedAgeHours(a);
+      const bh = postedAgeHours(b);
+      return sortMode === "new" ? ah - bh : bh - ah;
+    });
+    return arr;
+  };
+
+  /* ----- Apply work-model + date + dismissed filters, then sort ----- */
   const recommended = useMemo(() => {
     const jobs = liveJobs ?? [];
     const maxDays = DATE_POSTED_DAYS[filters.datePosted];
-    return jobs.filter((j) => {
+    const filtered = jobs.filter((j) => {
       if (dismissed.includes(j.id)) return false;
       if (filters.workModel === "remote_only" && j.mode === "On-site") return false;
       if (filters.workModel === "onsite_only" && j.mode === "Remote") return false;
       if (!postedWithinDays(j, maxDays)) return false;
       return true;
     });
-  }, [liveJobs, dismissed, filters.workModel, filters.datePosted]);
+    return sortJobs(filtered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveJobs, dismissed, filters.workModel, filters.datePosted, sortMode, scores]);
 
   const savedJobs = useMemo(
-    () => Object.values(saved).sort((a, b) => b.matchScore - a.matchScore),
-    [saved]
+    () => sortJobs(Object.values(saved)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saved, sortMode, scores]
   );
 
   /* ----- Keep selections valid ----- */
@@ -274,14 +407,14 @@ export function JobSearch() {
     }
   };
 
-  const openTailor = (job: JobPosting, scoreboard: MatchScoreboard | null) => {
+  const openTailor = (job: JobPosting, missing: string[]) => {
     const jd =
       job.description ||
       [
         job.summary,
         ...job.responsibilities,
         ...job.qualifications,
-        ...(scoreboard?.mainGaps ?? []).map((g) => `Requirement: ${g}`),
+        ...missing.map((m) => `Keyword: ${m}`),
       ].join("\n");
     setTailor({ open: true, jd, role: job.title });
   };
@@ -335,7 +468,6 @@ export function JobSearch() {
   }
 
   const role = profile?.role ?? "";
-  const count = liveCount ?? jobCountFor(role);
   const showLoading = jobsLoading && liveJobs === null;
 
   const selectedRec = recommended.find((j) => j.id === selectedId) ?? null;
@@ -343,35 +475,6 @@ export function JobSearch() {
 
   return (
     <div>
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-border">
-        {(
-          [
-            ["recommended", "Recommended jobs"],
-            ["saved", "Saved jobs"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={cn(
-              "-mb-px border-b-2 pb-3 text-sm font-medium transition-colors",
-              tab === key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-            {key === "saved" && savedJobs.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-foreground">
-                {savedJobs.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       {tab === "recommended" ? (
         <RecommendedView
           role={role}
@@ -380,20 +483,23 @@ export function JobSearch() {
           filters={filters}
           onEditFilters={() => setEditOpen(true)}
           onResetFilters={() => resetFilters(role)}
-          count={count}
           showLoading={showLoading}
           list={recommended}
           selected={selectedRec}
           selectedId={selectedId}
           onSelect={selectRecommended}
           onSave={saveFromRecommended}
-          onDismiss={(id, reason) => {
-            dismiss(id, reason);
-          }}
+          onDismiss={(id, reason) => dismiss(id, reason)}
           savedMap={saved}
           resume={profile.resume}
+          scoreOf={scoreOf}
           onTailor={openTailor}
           detailRef={detailRef}
+          tab={tab}
+          onTab={setTab}
+          savedCount={savedJobs.length}
+          sortMode={sortMode}
+          onSort={setSortMode}
         />
       ) : (
         <SavedView
@@ -405,8 +511,13 @@ export function JobSearch() {
           onRemove={removeSaved}
           onRestore={restoreSaved}
           resume={profile.resume}
+          scoreOf={scoreOf}
           onTailor={openTailor}
           detailRef={detailRef}
+          tab={tab}
+          onTab={setTab}
+          sortMode={sortMode}
+          onSort={setSortMode}
         />
       )}
 
@@ -439,7 +550,6 @@ function RecommendedView({
   filters,
   onEditFilters,
   onResetFilters,
-  count,
   showLoading,
   list,
   selected,
@@ -449,8 +559,14 @@ function RecommendedView({
   onDismiss,
   savedMap,
   resume,
+  scoreOf,
   onTailor,
   detailRef,
+  tab,
+  onTab,
+  savedCount,
+  sortMode,
+  onSort,
 }: {
   role: string;
   profiles: Profile[];
@@ -458,7 +574,6 @@ function RecommendedView({
   filters: ReturnType<typeof useJobsStore.getState>["filters"];
   onEditFilters: () => void;
   onResetFilters: () => void;
-  count: number;
   showLoading: boolean;
   list: JobPosting[];
   selected: JobPosting | null;
@@ -468,8 +583,14 @@ function RecommendedView({
   onDismiss: (id: string, reason: string) => void;
   savedMap: Record<string, JobPosting>;
   resume: ScoreResume;
-  onTailor: (job: JobPosting, sb: MatchScoreboard | null) => void;
+  scoreOf: (job: JobPosting) => number;
+  onTailor: (job: JobPosting, missing: string[]) => void;
   detailRef: React.RefObject<HTMLDivElement | null>;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  savedCount: number;
+  sortMode: SortMode;
+  onSort: (v: SortMode) => void;
 }) {
   return (
     <div>
@@ -505,58 +626,58 @@ function RecommendedView({
       {showLoading ? (
         <JobsLoading />
       ) : (
-        <>
-          {/* Count + sort */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {list.length > 0
-                ? `${count.toLocaleString("en-US")} jobs found`
-                : "No matching jobs"}
-            </p>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground">
-              <ArrowUpDown className="size-4 text-muted-foreground" />
-              Best match
-            </span>
-          </div>
+        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+          {/* Left column: header + list (or empty state) */}
+          <div>
+            <ListHeader
+              tab={tab}
+              onTab={onTab}
+              savedCount={savedCount}
+              count={list.length}
+              sortMode={sortMode}
+              onSort={onSort}
+              showMeta={list.length > 0}
+            />
 
-          {list.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
-              <h2 className="text-lg font-semibold text-foreground">
-                We did not find jobs matching your resume
-              </h2>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                Add recent achievements or expand your location to discover more roles.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={onEditFilters}
-                  className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                >
-                  Edit filters
-                </button>
-                <button
-                  type="button"
-                  onClick={onResetFilters}
-                  className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
-                >
-                  Reset filters
-                </button>
-                <Link
-                  href="/builder"
-                  className="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/20"
-                >
-                  Improve resume
-                </Link>
+            {list.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center">
+                <h2 className="text-lg font-semibold text-foreground">
+                  We did not find jobs matching your resume
+                </h2>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                  Add recent achievements or expand your location to discover more
+                  roles.
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onEditFilters}
+                    className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    Edit filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onResetFilters}
+                    className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                  >
+                    Reset filters
+                  </button>
+                  <Link
+                    href="/builder"
+                    className="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/20"
+                  >
+                    Improve resume
+                  </Link>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
-              <div className="space-y-3">
+            ) : (
+              <div className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
                 {list.map((job) => (
                   <JobCard
                     key={job.id}
                     job={job}
+                    score={scoreOf(job)}
                     selected={job.id === selectedId}
                     saved={Boolean(savedMap[job.id])}
                     onSelect={() => onSelect(job.id)}
@@ -565,22 +686,22 @@ function RecommendedView({
                   />
                 ))}
               </div>
+            )}
+          </div>
 
-              <div ref={detailRef} className="lg:sticky lg:top-20">
-                {selected && (
-                  <JobDetail
-                    job={selected}
-                    resume={resume}
-                    saved={Boolean(savedMap[selected.id])}
-                    onSave={() => onSave(selected)}
-                    onDismiss={(reason) => onDismiss(selected.id, reason)}
-                    onTailor={onTailor}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </>
+          {/* Right column: detail */}
+          <div ref={detailRef} className="lg:sticky lg:top-20">
+            {selected && (
+              <JobDetail
+                job={selected}
+                resume={resume}
+                saved={Boolean(savedMap[selected.id])}
+                onSave={() => onSave(selected)}
+                onTailor={onTailor}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -599,8 +720,13 @@ function SavedView({
   onRemove,
   onRestore,
   resume,
+  scoreOf,
   onTailor,
   detailRef,
+  tab,
+  onTab,
+  sortMode,
+  onSort,
 }: {
   savedJobs: JobPosting[];
   pendingRemovals: ReturnType<typeof useJobsStore.getState>["pendingRemovals"];
@@ -610,8 +736,13 @@ function SavedView({
   onRemove: (id: string) => void;
   onRestore: (id: string) => void;
   resume: ScoreResume;
-  onTailor: (job: JobPosting, sb: MatchScoreboard | null) => void;
+  scoreOf: (job: JobPosting) => number;
+  onTailor: (job: JobPosting, missing: string[]) => void;
   detailRef: React.RefObject<HTMLDivElement | null>;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  sortMode: SortMode;
+  onSort: (v: SortMode) => void;
 }) {
   const empty = savedJobs.length === 0 && pendingRemovals.length === 0;
 
@@ -621,24 +752,22 @@ function SavedView({
         Your saved jobs
       </h1>
 
-      {empty ? (
-        <SavedEmptyState />
-      ) : (
-        <>
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {savedJobs.length} {savedJobs.length === 1 ? "job" : "jobs"}
-            </p>
-            {savedJobs.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground">
-                <ArrowUpDown className="size-4 text-muted-foreground" />
-                Best match
-              </span>
-            )}
-          </div>
+      <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <div>
+          <ListHeader
+            tab={tab}
+            onTab={onTab}
+            savedCount={savedJobs.length}
+            count={savedJobs.length}
+            sortMode={sortMode}
+            onSort={onSort}
+            showMeta={savedJobs.length > 0}
+          />
 
-          <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
-            <div className="space-y-3">
+          {empty ? (
+            <SavedEmptyState />
+          ) : (
+            <div className="mt-4 space-y-3">
               {/* Undo cards for just-removed jobs */}
               {pendingRemovals.map((p) => (
                 <div
@@ -660,32 +789,37 @@ function SavedView({
                 </div>
               ))}
 
-              {savedJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  selected={job.id === selectedId}
-                  saved
-                  onSelect={() => onSelect(job.id)}
-                  onSave={() => onRemove(job.id)}
-                />
-              ))}
-            </div>
-
-            <div ref={detailRef} className="lg:sticky lg:top-20">
-              {selected && (
-                <JobDetail
-                  job={selected}
-                  resume={resume}
-                  saved
-                  onSave={() => onRemove(selected.id)}
-                  onTailor={onTailor}
-                />
+              {savedJobs.length > 0 && (
+                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+                  {savedJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      score={scoreOf(job)}
+                      selected={job.id === selectedId}
+                      saved
+                      onSelect={() => onSelect(job.id)}
+                      onSave={() => onRemove(job.id)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        </>
-      )}
+          )}
+        </div>
+
+        <div ref={detailRef} className="lg:sticky lg:top-20">
+          {selected && (
+            <JobDetail
+              job={selected}
+              resume={resume}
+              saved
+              onSave={() => onRemove(selected.id)}
+              onTailor={onTailor}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

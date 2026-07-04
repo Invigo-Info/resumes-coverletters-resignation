@@ -74,7 +74,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="grid size-9 place-items-center rounded-full bg-[#D2451E] text-sm font-semibold uppercase text-white outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="grid size-9 place-items-center rounded-full bg-brand-teal text-sm font-semibold uppercase text-white outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
               aria-label="Account menu"
             >
               {initial}

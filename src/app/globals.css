@@ -13,6 +13,7 @@
 
   /* resume.co brand tokens (usable as bg-brand-blue, text-ai-from, etc.) */
   --color-brand-blue: var(--brand-blue);
+  --color-brand-teal: var(--brand-teal);
   --color-ai-from: var(--ai-from);
   --color-ai-to: var(--ai-to);
   --color-logo-from: var(--logo-from);
@@ -46,6 +47,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -75,6 +77,8 @@
 
   --primary: #2563eb;
   --primary-foreground: #ffffff;
+  /* Dark blue used for the hover border on interactive cards (app-wide). */
+  --primary-strong: #1d4ed8;
 
   --secondary: #f1f2f4;
   --secondary-foreground: #1f2937;
@@ -99,9 +103,13 @@
 
   /* brand gradients / accents */
   --brand-blue: #2563eb;
+  /* Brand teal used for the account avatar (matches the teal logo mark);
+     darkened to teal-700 so white text stays >= 4.5:1 (POUR). */
+  --brand-teal: #0f766e;
   --ai-from: #8b5cf6;
   --ai-to: #d946ef;
-  --logo-from: #34d399;
+  /* Brand logo mark: an all-blue gradient (light blue -> primary blue). */
+  --logo-from: #4f8bff;
   --logo-to: #2563eb;
   /* creation-menu icon tiles (the "How should we start?" cards) */
   --tile-strong-from: #4f8bff;

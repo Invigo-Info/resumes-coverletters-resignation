@@ -42,6 +42,8 @@ export interface JobPosting {
   seniority?: string;
   /** When the job was posted (epoch ms) - used for the date filter + sorting. */
   postedAt?: number;
+  /** Industry / sector label, e.g. "Hospitals and Health Care". */
+  industry?: string;
   /** Where this posting came from ("live" = a real jobs API). */
   source?: "generated" | "live";
   /** Free-text job description (live postings only; may contain newlines). */
@@ -381,6 +383,28 @@ function buildPosted(seed: number): string {
 
 const SENIOR_HINT = /(senior|director|head|vp|principal|chief|lead|staff)/i;
 
+// Map a role/title to a human industry label (shown in the detail metadata row).
+const INDUSTRY_MAP: [RegExp, string][] = [
+  [/nurse|clinical|medical|health|patient|physician|\brn\b|therapist|pharmac|dental|caregiver/i, "Hospitals and Health Care"],
+  [/market|brand|seo|content|social media|communications|advertis/i, "Marketing and Advertising"],
+  [/software|developer|engineer|program|data|devops|frontend|backend|full[- ]?stack|qa|cloud/i, "Software Development"],
+  [/\bux\b|\bui\b|graphic|product design|illustrat|visual/i, "Design Services"],
+  [/sales|account executive|business development|revenue/i, "Sales"],
+  [/finance|account|audit|\btax\b|bank|investment|financial/i, "Financial Services"],
+  [/teacher|education|tutor|instructor|professor|curriculum/i, "Education"],
+  [/legal|attorney|lawyer|paralegal|counsel/i, "Legal Services"],
+  [/\bhr\b|recruit|talent|people ops|human resource/i, "Human Resources"],
+  [/project manager|program manager|operations|logistics|supply chain|warehouse/i, "Operations"],
+  [/construction|architect|civil|mechanical|electrical/i, "Construction"],
+  [/retail|store|merchandis|cashier|hospitality|restaurant|hotel/i, "Retail and Hospitality"],
+];
+
+/** Best-effort industry / sector label from a role or title. */
+export function industryFor(role: string): string {
+  for (const [re, label] of INDUSTRY_MAP) if (re.test(role)) return label;
+  return "";
+}
+
 /** Best-effort seniority label from a job title. */
 function seniorityFor(title: string): string {
   const t = title.toLowerCase();
@@ -426,6 +450,7 @@ export function generateJobs(profile: ResumeProfile): JobPosting[] {
       postedLabel: buildPosted(seed),
       matchScore,
       seniority: seniorityFor(title),
+      industry: industryFor(`${title} ${parsed.head}`),
       summary: `Own and grow the ${parsed.head.toLowerCase()} function as a ${title} at ${pick(
         COMPANIES,
         seed
@@ -479,6 +504,26 @@ export function postedWithinDays(job: JobPosting, maxDays: number): boolean {
   const unit = m[2];
   const days = unit === "h" ? n / 24 : unit === "d" ? n : unit === "w" ? n * 7 : n * 30;
   return days <= maxDays;
+}
+
+/**
+ * Approximate age of a posting in hours (for New-to-old / Old-to-new sorting).
+ * Uses `postedAt` (live jobs) when present, otherwise parses the relative
+ * `postedLabel` ("5m ago" / "3h ago" / "2d ago" / "1w ago" / "2mo ago").
+ */
+export function postedAgeHours(job: JobPosting): number {
+  if (typeof job.postedAt === "number") return (Date.now() - job.postedAt) / 3600000;
+  const m = /^(\d+)\s*(mo|[mhdw])/.exec(job.postedLabel);
+  if (!m) return 24 * 30;
+  const n = Number(m[1]);
+  switch (m[2]) {
+    case "m": return n / 60;
+    case "h": return n;
+    case "d": return n * 24;
+    case "w": return n * 24 * 7;
+    case "mo": return n * 24 * 30;
+    default: return 24 * 30;
+  }
 }
 
 /**

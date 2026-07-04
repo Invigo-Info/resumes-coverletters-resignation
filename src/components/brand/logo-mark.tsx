@@ -10,7 +10,7 @@ interface LogoMarkProps {
 }
 
 /**
- * resume.co brand mark: a blue→teal gradient rounded tile with a speech-bubble
+ * resume.co brand mark: a blue gradient rounded tile with a speech-bubble
  * icon, optionally followed by the "resume.co" wordmark.
  */
 export function LogoMark({

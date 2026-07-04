@@ -1,30 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bookmark,
-  BookmarkCheck,
-  CalendarDays,
+  CircleDollarSign,
   MapPin,
-  Laptop,
+  Briefcase,
+  Building2,
   Trophy,
 } from "lucide-react";
 import type { JobPosting } from "@/lib/jobs/job-search";
+import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
+import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { CompanyLogo } from "./company-logo";
-import {
-  getScoreboard,
-  type MatchScoreboard,
-  type ScoreResume,
-} from "@/lib/jobs/scoreboard";
-import { MatchScoreboard as ScoreboardCard } from "./match-scoreboard";
-import { NotInterestedMenu } from "./not-interested-menu";
+import { KeywordMatchCard } from "./match-scoreboard";
+import { ImproveKeywordsFlow } from "./improve-keywords-flow";
 
 /** A single item in the job metadata row. */
 function Meta({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1.5">
       {icon}
       {children}
     </span>
@@ -32,31 +28,36 @@ function Meta({ icon, children }: { icon: React.ReactNode; children: React.React
 }
 
 /**
- * The right-side job detail panel. Header + metadata row + actions (Apply now,
- * Save, Not interested), the explainable match Scoreboard (lazy-loaded per job),
- * and the full job description below. Scrolls inside the panel.
+ * The right-side job detail panel. Header (company logo, posted time, title) with
+ * Save + Apply now, a metadata row (salary, location, industry, seniority, work
+ * model), the "Job keywords in your resume" match card, and the full job
+ * description. Scrolls inside the panel.
  */
 export function JobDetail({
   job,
   resume,
   saved,
   onSave,
-  onDismiss,
   onTailor,
 }: {
   job: JobPosting;
   resume: ScoreResume;
   saved: boolean;
   onSave: () => void;
-  /** Present only in Recommended - renders the Not-interested menu. */
-  onDismiss?: (reason: string) => void;
-  onTailor: (job: JobPosting, scoreboard: MatchScoreboard | null) => void;
+  onTailor: (job: JobPosting, missing: string[]) => void;
 }) {
   const router = useRouter();
   const setApplyJob = useApplyStore((s) => s.setJob);
-  const [scoreboard, setScoreboard] = useState<MatchScoreboard | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
+  const [improveOpen, setImproveOpen] = useState(false);
+
+  // Deterministic keyword match - same source as the ring on the job card.
+  const match = useMemo(() => buildKeywordMatch(job, resume), [job, resume]);
+
+  // The keyword pool shown as chips in the Improve-keywords flow (matched first).
+  const keywordPool = useMemo(
+    () => [...match.matched, ...match.missing].slice(0, 15),
+    [match]
+  );
 
   // Apply now opens the application-strengthening gateway (not the employer yet),
   // carrying this job as the active apply context.
@@ -65,89 +66,65 @@ export function JobDetail({
     router.push("/apply");
   };
 
-  // Lazy-load the scoreboard whenever the selected job changes.
-  useEffect(() => {
-    let alive = true;
-    setScoreboard(null);
-    setLoading(true);
-    setExpanded(false);
-    getScoreboard(job, resume)
-      .then((sb) => {
-        if (alive) {
-          setScoreboard(sb);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [job, resume]);
-
   const hasSalary = job.salaryLabel && job.salaryLabel !== "Salary not disclosed";
 
   return (
+    <>
     <div className="rounded-2xl border border-border bg-card">
       {/* Header */}
       <div className="border-b border-border p-5">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <CompanyLogo
-            company={job.company}
-            className="size-6 rounded-md"
-            initialClassName="text-xs"
-          />
-          {job.company}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 gap-3">
+            <CompanyLogo company={job.company} className="size-11 rounded-xl" />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">{job.postedLabel}</p>
+              <h2 className="mt-0.5 text-lg font-bold leading-snug text-foreground">
+                {job.title}
+              </h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">{job.company}</p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onSave}
+              aria-pressed={saved}
+              className="inline-flex h-9 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              {saved ? "Saved" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={onApply}
+              className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              Apply now
+            </button>
+          </div>
         </div>
-        <h2 className="mt-2 text-lg font-bold leading-snug text-foreground">
-          {job.title}
-        </h2>
 
         {/* Metadata row */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-          <Meta icon={<CalendarDays className="size-4" />}>{job.postedLabel}</Meta>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+          {hasSalary && (
+            <Meta icon={<CircleDollarSign className="size-4" />}>
+              <span className="font-medium text-foreground">{job.salaryLabel}</span>
+            </Meta>
+          )}
           <Meta icon={<MapPin className="size-4" />}>{job.locationLabel}</Meta>
-          <Meta icon={<Laptop className="size-4" />}>{job.mode}</Meta>
+          {job.industry && (
+            <Meta icon={<Building2 className="size-4" />}>{job.industry}</Meta>
+          )}
           {job.seniority && (
             <Meta icon={<Trophy className="size-4" />}>{job.seniority}</Meta>
           )}
-          {hasSalary && <span className="font-medium text-foreground">{job.salaryLabel}</span>}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onApply}
-            className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-          >
-            Apply now
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            aria-pressed={saved}
-            aria-label={saved ? "Remove saved job" : "Save job"}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-          >
-            {saved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
-            {saved ? "Saved" : "Save"}
-          </button>
-          {onDismiss && <NotInterestedMenu variant="button" onDismiss={onDismiss} />}
+          <Meta icon={<Briefcase className="size-4" />}>{job.mode}</Meta>
         </div>
       </div>
 
-      {/* Scrollable body: scoreboard + job description */}
+      {/* Scrollable body: keyword match card + job description */}
       <div className="max-h-[62vh] space-y-5 overflow-y-auto p-5">
-        <ScoreboardCard
-          scoreboard={scoreboard}
-          loading={loading}
-          fallbackScore={job.matchScore}
-          expanded={expanded}
-          onToggle={() => setExpanded((e) => !e)}
-          onTailor={() => onTailor(job, scoreboard)}
-        />
+        <KeywordMatchCard match={match} onImprove={() => setImproveOpen(true)} />
 
         <section>
           <h3 className="mb-2 text-sm font-semibold text-foreground">Job description</h3>
@@ -189,5 +166,17 @@ export function JobDetail({
         </section>
       </div>
     </div>
+
+    <ImproveKeywordsFlow
+      open={improveOpen}
+      onClose={() => setImproveOpen(false)}
+      jobTitle={job.title}
+      keywords={keywordPool}
+      onContinue={(selected, note) => {
+        setImproveOpen(false);
+        onTailor(job, note ? [...selected, note] : selected);
+      }}
+    />
+    </>
   );
 }

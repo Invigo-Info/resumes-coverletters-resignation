@@ -33,9 +33,9 @@ import { isDropboxConfigured, chooseFromDropbox } from "@/lib/dropbox";
 import { toast } from "sonner";
 
 /**
- * Cover-letter creation start screen. Offers four entry paths — continue draft,
+ * Cover-letter creation start screen. Offers four entry paths - continue draft,
  * use a saved resume, start from scratch, or upload/import a resume (file,
- * Dropbox, Google Drive, LinkedIn) — then routes into the wizard or review.
+ * Dropbox, Google Drive, LinkedIn) - then routes into the wizard or review.
  */
 export default function CoverLetterNewPage() {
   const router = useRouter();
@@ -52,7 +52,7 @@ export default function CoverLetterNewPage() {
   const hydrate = useCoverLetterStore((s) => s.hydrate);
   const reset = useCoverLetterStore((s) => s.reset);
 
-  // Draft detection — only after mount so the persisted store is hydrated
+  // Draft detection - only after mount so the persisted store is hydrated
   // (avoids an SSR/CSR mismatch from reading localStorage during render).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -145,7 +145,7 @@ export default function CoverLetterNewPage() {
             onClick={continueDraft}
             className="mb-6 flex w-full items-center gap-3 rounded-2xl bg-card px-5 py-4 text-left shadow-card ring-1 ring-border transition-colors hover:ring-primary/40"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-tile-strong text-white">
               <RotateCcw className="size-4" />
             </span>
             <span className="flex-1">
@@ -165,7 +165,7 @@ export default function CoverLetterNewPage() {
         </h1>
 
         <div className="w-full space-y-5">
-          {/* Use your resume — primary, expandable */}
+          {/* Use your resume - primary, expandable */}
           <StartOptionCard
             icon={<FileText className="size-6" />}
             title="Use your resume"
@@ -199,7 +199,7 @@ export default function CoverLetterNewPage() {
             onClick={startScratch}
           />
 
-          {/* Upload a resume — expandable */}
+          {/* Upload a resume - expandable */}
           <StartOptionCard
             icon={<FileUp className="size-6" />}
             title="Upload a resume"

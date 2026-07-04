@@ -1,35 +1,21 @@
 "use client";
 
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { matchMeta, type JobPosting } from "@/lib/jobs/job-search";
+import type { JobPosting } from "@/lib/jobs/job-search";
 import { CompanyLogo } from "./company-logo";
+import { ScoreRing } from "./match-scoreboard";
 import { NotInterestedMenu } from "./not-interested-menu";
 
-/** The circular score + "Strong match" label shown on each card. */
-export function MatchBadge({ score }: { score: number }) {
-  const { label, strong } = matchMeta(score);
-  const color = strong ? "#16A34A" : "#D97706";
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className="grid size-8 shrink-0 place-items-center rounded-full border-2 text-[11px] font-semibold"
-        style={{ borderColor: color, color }}
-      >
-        {score}
-      </span>
-      <span className="text-sm font-medium text-foreground">{label}</span>
-    </span>
-  );
-}
-
 /**
- * A single job card in the left list. Shows the logo initial, title, company,
- * location + work model, salary, posted date, the match badge, a Save toggle,
- * and (in Recommended) a Not-interested menu. Selected = blue outline.
+ * A single job card in the left list: company + posted time, the title, location
+ * and work model, salary, a heart Save toggle (and a hover-revealed Not
+ * interested menu in Recommended), plus the circular match ring in the corner.
+ * Selected = blue outline with a tinted background.
  */
 export function JobCard({
   job,
+  score,
   selected,
   saved,
   onSelect,
@@ -37,13 +23,17 @@ export function JobCard({
   onDismiss,
 }: {
   job: JobPosting;
+  /** Keyword match score shown in the ring (0-100). */
+  score: number;
   selected: boolean;
   saved: boolean;
   onSelect: () => void;
   onSave: () => void;
-  /** Present only in Recommended - renders the Not-interested (X) menu. */
+  /** Present only in Recommended - renders the Not-interested menu on hover. */
   onDismiss?: (reason: string) => void;
 }) {
+  const hasSalary = job.salaryLabel && job.salaryLabel !== "Salary not disclosed";
+
   return (
     <div
       role="button"
@@ -56,10 +46,10 @@ export function JobCard({
         }
       }}
       className={cn(
-        "group cursor-pointer rounded-2xl border bg-card p-4 text-left transition-colors",
+        "group relative cursor-pointer p-4 text-left transition-colors",
         selected
-          ? "border-primary ring-2 ring-primary/20"
-          : "border-border hover:border-foreground/20"
+          ? "bg-secondary"
+          : "hover:bg-secondary/40 hover:ring-1 hover:ring-inset hover:ring-primary-strong"
       )}
     >
       <div className="flex gap-3">
@@ -67,56 +57,49 @@ export function JobCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="min-w-0 text-[15px] font-semibold leading-snug text-foreground">
-              {job.title}, {job.company}
-            </h3>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {job.postedLabel}
-            </span>
+            <p className="min-w-0 truncate text-xs text-muted-foreground">
+              {job.company} &middot; {job.postedLabel}
+            </p>
+
+            <div className="flex shrink-0 items-center gap-0.5">
+              {onDismiss && (
+                <span className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                  <NotInterestedMenu
+                    variant="icon"
+                    ariaLabel={`Not interested in ${job.title}`}
+                    onDismiss={onDismiss}
+                  />
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSave();
+                }}
+                aria-pressed={saved}
+                aria-label={saved ? "Remove saved job" : "Save job"}
+                className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Heart className={cn("size-4", saved && "fill-primary text-primary")} />
+              </button>
+            </div>
           </div>
+
+          <h3 className="mt-0.5 text-[15px] font-semibold leading-snug text-foreground">
+            {job.title}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {job.locationLabel}, {job.mode}
-            {job.salaryLabel && job.salaryLabel !== "Salary not disclosed" && (
-              <>, {job.salaryLabel}{job.salaryLabel.startsWith("$") ? "/year" : ""}</>
-            )}
+            {job.locationLabel} &middot; {job.mode}
           </p>
+          {hasSalary && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{job.salaryLabel}</p>
+          )}
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <MatchBadge score={job.matchScore} />
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSave();
-            }}
-            className={cn(
-              "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors",
-              saved
-                ? "bg-secondary text-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-            aria-pressed={saved}
-            aria-label={saved ? "Remove saved job" : "Save job"}
-          >
-            {saved ? (
-              <BookmarkCheck className="size-4" />
-            ) : (
-              <Bookmark className="size-4" />
-            )}
-            {saved ? "Saved" : "Save"}
-          </button>
-          {onDismiss && (
-            <NotInterestedMenu
-              variant="icon"
-              ariaLabel={`Not interested in ${job.title}`}
-              onDismiss={onDismiss}
-            />
-          )}
-        </div>
+      <div className="mt-2 flex justify-end">
+        <ScoreRing score={score} size={44} />
       </div>
     </div>
   );

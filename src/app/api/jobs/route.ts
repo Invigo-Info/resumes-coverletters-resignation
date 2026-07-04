@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { scoreText, type JobPosting, type ResumeProfile } from "@/lib/jobs/job-search";
+import {
+  scoreText,
+  industryFor,
+  type JobPosting,
+  type ResumeProfile,
+} from "@/lib/jobs/job-search";
 
 /** Normalized query built from the request's filter params. */
 interface JobQuery {
@@ -168,6 +173,12 @@ interface AdzunaResult {
   created?: string;
   redirect_url?: string;
   contract_time?: string;
+  category?: { label?: string; tag?: string };
+}
+
+/** Clean an Adzuna category label ("Healthcare & Nursing Jobs" -> "Healthcare & Nursing"). */
+function cleanIndustry(label?: string): string {
+  return (label || "").replace(/\s*Jobs?$/i, "").trim();
 }
 interface AdzunaResponse {
   count?: number;
@@ -214,6 +225,7 @@ async function fetchAdzuna(
       postedLabel: r.created ? relativeTime(r.created) : "Recently",
       postedAt: toEpoch(r.created),
       seniority: seniorityFrom(title),
+      industry: cleanIndustry(r.category?.label) || industryFor(`${title} ${description}`),
       matchScore: scoreText(`${title} ${description}`, profile),
       summary: `${title} at ${company}${location ? `, ${location}` : ""}.`,
       responsibilities: [],
@@ -256,6 +268,7 @@ interface RemotiveJob {
   url?: string;
   description?: string;
   publication_date?: string;
+  category?: string;
 }
 interface RemotiveResponse {
   "job-count"?: number;
@@ -290,6 +303,7 @@ async function fetchRemotive(
       postedLabel: j.publication_date ? relativeTime(j.publication_date) : "Recently",
       postedAt: toEpoch(j.publication_date),
       seniority: seniorityFrom(title),
+      industry: j.category?.trim() || industryFor(`${title} ${description}`),
       matchScore: scoreText(`${title} ${description}`, profile),
       summary: `${title} at ${company} (${location}).`,
       responsibilities: [],

@@ -49,7 +49,7 @@ export function PaywallDialog({
         </button>
 
         <div className="px-7 pb-7 pt-9 text-center">
-          <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-tile-strong text-white">
             <Crown className="size-7" />
           </span>
           <h2 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
