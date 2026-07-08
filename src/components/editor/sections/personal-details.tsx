@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Plus, Minus, Camera, X } from "lucide-react";
 import { useResumeStore } from "@/lib/store/resume-store";
+import { downscaleImage } from "@/lib/downscale-image";
 import { Field, FieldWrap, SectionHeading } from "./field";
 import { BirthDatePicker } from "./birth-date-picker";
 import { AutocompleteInput } from "./autocomplete-input";
@@ -19,15 +20,22 @@ export function PersonalDetailsForm() {
   const [showMore, setShowMore] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Read the picked image as a data URL and store it as the profile photo.
-  function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPersonal({ photo: reader.result as string });
-    reader.readAsDataURL(file);
+  // Downscale + compress the picked image before storing it as the profile photo,
+  // so a large phone photo doesn't blow the localStorage quota (it is duplicated
+  // across every saved draft). Falls back to the original if decoding fails.
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
     // Reset so picking the same file again still fires onChange.
-    e.target.value = "";
+    input.value = "";
+    if (!file) return;
+    try {
+      setPersonal({ photo: await downscaleImage(file) });
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => setPersonal({ photo: reader.result as string });
+      reader.readAsDataURL(file);
+    }
   }
 
   return (

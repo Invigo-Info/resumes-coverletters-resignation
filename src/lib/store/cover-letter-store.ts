@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -343,7 +344,7 @@ export const useCoverLetterStore = create<CoverLetterState>()(
     }),
     {
       name: "resume-co:cover-letter",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 );

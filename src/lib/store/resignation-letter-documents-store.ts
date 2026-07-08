@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import {
   useResignationLetterStore,
   newResignationLetterId,
@@ -80,7 +81,7 @@ export const useResignationLetterDocumentsStore =
       }),
       {
         name: "resume-co:resignation-letter-documents",
-        storage: createJSONStorage(() => localStorage),
+        storage: createJSONStorage(() => safeLocalStorage),
       }
     )
   );

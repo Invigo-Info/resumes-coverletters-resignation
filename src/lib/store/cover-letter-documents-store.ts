@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import {
   useCoverLetterStore,
   newCoverLetterId,
@@ -73,7 +74,7 @@ export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
     }),
     {
       name: "resume-co:cover-letter-documents",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 );

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import {
   type JobPosting,
   type JobFilters,
@@ -26,6 +27,11 @@ interface JobsState {
   dismissedReasons: Record<string, string>;
   /** Filters currently applied to the Recommended list. */
   filters: JobFilters;
+  /** The resume role the current filters were seeded from. Lets the Jobs page
+   *  detect when a newly uploaded/selected resume has a different role and
+   *  re-seed the (persisted) filters, instead of keeping a stale role that would
+   *  surface jobs unrelated to the resume. */
+  filtersRole: string;
   /** Saved jobs just removed in the Saved tab, awaiting Undo/expiry (transient). */
   pendingRemovals: PendingRemoval[];
 
@@ -62,6 +68,7 @@ export const useJobsStore = create<JobsState>()(
       dismissed: [],
       dismissedReasons: {},
       filters: defaultFilters(""),
+      filtersRole: "",
       pendingRemovals: [],
 
       toggleSave: (job) =>
@@ -93,7 +100,8 @@ export const useJobsStore = create<JobsState>()(
       isSaved: (id) => Boolean(get().saved[id]),
 
       setFilters: (filters) => set({ filters }),
-      resetFilters: (role) => set({ filters: defaultFilters(role) }),
+      resetFilters: (role) =>
+        set({ filters: defaultFilters(role), filtersRole: role.trim() }),
 
       removeSaved: (id) =>
         set((s) => {
@@ -129,7 +137,7 @@ export const useJobsStore = create<JobsState>()(
     }),
     {
       name: "resume-co:jobs",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       // Don't persist the transient undo stack - a reload should start clean.
       partialize: ({ pendingRemovals: _pending, ...rest }) => rest,
     }

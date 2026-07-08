@@ -21,12 +21,14 @@ import {
 import { getTemplate } from "@/lib/templates";
 import type { ResumeDoc } from "@/lib/mock-data";
 
-/** Format a timestamp into the card's "Updated 5 Jun 2026" label. */
+/** Format a timestamp into the card's "Updated 5 Jun 2026, 3:45 PM" label
+ *  (date + time so multiple same-day saves are distinguishable). */
 function formatUpdated(ts: number): string {
   const d = new Date(ts);
   const day = d.getDate();
   const month = d.toLocaleString("en-US", { month: "short" });
-  return `Updated ${day} ${month} ${d.getFullYear()}`;
+  const time = d.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `Updated ${day} ${month} ${d.getFullYear()}, ${time}`;
 }
 
 /**
@@ -41,13 +43,13 @@ export function DashboardResumes() {
   const upsertResume = useDocumentsStore((s) => s.upsertResume);
   const loadDocument = useResumeStore((s) => s.loadDocument);
 
-  // Avoid SSR/client mismatch — drafts live in localStorage (client only).
+  // Avoid SSR/client mismatch - drafts live in localStorage (client only).
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     let alive = true;
     // Backfill: a resume that was created/edited but never reached the drafts
     // list (e.g. the user navigated away before autosave fired) still lives in
-    // the active resume store — surface it as a draft card here.
+    // the active resume store - surface it as a draft card here.
     saveActiveResume();
     // Pull this user's saved resumes from the server (works across devices),
     // back up any local-only drafts to the account, then merge newest-wins.

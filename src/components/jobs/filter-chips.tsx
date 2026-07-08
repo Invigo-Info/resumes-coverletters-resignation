@@ -36,12 +36,22 @@ function Chip({
  */
 export function FilterChips({
   filters,
+  role,
   onEdit,
 }: {
   filters: JobFilters;
+  /** Resume role, shown as the title chip when no explicit title filter is set. */
+  role?: string;
   onEdit: () => void;
 }) {
-  const [firstTitle, ...restTitles] = filters.jobTitles;
+  // Fall back to the resume role when the user has no title filter, so the row
+  // always reflects what's being searched (matches the jobs reference).
+  const titles = filters.jobTitles.length
+    ? filters.jobTitles
+    : role?.trim()
+      ? [role.trim()]
+      : [];
+  const [firstTitle, ...restTitles] = titles;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -49,7 +59,7 @@ export function FilterChips({
         icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
         onClick={onEdit}
       >
-        <span className="font-medium">Filters</span>
+        <span className="font-medium">Edit filters</span>
       </Chip>
 
       {firstTitle && (

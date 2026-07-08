@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import type { JobPosting } from "@/lib/jobs/job-search";
 
 /**
@@ -25,7 +26,7 @@ export const useApplyStore = create<ApplyState>()(
     }),
     {
       name: "resume-co:apply",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 );

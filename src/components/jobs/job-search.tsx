@@ -24,7 +24,6 @@ import {
 } from "@/lib/jobs/job-search";
 import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
 import type { ScoreResume } from "@/lib/jobs/scoreboard";
-import { TailorDialog } from "@/components/dashboard/tailor-dialog";
 import { JobCard } from "./job-card";
 import { JobDetail } from "./job-detail";
 import { FilterChips } from "./filter-chips";
@@ -39,6 +38,8 @@ import { SavedEmptyState } from "./saved-empty-state";
 /** A resume's role/skills/location plus the fuller context for scoring. */
 interface Profile extends ResumeProfile {
   resume: ScoreResume;
+  /** Id of the source resume draft, so tailoring loads the right one. */
+  resumeId: string;
 }
 
 /** Strip HTML tags to plain text. */
@@ -53,41 +54,56 @@ type Tab = "recommended" | "saved";
 type SortMode = "match" | "new" | "old";
 
 const SORT_LABEL: Record<SortMode, string> = {
-  match: "Match",
-  new: "New to old",
-  old: "Old to new",
+  match: "Best match",
+  new: "Newest",
+  old: "Oldest",
 };
 
-/** A Search / Saved toggle pill in the list header. */
-function TabPill({
-  active,
-  onClick,
-  icon,
-  children,
+/**
+ * The "Recommended jobs / Saved jobs" sub-tabs shown above the page heading -
+ * blue active tab with an underline (matches the jobs reference).
+ */
+function JobsTabs({
+  tab,
+  onTab,
+  savedCount,
 }: {
-  active: boolean;
-  onClick: () => void;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  savedCount: number;
 }) {
+  const tabClass = (active: boolean) =>
+    cn(
+      "relative -mb-px inline-flex items-center gap-1.5 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition-colors",
+      active
+        ? "border-primary text-primary"
+        : "border-transparent text-muted-foreground hover:text-foreground"
+    );
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active
-          ? "bg-foreground text-background"
-          : "bg-secondary text-foreground hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
-      )}
-    >
-      {icon}
-      {children}
-    </button>
+    <div className="flex items-center gap-6 border-b border-border">
+      <button
+        type="button"
+        onClick={() => onTab("recommended")}
+        aria-current={tab === "recommended" ? "page" : undefined}
+        className={tabClass(tab === "recommended")}
+      >
+        Recommended jobs
+      </button>
+      <button
+        type="button"
+        onClick={() => onTab("saved")}
+        aria-current={tab === "saved" ? "page" : undefined}
+        className={tabClass(tab === "saved")}
+      >
+        <Heart className={cn("size-3.5", tab === "saved" && "fill-current")} />
+        Saved jobs
+        {savedCount > 0 && <span className="ml-0.5 opacity-70">{savedCount}</span>}
+      </button>
+    </div>
   );
 }
 
-/** The "Match / New to old / Old to new" sort dropdown. */
+/** The "Best match / Newest / Oldest" sort dropdown. */
 function SortMenu({ value, onChange }: { value: SortMode; onChange: (v: SortMode) => void }) {
   return (
     <DropdownMenu>
@@ -114,47 +130,25 @@ function SortMenu({ value, onChange }: { value: SortMode; onChange: (v: SortMode
   );
 }
 
-/** The list-column header: Search/Saved pills + result count + sort control. */
+/** The list-column header: result count + sort control. */
 function ListHeader({
-  tab,
-  onTab,
-  savedCount,
   count,
   sortMode,
   onSort,
   showMeta,
 }: {
-  tab: Tab;
-  onTab: (t: Tab) => void;
-  savedCount: number;
   count: number;
   sortMode: SortMode;
   onSort: (v: SortMode) => void;
   showMeta: boolean;
 }) {
+  if (!showMeta) return null;
   return (
     <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <TabPill active={tab === "recommended"} onClick={() => onTab("recommended")}>
-          Search
-        </TabPill>
-        <TabPill
-          active={tab === "saved"}
-          onClick={() => onTab("saved")}
-          icon={<Heart className={cn("size-3.5", tab === "saved" && "fill-current")} />}
-        >
-          Saved
-          {savedCount > 0 && <span className="opacity-70">{savedCount}</span>}
-        </TabPill>
-      </div>
-      {showMeta && (
-        <div className="flex items-center gap-3">
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
-            {count} found
-          </span>
-          <SortMenu value={sortMode} onChange={onSort} />
-        </div>
-      )}
+      <span className="whitespace-nowrap text-sm text-muted-foreground">
+        {count} {count === 1 ? "job" : "jobs"} found
+      </span>
+      <SortMenu value={sortMode} onChange={onSort} />
     </div>
   );
 }
@@ -173,6 +167,7 @@ export function JobSearch() {
   const resumes = useDocumentsStore((s) => s.resumes);
   // Select each field separately - a selector returning a new object every
   // render would loop Zustand's useSyncExternalStore.
+  const activeId = useResumeStore((s) => s.id);
   const activeRole = useResumeStore((s) => s.personal.jobTitle);
   const activeSkills = useResumeStore((s) => s.skills);
   const activeLocation = useResumeStore((s) => s.contact.location);
@@ -182,6 +177,7 @@ export function JobSearch() {
   const saved = useJobsStore((s) => s.saved);
   const dismissed = useJobsStore((s) => s.dismissed);
   const filters = useJobsStore((s) => s.filters);
+  const filtersRole = useJobsStore((s) => s.filtersRole);
   const pendingRemovals = useJobsStore((s) => s.pendingRemovals);
   const toggleSave = useJobsStore((s) => s.toggleSave);
   const dismiss = useJobsStore((s) => s.dismiss);
@@ -200,11 +196,6 @@ export function JobSearch() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savedSelectedId, setSavedSelectedId] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [tailor, setTailor] = useState<{ open: boolean; jd: string; role: string }>({
-    open: false,
-    jd: "",
-    role: "",
-  });
   const detailRef = useRef<HTMLDivElement>(null);
 
   // Live results from /api/jobs (null = not loaded yet).
@@ -217,6 +208,7 @@ export function JobSearch() {
     const out: Profile[] = [];
     const seen = new Set<string>();
     const add = (
+      id: string,
       role: string,
       skills: string[],
       location: string,
@@ -232,6 +224,7 @@ export function JobSearch() {
         skills: cleanSkills,
         location: location.trim(),
         resume: { role: r, skills: cleanSkills, summary, experience },
+        resumeId: id,
       });
     };
     for (const rec of resumes) {
@@ -244,6 +237,7 @@ export function JobSearch() {
         .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
         .join("\n");
       add(
+        rec.id,
         role,
         (d.skills ?? []).map((sk) => sk.name),
         d.contact?.location ?? "",
@@ -256,6 +250,7 @@ export function JobSearch() {
       .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
       .join("\n");
     add(
+      activeId,
       activeRole || empRole,
       activeSkills.map((sk) => sk.name),
       activeLocation,
@@ -266,6 +261,7 @@ export function JobSearch() {
   }, [
     mounted,
     resumes,
+    activeId,
     activeRole,
     activeSkills,
     activeLocation,
@@ -275,23 +271,45 @@ export function JobSearch() {
 
   const profile = profiles[roleIndex] ?? profiles[0];
 
-  /* ----- Seed filters from the role on first load ----- */
+  /* ----- Seed filters from the resume role (and re-seed when it changes) ----- */
   useEffect(() => {
-    if (mounted && profile && filters.jobTitles.length === 0) {
-      resetFilters(profile.role);
+    if (!mounted || !profile) return;
+    // Filters are persisted, so a role left over from a previous resume/session
+    // would otherwise stick and surface jobs unrelated to the resume the user
+    // just uploaded or selected. Re-seed whenever the active resume's role no
+    // longer matches the role the filters were seeded from. Deliberate title
+    // edits (same role, extra titles) keep `filtersRole`, so they're preserved.
+    const role = profile.role.trim();
+    if (role && role !== filtersRole) {
+      resetFilters(role);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, profile]);
+  }, [mounted, profile, filtersRole]);
 
   /* ----- Fetch live jobs whenever the role or filters change ----- */
   const filtersKey = JSON.stringify(filters);
   useEffect(() => {
-    if (!profile || filters.jobTitles.length === 0) return;
+    if (!profile) return;
+    // Titles to search: the user's chosen title filters, or the resume's role when
+    // none are set (e.g. the user cleared the title chip in Edit filters). Without
+    // this fallback an empty title list skips the fetch entirely and the page is
+    // stuck on the "no jobs" empty state.
+    const role = profile.role.trim();
+    const searchTitles = filters.jobTitles.length
+      ? filters.jobTitles
+      : role
+        ? [role]
+        : [];
+    if (searchTitles.length === 0) return;
+    // Wait until the filters have been (re-)seeded for THIS resume's role before
+    // fetching, so an initial request never goes out for a stale role left in the
+    // persisted filters (which would briefly surface unrelated jobs).
+    if (role && filtersRole !== role) return;
     let alive = true;
     setJobsLoading(true);
     const params = new URLSearchParams({
       role: profile.role,
-      titles: filters.jobTitles.join(","),
+      titles: searchTitles.join(","),
       where: filters.location,
       skills: profile.skills.slice(0, 8).join(","),
       date: filters.datePosted,
@@ -315,7 +333,7 @@ export function JobSearch() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.role, filtersKey]);
+  }, [profile?.role, filtersKey, filtersRole]);
 
   /* ----- Keyword match score per job (drives rings + Match sort) ----- */
   const scores = useMemo(() => {
@@ -407,22 +425,12 @@ export function JobSearch() {
     }
   };
 
-  const openTailor = (job: JobPosting, missing: string[]) => {
-    const jd =
-      job.description ||
-      [
-        job.summary,
-        ...job.responsibilities,
-        ...job.qualifications,
-        ...missing.map((m) => `Keyword: ${m}`),
-      ].join("\n");
-    setTailor({ open: true, jd, role: job.title });
-  };
-
   const switchRole = (i: number) => {
     setRoleIndex(i);
     const role = profiles[i]?.role ?? "";
-    setFilters({ ...filters, jobTitles: role ? [role] : [] });
+    // Reset (not merge) so the new resume's role becomes the seeded role and the
+    // recommendations refetch for it; `resetFilters` records `filtersRole`.
+    resetFilters(role);
     setSelectedId(null);
   };
 
@@ -468,7 +476,11 @@ export function JobSearch() {
   }
 
   const role = profile?.role ?? "";
-  const showLoading = jobsLoading && liveJobs === null;
+  // Show the re-matching state on EVERY fetch (initial load AND filter/role
+  // changes), not just the first. The heading + chip row stay visible above it,
+  // so applying a filter gives immediate feedback and a visible refresh instead
+  // of leaving the previous results on screen while the (slow) live API responds.
+  const showLoading = jobsLoading;
 
   const selectedRec = recommended.find((j) => j.id === selectedId) ?? null;
   const selectedSaved = savedJobs.find((j) => j.id === savedSelectedId) ?? null;
@@ -492,8 +504,8 @@ export function JobSearch() {
           onDismiss={(id, reason) => dismiss(id, reason)}
           savedMap={saved}
           resume={profile.resume}
+          resumeId={profile.resumeId}
           scoreOf={scoreOf}
-          onTailor={openTailor}
           detailRef={detailRef}
           tab={tab}
           onTab={setTab}
@@ -511,8 +523,8 @@ export function JobSearch() {
           onRemove={removeSaved}
           onRestore={restoreSaved}
           resume={profile.resume}
+          resumeId={profile.resumeId}
           scoreOf={scoreOf}
-          onTailor={openTailor}
           detailRef={detailRef}
           tab={tab}
           onTab={setTab}
@@ -527,13 +539,6 @@ export function JobSearch() {
         role={role}
         applied={filters}
         onApply={setFilters}
-      />
-
-      <TailorDialog
-        open={tailor.open}
-        onClose={() => setTailor((t) => ({ ...t, open: false }))}
-        resumeTitle={`Resume, ${tailor.role}`}
-        initialJobDescription={tailor.jd}
       />
     </div>
   );
@@ -559,8 +564,8 @@ function RecommendedView({
   onDismiss,
   savedMap,
   resume,
+  resumeId,
   scoreOf,
-  onTailor,
   detailRef,
   tab,
   onTab,
@@ -583,8 +588,8 @@ function RecommendedView({
   onDismiss: (id: string, reason: string) => void;
   savedMap: Record<string, JobPosting>;
   resume: ScoreResume;
+  resumeId: string;
   scoreOf: (job: JobPosting) => number;
-  onTailor: (job: JobPosting, missing: string[]) => void;
   detailRef: React.RefObject<HTMLDivElement | null>;
   tab: Tab;
   onTab: (t: Tab) => void;
@@ -594,6 +599,11 @@ function RecommendedView({
 }) {
   return (
     <div>
+      {/* Recommended jobs / Saved jobs sub-tabs */}
+      <div className="mt-2">
+        <JobsTabs tab={tab} onTab={onTab} savedCount={savedCount} />
+      </div>
+
       {/* Heading + role switcher */}
       <div className="mt-6">
         <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
@@ -620,7 +630,7 @@ function RecommendedView({
 
       {/* Filter chips */}
       <div className="mt-4">
-        <FilterChips filters={filters} onEdit={onEditFilters} />
+        <FilterChips filters={filters} role={role} onEdit={onEditFilters} />
       </div>
 
       {showLoading ? (
@@ -630,9 +640,6 @@ function RecommendedView({
           {/* Left column: header + list (or empty state) */}
           <div>
             <ListHeader
-              tab={tab}
-              onTab={onTab}
-              savedCount={savedCount}
               count={list.length}
               sortMode={sortMode}
               onSort={onSort}
@@ -695,9 +702,9 @@ function RecommendedView({
               <JobDetail
                 job={selected}
                 resume={resume}
+                resumeId={resumeId}
                 saved={Boolean(savedMap[selected.id])}
                 onSave={() => onSave(selected)}
-                onTailor={onTailor}
               />
             )}
           </div>
@@ -720,8 +727,8 @@ function SavedView({
   onRemove,
   onRestore,
   resume,
+  resumeId,
   scoreOf,
-  onTailor,
   detailRef,
   tab,
   onTab,
@@ -736,8 +743,8 @@ function SavedView({
   onRemove: (id: string) => void;
   onRestore: (id: string) => void;
   resume: ScoreResume;
+  resumeId: string;
   scoreOf: (job: JobPosting) => number;
-  onTailor: (job: JobPosting, missing: string[]) => void;
   detailRef: React.RefObject<HTMLDivElement | null>;
   tab: Tab;
   onTab: (t: Tab) => void;
@@ -748,6 +755,11 @@ function SavedView({
 
   return (
     <div>
+      {/* Recommended jobs / Saved jobs sub-tabs */}
+      <div className="mt-2">
+        <JobsTabs tab={tab} onTab={onTab} savedCount={savedJobs.length} />
+      </div>
+
       <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">
         Your saved jobs
       </h1>
@@ -755,9 +767,6 @@ function SavedView({
       <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div>
           <ListHeader
-            tab={tab}
-            onTab={onTab}
-            savedCount={savedJobs.length}
             count={savedJobs.length}
             sortMode={sortMode}
             onSort={onSort}
@@ -813,9 +822,9 @@ function SavedView({
             <JobDetail
               job={selected}
               resume={resume}
+              resumeId={resumeId}
               saved
               onSave={() => onRemove(selected.id)}
-              onTailor={onTailor}
             />
           )}
         </div>

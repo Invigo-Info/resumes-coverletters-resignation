@@ -1,4 +1,5 @@
 import { DEFAULT_SECTION_ORDER, type ResumeState } from "@/lib/store/resume-store";
+import { extractDocxText } from "@/lib/docx-text";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -143,27 +144,54 @@ function isUsable(d: Partial<ResumeState>): boolean {
 /* Public API                                                         */
 /* ------------------------------------------------------------------ */
 
+/** An inline file part sent to the extraction model (base64, no data: prefix). */
+interface InlineFile {
+  mimeType: string;
+  data: string;
+}
+
+/** True for a Word document (by extension or MIME type). */
+function isWordFile(file: File): boolean {
+  return (
+    /\.docx?$/i.test(file.name) ||
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "application/msword"
+  );
+}
+
 /**
  * Parse an uploaded resume into the builder's data shape.
  *
- * With a GEMINI_API_KEY configured, the file (PDF/DOC) is sent to the model
- * and the candidate's REAL details are extracted. Without a key — or if the
- * call fails, or no file is provided (cloud-import demo buttons) — it falls
- * back to canned sample content so the flow always completes.
+ * With a GEMINI_API_KEY configured, the candidate's REAL details are extracted:
+ * a PDF is sent to the model directly (it reads PDFs natively); a Word .docx is
+ * converted to text HERE first, because the model can't read Word's binary
+ * format. Without a key — or if the call fails, or no file is provided (cloud-
+ * import demo buttons) — it falls back to canned sample content.
  */
 export async function parseResume(file?: File): Promise<Partial<ResumeState>> {
   // Real file → extract the candidate's actual data. We deliberately DO NOT
   // fall back to sample data here: showing a different person's resume for the
   // user's upload is worse than a clear error. Throw so the caller can retry.
   if (file) {
-    const base64 = await fileToBase64(file);
+    // Word: extract the text on the client (the model can't parse .docx bytes)
+    // and send that as `resumeText`. PDF: attach the file for native parsing.
+    let inlineFile: InlineFile | undefined;
+    let resumeText = "";
+    if (isWordFile(file)) {
+      resumeText = await extractDocxText(file); // throws for legacy .doc
+    } else {
+      const base64 = await fileToBase64(file);
+      inlineFile = { mimeType: file.type || "application/pdf", data: base64 };
+    }
     const res = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         task: "extractResume",
         payload: {
-          file: { mimeType: file.type || "application/pdf", data: base64 },
+          ...(inlineFile ? { file: inlineFile } : {}),
+          resumeText,
         },
       }),
     });

@@ -13,6 +13,7 @@ import type { JobPosting } from "@/lib/jobs/job-search";
 import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
 import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { useApplyStore } from "@/lib/store/apply-store";
+import { useTailorStore } from "@/lib/store/tailor-store";
 import { CompanyLogo } from "./company-logo";
 import { KeywordMatchCard } from "./match-scoreboard";
 import { ImproveKeywordsFlow } from "./improve-keywords-flow";
@@ -36,24 +37,27 @@ function Meta({ icon, children }: { icon: React.ReactNode; children: React.React
 export function JobDetail({
   job,
   resume,
+  resumeId,
   saved,
   onSave,
-  onTailor,
 }: {
   job: JobPosting;
   resume: ScoreResume;
+  /** Id of the resume backing this match, tailored on Continue. */
+  resumeId: string;
   saved: boolean;
   onSave: () => void;
-  onTailor: (job: JobPosting, missing: string[]) => void;
 }) {
   const router = useRouter();
   const setApplyJob = useApplyStore((s) => s.setJob);
+  const setTailor = useTailorStore((s) => s.setTailor);
   const [improveOpen, setImproveOpen] = useState(false);
 
   // Deterministic keyword match - same source as the ring on the job card.
   const match = useMemo(() => buildKeywordMatch(job, resume), [job, resume]);
 
-  // The keyword pool shown as chips in the Improve-keywords flow (matched first).
+  // The job's extracted keywords (what this posting requires), matched-first, for
+  // the "Choose keywords to highlight" step.
   const keywordPool = useMemo(
     () => [...match.matched, ...match.missing].slice(0, 15),
     [match]
@@ -167,14 +171,26 @@ export function JobDetail({
       </div>
     </div>
 
+    {/* Improve keywords runs the same choose-keywords + loading workflow as the
+        /apply "Tailor your resume" flow, then goes to /tailoring - without the
+        "Let's make your application stronger" gateway page in between. */}
     <ImproveKeywordsFlow
       open={improveOpen}
       onClose={() => setImproveOpen(false)}
       jobTitle={job.title}
+      company={job.company}
       keywords={keywordPool}
       onContinue={(selected, note) => {
         setImproveOpen(false);
-        onTailor(job, note ? [...selected, note] : selected);
+        setTailor({
+          jobTitle: job.title,
+          company: job.company,
+          keywords: selected,
+          note,
+          baseScore: match.score,
+          resumeId,
+        });
+        router.push("/tailoring");
       }}
     />
     </>

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import {
   reasonParagraph,
   gratitudeParagraph,
@@ -373,7 +374,7 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
     }),
     {
       name: "resume-co:resignation-letter",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 );

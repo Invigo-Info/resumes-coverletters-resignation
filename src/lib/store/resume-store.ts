@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import { getTemplate } from "@/lib/templates";
 
 /* ------------------------------------------------------------------ */
@@ -425,7 +426,7 @@ export const useResumeStore = create<ResumeState>()(
     }),
     {
       name: "resume-co:resume",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       // Don't restore the transient UI cursor — always open on the first section.
       partialize: ({
         activeSection: _activeSection,

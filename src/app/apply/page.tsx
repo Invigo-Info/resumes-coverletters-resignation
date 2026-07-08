@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,10 +15,18 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
-import { TailorDialog } from "@/components/dashboard/tailor-dialog";
 import { CompanyLogo } from "@/components/jobs/company-logo";
+import { ImproveKeywordsFlow } from "@/components/jobs/improve-keywords-flow";
+import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
+import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+import { useResumeStore } from "@/lib/store/resume-store";
+import { useTailorStore } from "@/lib/store/tailor-store";
+
+/** Strip HTML tags to plain text. */
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 /** One improvement option card on the gateway. */
 function OptionCard({
@@ -60,10 +68,43 @@ export default function ApplyGatewayPage() {
   const router = useRouter();
   const job = useApplyStore((s) => s.job);
   const patchJobDetails = useCoverLetterStore((s) => s.patchJobDetails);
+  const setTailor = useTailorStore((s) => s.setTailor);
+
+  // Resume fields for keyword matching (selected individually to avoid loops).
+  const resumeId = useResumeStore((s) => s.id);
+  const personalJobTitle = useResumeStore((s) => s.personal.jobTitle);
+  const skills = useResumeStore((s) => s.skills);
+  const summary = useResumeStore((s) => s.summary);
+  const employment = useResumeStore((s) => s.employment);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const [tailorOpen, setTailorOpen] = useState(false);
+  const [flowOpen, setFlowOpen] = useState(false);
+
+  // Build the resume profile + keyword match for the selected job, so the Tailor
+  // flow shows the same keywords (and starting score) as the Jobs page.
+  const scoreResume = useMemo<ScoreResume>(
+    () => ({
+      role: personalJobTitle,
+      skills: skills.map((sk) => sk.name).filter(Boolean),
+      summary: stripHtml(summary),
+      experience: employment
+        .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
+        .join("\n"),
+    }),
+    [personalJobTitle, skills, summary, employment]
+  );
+
+  const match = useMemo(
+    () => (job ? buildKeywordMatch(job, scoreResume) : null),
+    [job, scoreResume]
+  );
+  // The job's extracted keywords (what this posting requires) for the "Choose
+  // keywords to highlight" step.
+  const keywordPool = useMemo(
+    () => (match ? [...match.matched, ...match.missing].slice(0, 15) : []),
+    [match]
+  );
 
   // Route "Write a cover letter" into the existing builder, seeded with the job.
   const goCoverLetter = () => {
@@ -153,7 +194,7 @@ export default function ApplyGatewayPage() {
             icon={<Sparkles className="size-5" />}
             title="Tailor your resume"
             subtitle="Boost your interview chances 3x"
-            onClick={() => setTailorOpen(true)}
+            onClick={() => setFlowOpen(true)}
           />
           <OptionCard
             icon={<PenLine className="size-5" />}
@@ -190,14 +231,24 @@ export default function ApplyGatewayPage() {
         )}
       </div>
 
-      <TailorDialog
-        open={tailorOpen}
-        onClose={() => setTailorOpen(false)}
-        resumeTitle={`Resume, ${job.title}`}
-        initialJobDescription={
-          job.description ||
-          [job.summary, ...job.responsibilities, ...job.qualifications].join("\n")
-        }
+      <ImproveKeywordsFlow
+        open={flowOpen}
+        onClose={() => setFlowOpen(false)}
+        jobTitle={job.title}
+        company={job.company}
+        keywords={keywordPool}
+        onContinue={(selected, note) => {
+          setFlowOpen(false);
+          setTailor({
+            jobTitle: job.title,
+            company: job.company,
+            keywords: selected,
+            note,
+            baseScore: match?.score ?? 0,
+            resumeId,
+          });
+          router.push("/tailoring");
+        }}
       />
 
       <HelpPill />

@@ -60,7 +60,8 @@ export function ResumeOnboarding() {
     } catch {
       setPhase(null);
       toast.error("We couldn't read that resume", {
-        description: "Please try uploading the file again (PDF works best).",
+        description:
+          "PDF and Word (.docx) work best. If it's an older .doc, save it as .docx or PDF and try again.",
       });
     }
   }

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./safe-storage";
 import {
   useResumeStore,
   newResumeId,
@@ -71,7 +72,7 @@ export const useDocumentsStore = create<DocumentsState>()(
     }),
     {
       name: "resume-co:documents",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 );

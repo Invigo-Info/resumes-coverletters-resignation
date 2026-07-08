@@ -33,6 +33,7 @@ export function ScoreRing({ score, size = 72 }: { score: number; size?: number }
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset,stroke] duration-700 ease-out"
         />
       </svg>
       <span className={cn("absolute font-bold text-foreground", fontClass)}>{score}</span>
