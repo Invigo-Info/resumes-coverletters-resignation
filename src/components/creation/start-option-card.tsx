@@ -13,6 +13,9 @@ interface StartOptionCardProps {
   /** Render expandable content (used by the Upload card). */
   children?: React.ReactNode;
   expanded?: boolean;
+  /** The suggested path. Carries a slightly stronger border and a soft glow so
+   *  it reads as the default choice without shouting over the other card. */
+  recommended?: boolean;
 }
 
 /** One of the two large "How should we start?" option cards. */
@@ -24,9 +27,17 @@ export function StartOptionCard({
   iconClassName = "bg-tile-strong",
   children,
   expanded,
+  recommended,
 }: StartOptionCardProps) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-lg">
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-lg",
+        recommended
+          ? "ring-2 ring-primary/25 shadow-[0_8px_28px_-10px_var(--primary)]"
+          : "ring-1 ring-black/5"
+      )}
+    >
       <button
         type="button"
         onClick={onClick}

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
+import { Placeholder } from "@tiptap/extensions";
 import {
   Bold,
   Italic,
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Index of the bullet/paragraph the caret sits in, counting list items and
- * top-level paragraphs in document order — matching how the preview enumerates
+ * top-level paragraphs in document order, matching how the preview enumerates
  * blocks. Returns -1 when nothing relevant is focused.
  */
 function blockIndexAtSelection(editor: ReturnType<typeof useEditor>): number {
@@ -91,8 +91,12 @@ export function RichTextEditor({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ heading: false }),
-      Link.configure({ openOnClick: false }),
+      // StarterKit already bundles Link; registering it separately made Tiptap
+      // warn "Duplicate extension names found: ['link']". Configure it here.
+      StarterKit.configure({ heading: false, link: { openOnClick: false } }),
+      // Without this the `placeholder` prop renders nothing: the data attribute
+      // alone has no styling behind it.
+      Placeholder.configure({ placeholder: placeholder ?? "" }),
     ],
     content: value,
     editorProps: {
@@ -125,7 +129,9 @@ export function RichTextEditor({
 
   return (
     <div className="rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
+      {/* Wraps so the format buttons plus the AI controls never force the card
+          wider than a 280px screen. */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5">
         <ToolbarButton
           label="Bold"
           active={editor.isActive("bold")}
@@ -174,7 +180,6 @@ export function RichTextEditor({
         editor={editor}
         style={{ minHeight }}
         className="px-3 py-2.5 text-sm text-foreground [&_.tiptap]:min-h-[inherit] [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal"
-        data-placeholder={placeholder}
       />
     </div>
   );

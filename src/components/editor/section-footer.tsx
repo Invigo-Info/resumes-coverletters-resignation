@@ -23,8 +23,10 @@ export function EditorFooter({
     <div className="mt-8 border-t border-border pt-6">
       {/* Back (left, hidden on the first section) · Reorder sections · Next. The
           sections menu (Reorder) stays visible on mobile, matching resume.co. */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1">
+      {/* Wraps rather than overflowing: Back + Reorder + Next do not fit side by
+          side on a 280px screen. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
           {onBack && (
             <GhostButton onClick={onBack}>
               <ChevronLeft className="size-4" />
@@ -44,7 +46,7 @@ export function EditorFooter({
           </button>
         )}
 
-        <div className="flex flex-1 justify-end">
+        <div className="flex min-w-0 flex-1 justify-end">
           {onNext && (
             <PrimaryButton onClick={onNext}>
               {nextLabel}
@@ -57,14 +59,7 @@ export function EditorFooter({
   );
 }
 
-export function SectionFooter({
-  onReorder,
-  onComplete,
-}: {
-  onReorder: () => void;
-  /** Called by Next on the final section (e.g. advance to the Design tab). */
-  onComplete?: () => void;
-}) {
+export function SectionFooter({ onReorder }: { onReorder: () => void }) {
   const order = useResumeStore((s) => s.sectionOrder);
   const active = useResumeStore((s) => s.activeSection);
   const setActive = useResumeStore((s) => s.setActiveSection);
@@ -77,13 +72,10 @@ export function SectionFooter({
     <EditorFooter
       onBack={isFirst ? undefined : () => setActive(order[idx - 1])}
       onReorder={onReorder}
-      nextLabel={isLast ? "Next: Design" : "Next"}
-      // On the final section, Next moves on to the Design step; otherwise to the
-      // next section in the editing order.
-      onNext={() => {
-        if (isLast) onComplete?.();
-        else setActive(order[idx + 1]);
-      }}
+      // After the final section, Next offers the optional extra sections; the
+      // picker's own Next then closes out the Write step. Otherwise it just
+      // advances to the next section in the editing order.
+      onNext={() => setActive(isLast ? "additional" : order[idx + 1])}
     />
   );
 }

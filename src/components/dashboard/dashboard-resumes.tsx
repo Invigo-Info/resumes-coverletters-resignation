@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
@@ -20,6 +21,16 @@ import {
 } from "@/lib/store/documents-sync";
 import { getTemplate } from "@/lib/templates";
 import type { ResumeDoc } from "@/lib/mock-data";
+
+/** Collect the resume's real experience bullets, so the AI tailoring flow can
+ *  reframe them instead of inventing achievements. */
+function experienceBullets(data: ResumeDocData): string[] {
+  return (data.employment ?? []).flatMap((job) =>
+    Array.from(job.description.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi))
+      .map((m) => m[1].replace(/<[^>]*>/g, "").trim())
+      .filter(Boolean)
+  );
+}
 
 /** Format a timestamp into the card's "Updated 5 Jun 2026, 3:45 PM" label
  *  (date + time so multiple same-day saves are distinguishable). */
@@ -111,6 +122,7 @@ export function DashboardResumes() {
           <ResumeCard
             key={rec.id}
             resume={doc}
+            resumeBullets={experienceBullets(rec.data)}
             onEdit={open}
             onDownload={open}
             onCopy={() => {
@@ -122,15 +134,20 @@ export function DashboardResumes() {
                 title: `${rec.title} (copy)`,
                 updatedAt: Date.now(),
               });
+              toast.success("Resume duplicated", {
+                description: "Tailor the copy for a different role.",
+              });
             }}
             onDelete={() => removeResume(rec.id)}
           />
         );
       })}
 
-      <div className="flex justify-center">
+      {/* Secondary CTA to the "start from scratch / upload your resume" flow -
+          large and noticeable, but quieter than the header's Create button. */}
+      <div className="flex justify-center pt-2">
         <Link href="/resume-creation-menu">
-          <GhostButton className="bg-card shadow-card hover:bg-card">
+          <GhostButton className="h-12 bg-card px-7 text-base shadow-card ring-1 ring-border transition-colors hover:bg-primary/10 hover:text-primary hover:ring-primary/30">
             <Plus className="size-4" />
             Create new resume
           </GhostButton>

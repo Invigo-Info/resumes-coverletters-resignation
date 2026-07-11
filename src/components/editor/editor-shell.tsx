@@ -32,7 +32,7 @@ import { ImprovePanel } from "./improve-panel";
 /**
  * Renders the form for the currently active write step. Routes the special
  * "reorder" and "additional" keys to their flows, then matches user-added
- * sections by id, and finally the built-in section forms — defaulting to Personal.
+ * sections by id, and finally the built-in section forms - defaulting to Personal.
  */
 function ActiveSectionForm({ onFinish }: { onFinish: () => void }) {
   const active = useResumeStore((s) => s.activeSection);
@@ -102,7 +102,7 @@ export function EditorShell({
   useResumeAutosave();
 
   // True for the one render where `active` changed because the URL synced it
-  // (not a user click) — so the store->URL effect below doesn't fire a spurious
+  // (not a user click) - so the store->URL effect below doesn't fire a spurious
   // router.replace with the stale section and cause the page to flip/blink.
   const syncingFromUrl = useRef(false);
 
@@ -162,14 +162,14 @@ export function EditorShell({
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <ActiveSectionForm onFinish={() => setTab("improve")} />
+                    {/* Additional section is the last Write step, so its Next
+                        hands off to Design - the destination the old
+                        "Next: Design" button on Professional summary had. */}
+                    <ActiveSectionForm onFinish={() => setTab("design")} />
                   </motion.div>
                 </AnimatePresence>
                 {active !== "reorder" && active !== "additional" && (
-                  <SectionFooter
-                    onReorder={() => setActive("reorder")}
-                    onComplete={() => setTab("design")}
-                  />
+                  <SectionFooter onReorder={() => setActive("reorder")} />
                 )}
               </div>
             </main>

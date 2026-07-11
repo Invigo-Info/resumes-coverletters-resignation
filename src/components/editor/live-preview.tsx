@@ -8,11 +8,12 @@ import {
   type DesignOptions,
 } from "@/lib/store/resume-store";
 import { spaceBlocks } from "@/lib/html-spacing";
+import { displayUrl, normalizeUrl } from "@/lib/url";
 
 /** Format a start/end pair as "start - end", omitting empty sides; "" if both blank. */
 function dateRange(start: string, end: string) {
   if (!start && !end) return "";
-  return [start, end].filter(Boolean).join(" – ");
+  return [start, end].filter(Boolean).join(" - ");
 }
 
 /**
@@ -50,7 +51,7 @@ function highlightBlockHtml(html: string, index: number | null): string {
 // Maps each selectable font id to the concrete CSS font-family stack applied to
 // the rendered resume (with web-safe fallbacks).
 const FONT_STACK: Record<DesignOptions["font"], string> = {
-  roboto: "Verdana, Geneva, Tahoma, sans-serif",
+  roboto: "var(--font-roboto-flex), Verdana, Geneva, Tahoma, sans-serif",
   georgia: "Georgia, 'Times New Roman', serif",
   garamond: "'EB Garamond', Garamond, Georgia, serif",
 };
@@ -112,7 +113,7 @@ export function LivePreview() {
   }) {
     const active = id === s.activeEntryId;
     // When the caret is in a specific bullet/paragraph, that block highlights on
-    // its own — so suppress the whole-entry box (keep just the presence badge).
+    // its own - so suppress the whole-entry box (keep just the presence badge).
     const showBox = active && s.activeBlockIndex == null;
     return (
       <div className="relative">
@@ -125,7 +126,7 @@ export function LivePreview() {
                 className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
               />
             )}
-            {/* Presence badge — "you're editing here", like resume.co. */}
+            {/* Presence badge - "you're editing here", like resume.co. */}
             <span
               aria-hidden
               data-html2canvas-ignore
@@ -149,7 +150,7 @@ export function LivePreview() {
     title: string;
     /** Maps this block to its editor section, so it highlights when active. */
     sectionKey?: string;
-    /** Inner entry ids — when one is the active entry, the per-entry highlight
+    /** Inner entry ids - when one is the active entry, the per-entry highlight
      *  takes over and the whole-section box is suppressed. */
     entryIds?: string[];
     children: React.ReactNode;
@@ -164,7 +165,7 @@ export function LivePreview() {
     return (
       <section className={`relative ${sp.section}`}>
         {/* Active-section highlight. `data-html2canvas-ignore` keeps it out of
-            the downloaded PDF — it's an editor-only affordance. */}
+            the downloaded PDF - it's an editor-only affordance. */}
         {isActive && (
           <span
             aria-hidden
@@ -247,28 +248,51 @@ export function LivePreview() {
             {sec.entries.map((e) => (
               <EntryHighlight id={e.id} key={e.id}>
                 <div className="text-[11px] text-neutral-700">
+                  {/* The course is the credential; the institution qualifies it.
+                      Same precedence as the entry card's header. */}
                   <div className="flex justify-between font-semibold text-neutral-900">
-                    <span>{e.institution}</span>
+                    <span>{e.course || e.institution}</span>
                     <span className="font-normal text-neutral-500">
                       {dateRange(e.startDate, e.endDate)}
                     </span>
                   </div>
-                  {e.course && <p className="italic text-neutral-500">{e.course}</p>}
+                  {e.course && e.institution && (
+                    <p className="italic text-neutral-500">{e.institution}</p>
+                  )}
                 </div>
               </EntryHighlight>
             ))}
           </PreviewSection>
         );
       case "references":
-        if (!has("name")) return null;
+        if (!has("name") && !has("company")) return null;
         return (
-          <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
-            <p className="text-[11px] text-neutral-700">
-              {sec.entries
-                .filter((e) => e.name)
-                .map((e) => [e.name, e.company].filter(Boolean).join(", "))
-                .join("  •  ")}
-            </p>
+          <PreviewSection
+            title={sec.title}
+            key={sec.id}
+            sectionKey={sec.id}
+            entryIds={sec.entries.map((e) => e.id)}
+          >
+            {/* One contact per block: name, then company, then how to reach
+                them. Joining these into a single comma-separated line left
+                stray separators whenever a field was blank. */}
+            {sec.entries
+              .filter((e) => (e.name ?? "").trim() || (e.company ?? "").trim())
+              .map((e) => (
+                <EntryHighlight id={e.id} key={e.id}>
+                  <div className="text-[11px] text-neutral-700">
+                    {e.name && (
+                      <p className="font-semibold text-neutral-900">{e.name}</p>
+                    )}
+                    {e.company && (
+                      <p className="italic text-neutral-500">{e.company}</p>
+                    )}
+                    {(e.email || e.phone) && (
+                      <p>{[e.email, e.phone].filter(Boolean).join("  •  ")}</p>
+                    )}
+                  </div>
+                </EntryHighlight>
+              ))}
           </PreviewSection>
         );
       case "languages":
@@ -300,9 +324,17 @@ export function LivePreview() {
                 <EntryHighlight id={e.id} key={e.id}>
                   <p className="text-[11px] break-words text-neutral-700">
                     {e.title && <span className="font-semibold">{e.title}: </span>}
-                    <span className="underline" style={{ color: accent }}>
-                      {e.url}
-                    </span>
+                    {/* Reads as a person would say it ("linkedin.com"), but the
+                        href keeps the full address the user typed. */}
+                    <a
+                      href={normalizeUrl(e.url ?? "")}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="underline"
+                      style={{ color: accent }}
+                    >
+                      {displayUrl(e.url ?? "")}
+                    </a>
                   </p>
                 </EntryHighlight>
               ))}
@@ -362,7 +394,11 @@ export function LivePreview() {
     switch (key) {
       case "summary":
         return s.summary.replace(/<[^>]*>/g, "").trim() ? (
-          <PreviewSection title="Professional summary" key={key} sectionKey={key}>
+          <PreviewSection
+            title={s.summaryTitle?.trim() || "Professional summary"}
+            key={key}
+            sectionKey={key}
+          >
             <div
               className="text-[11px] text-neutral-700 [&_li]:ml-4 [&_li]:list-disc"
               dangerouslySetInnerHTML={{ __html: spaceBlocks(s.summary, 0.5) }}

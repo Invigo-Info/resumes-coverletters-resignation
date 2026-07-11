@@ -20,6 +20,14 @@ export const SUMMARY_TONES = [
 /** One of the valid tone ids, derived from SUMMARY_TONES. */
 export type ToneId = (typeof SUMMARY_TONES)[number]["id"];
 
+/**
+ * The tone for the nth generated summary variant. Each "Rewrite" advances one
+ * step, so the user sees a genuinely different voice (Visionary -> Enthusiastic
+ * -> …) rather than a reshuffle of the same one. Wraps after the last tone.
+ */
+export const toneAt = (index: number) =>
+  SUMMARY_TONES[((index % SUMMARY_TONES.length) + SUMMARY_TONES.length) % SUMMARY_TONES.length];
+
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** POST to the AI bridge. Returns null when the server signals fallback. */
@@ -82,7 +90,21 @@ const SOFT_SKILLS = [
 
 /* ------------------------------- functions ------------------------------- */
 
-/** Generate a professional-summary draft for the given tone. */
+/**
+ * Canned draft for when AI is unavailable. Both the opener lookup and the role
+ * are guarded: an unknown tone id or a blank job title must still read as a
+ * sentence, never as "undefined professional …".
+ */
+function fallbackSummary(tone: ToneId, jobTitle?: string): string {
+  const opener = TONE_OPENERS[tone] ?? TONE_OPENERS.confident;
+  return `${opener(jobTitle?.trim() || "professional")} ${TONE_BODY}`;
+}
+
+/**
+ * Generate a professional-summary draft from scratch ("Write with AI").
+ * `jobTitle` is the desired job title from Personal details - here that IS the
+ * right source, since the summary describes the role being applied for.
+ */
 export async function generateSummary(opts: {
   tone: ToneId;
   jobTitle?: string;
@@ -90,30 +112,45 @@ export async function generateSummary(opts: {
   const ai = await callAi<string>("summary", opts);
   if (ai) return ai;
   await delay(500);
-  const role = opts.jobTitle || "professional";
-  return `${TONE_OPENERS[opts.tone](role)} ${TONE_BODY}`;
+  return fallbackSummary(opts.tone, opts.jobTitle);
 }
 
-/** Refine an existing professional summary (Improve with AI). */
+/**
+ * Refine the summary already in the editor ("Improve with AI"). `instruction`
+ * carries the chosen preset (Improve / More human / Shorter / Ask AI to…).
+ * Facts are preserved; only the wording and tone change.
+ */
 export async function improveSummary(opts: {
   tone: ToneId;
   text: string;
   jobTitle?: string;
+  instruction?: string;
 }): Promise<string> {
   const ai = await callAi<string>("improveSummary", opts);
   if (ai) return ai;
   await delay(500);
-  const role = opts.jobTitle || "professional";
-  return `${TONE_OPENERS[opts.tone](role)} ${TONE_BODY}`;
+  return fallbackSummary(opts.tone, opts.jobTitle);
 }
 
-/** Suggest achievement-style bullet points (idea generation). */
+/**
+ * Suggest achievement-style bullet points (idea generation).
+ *
+ * `role` is the job title of THIS employment entry - never the desired job
+ * title from Personal details. An empty role yields generic bullets, which is
+ * exactly what the caller wants when the entry has no title yet.
+ */
 export async function improveBullets(opts: {
   role?: string;
   company?: string;
   page?: number;
 }): Promise<string[]> {
-  const ai = await callAi<string[]>("bullets", opts);
+  // The server prompt reads `jobTitle`; send it under that name or every
+  // suggestion comes back for a generic "professional".
+  const ai = await callAi<string[]>("bullets", {
+    jobTitle: opts.role?.trim() || "",
+    company: opts.company,
+    page: opts.page,
+  });
   if (ai && Array.isArray(ai)) return ai;
   await delay(500);
   const start = ((opts.page ?? 0) * 4) % BULLET_POOL.length;
@@ -177,14 +214,37 @@ export async function rewriteText(opts: {
   return null;
 }
 
-/** Tailor a resume to a pasted job description (returns summary + keywords). */
+/** What the tailoring flow returns for a pasted/uploaded job posting. */
+export interface TailorResult {
+  summary: string;
+  keywords: string[];
+  /** The candidate's own bullets, reframed for the posting. Empty when we had
+   *  no real bullets to work from - we never invent achievements. */
+  achievements: string[];
+}
+
+/**
+ * Tailor a resume to a pasted job description. `bullets` are the candidate's
+ * REAL experience bullets; when supplied, the AI reframes them into tailored
+ * achievements. Without them the achievements list stays empty rather than
+ * fabricating accomplishments.
+ */
 export async function tailorResume(opts: {
   jobDescription: string;
   summary?: string;
   jobTitle?: string;
-}): Promise<{ summary: string; keywords: string[] }> {
-  const ai = await callAi<{ summary: string; keywords: string[] }>("tailor", opts);
-  if (ai && ai.summary && Array.isArray(ai.keywords)) return ai;
+  bullets?: string[];
+}): Promise<TailorResult> {
+  const ai = await callAi<Partial<TailorResult>>("tailor", opts);
+  if (ai && ai.summary && Array.isArray(ai.keywords)) {
+    return {
+      summary: ai.summary,
+      keywords: ai.keywords,
+      achievements: Array.isArray(ai.achievements)
+        ? ai.achievements.filter((a): a is string => typeof a === "string" && !!a.trim())
+        : [],
+    };
+  }
   await delay(700);
   const role = opts.jobTitle || "professional";
   return {
@@ -193,6 +253,7 @@ export async function tailorResume(opts: {
       "communication", "leadership", "project management", "data analysis",
       "stakeholder management", "problem solving", "strategy", "collaboration",
     ],
+    achievements: [],
   };
 }
 

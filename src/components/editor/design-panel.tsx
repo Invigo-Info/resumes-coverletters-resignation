@@ -28,13 +28,14 @@ import {
   type SpacingId,
   type ColumnsId,
 } from "@/lib/store/resume-store";
-import { templates } from "@/lib/templates";
+import { templates, isAtsFriendly } from "@/lib/templates";
 
-// Font choices offered in the Design panel. `family` is the CSS stack used to
-// preview the option; `label`/`sub` are the display text on the swatch button.
+// Font choices offered in the Design panel. Each option previews itself: the
+// name renders in its own family, so the difference is visible before picking.
+// `family` mirrors live-preview's FONT_STACK, or the swatch would lie.
 const FONTS: { id: FontId; label: string; sub: string; family: string }[] = [
-  { id: "roboto", label: "Verdana", sub: "Verdana", family: "Verdana, Geneva, sans-serif" },
-  { id: "georgia", label: "Georgia", sub: "Arial", family: "Georgia, serif" },
+  { id: "roboto", label: "Roboto Flex", sub: "Roboto Flex", family: "var(--font-roboto-flex), Verdana, sans-serif" },
+  { id: "georgia", label: "Georgia", sub: "Georgia", family: "Georgia, serif" },
   { id: "garamond", label: "Garamond", sub: "Garamond", family: "'EB Garamond', Garamond, serif" },
 ];
 
@@ -54,16 +55,16 @@ const COLUMNS: { id: ColumnsId; label: string; icon: LucideIcon }[] = [
 
 // Solid swatches apply an accent on a white page. "Combination" swatches (with
 // `bg`) tint the whole resume: light page background + dark accent/heading color.
-type Swatch = { accent: string; bg?: string };
+type Swatch = { accent: string; bg?: string; name: string };
 const COLORS: Swatch[] = [
-  { accent: "#111827" },
-  { accent: "#2563eb" },
-  { accent: "#e11d48" },
-  { accent: "#f59e0b" },
-  { accent: "#0f6e51", bg: "#e7f3ee" },
-  { accent: "#2f855a", bg: "#eaf5ec" },
-  { accent: "#0e7490", bg: "#e3f1f4" },
-  { accent: "#374151", bg: "#eef0f2" },
+  { accent: "#111827", name: "Black" },
+  { accent: "#2563eb", name: "Blue" },
+  { accent: "#e11d48", name: "Rose" },
+  { accent: "#f59e0b", name: "Amber" },
+  { accent: "#0f6e51", bg: "#e7f3ee", name: "Emerald" },
+  { accent: "#2f855a", bg: "#eaf5ec", name: "Green" },
+  { accent: "#0e7490", bg: "#e3f1f4", name: "Teal" },
+  { accent: "#374151", bg: "#eef0f2", name: "Slate" },
 ];
 
 /** Labelled section wrapper (icon + title + content) for one Design panel group. */
@@ -89,8 +90,8 @@ function PanelGroup({
 
 /**
  * The Design tab's control panel: pick a template style (paged carousel), font,
- * density, column layout, and color theme — each writing straight into the resume
- * store so the live preview updates — plus Back and Download actions.
+ * density, column layout, and color theme - each writing straight into the resume
+ * store so the live preview updates - plus Back and Download actions.
  */
 export function DesignPanel({ onBack }: { onBack: () => void }) {
   const design = useResumeStore((s) => s.design);
@@ -98,13 +99,18 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
   const templateId = useResumeStore((s) => s.templateId);
   const applyTemplate = useResumeStore((s) => s.applyTemplate);
 
-  // Template carousel: `start` is the index of the first of the 3 visible
-  // thumbnails; prev/next shift the window while keeping it in bounds.
+  // Template carousel: `start` is the index of the first visible thumbnail;
+  // prev/next shift the window while keeping it in bounds.
+  const PER_PAGE = 4;
+  const MAX_START = Math.max(0, templates.length - PER_PAGE);
   const [start, setStart] = useState(0);
   const [downloading, setDownloading] = useState(false);
-  const visible = templates.slice(start, start + 3);
-  const canPrev = start > 0;
-  const canNext = start < templates.length - 3;
+  const visible = templates.slice(start, start + PER_PAGE);
+  // Wrap at both ends, so neither arrow is ever a dead control. The reference
+  // shows both fully opaque at the first page, and a disabled-looking-enabled
+  // arrow would be worse than either.
+  const prevPage = () => setStart((i) => (i === 0 ? MAX_START : i - 1));
+  const nextPage = () => setStart((i) => (i === MAX_START ? 0 : i + 1));
 
   // Trigger the PDF export, showing a spinner on the button until it resolves.
   async function handleDownload() {
@@ -122,13 +128,14 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
         {/* Styles carousel */}
         <PanelGroup icon={LayoutTemplate} title="Styles">
           <div className="relative">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {visible.map((t) => {
                 const active = t.id === templateId;
                 return (
                   <button
                     key={t.id}
                     onClick={() => applyTemplate(t.id)}
+                    aria-pressed={active}
                     className={cn(
                       "relative aspect-[210/297] overflow-hidden rounded-md ring-1 transition-all",
                       active ? "ring-2 ring-primary" : "ring-border hover:ring-primary/40"
@@ -136,38 +143,39 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                   >
                     <Image src={t.image} alt={t.name} fill className="object-cover object-top" />
                     {active && (
-                      <span className="absolute left-1 top-1 grid size-4 place-items-center rounded-full bg-primary text-white">
-                        <Check className="size-2.5" />
+                      <span className="absolute bottom-0 left-0 grid size-5 place-items-center rounded-br-none rounded-tr-md bg-primary text-white">
+                        <Check className="size-3" />
+                        <span className="sr-only">Selected</span>
                       </span>
                     )}
-                    {/* ATS badge */}
-                    <span className="absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded bg-emerald-600 px-1 py-0.5 text-[8px] font-bold leading-none text-white">
-                      <Check className="size-2" />
-                      ATS
-                    </span>
+                    {/* Only on templates that really are ATS-safe: a badge on a
+                        template that isn't would cost the user an application. */}
+                    {isAtsFriendly(t) && (
+                      <span className="absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded bg-emerald-700 px-1 py-0.5 text-[8px] font-bold leading-none text-white">
+                        <Check className="size-2" />
+                        ATS
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {canPrev && (
-              <button
-                onClick={() => setStart((i) => Math.max(0, i - 1))}
-                aria-label="Previous styles"
-                className="absolute -left-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-            )}
-            {canNext && (
-              <button
-                onClick={() => setStart((i) => Math.min(templates.length - 3, i + 1))}
-                aria-label="More styles"
-                className="absolute -right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            )}
+            {/* Overlaid arrows, as in the reference. */}
+            <button
+              onClick={prevPage}
+              aria-label="Previous styles"
+              className="absolute -left-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-neutral-800/95 text-white shadow-lg outline-none transition-colors hover:bg-neutral-700 focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <button
+              onClick={nextPage}
+              aria-label="More styles"
+              className="absolute -right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-neutral-800/95 text-white shadow-lg outline-none transition-colors hover:bg-neutral-700 focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <ChevronRight className="size-5" />
+            </button>
           </div>
         </PanelGroup>
 
@@ -181,14 +189,15 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                 <button
                   key={sp.id}
                   onClick={() => setDesign({ spacing: sp.id })}
+                  aria-pressed={active}
                   className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-card text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 shrink-0" />
                   {sp.label}
                 </button>
               );
@@ -201,6 +210,7 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                 <button
                   key={f.id}
                   onClick={() => setDesign({ font: f.id })}
+                  aria-pressed={active}
                   className={cn(
                     "rounded-xl border px-3 py-2.5 text-left transition-colors",
                     active
@@ -231,14 +241,15 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                 <button
                   key={c.id}
                   onClick={() => setDesign({ columns: c.id })}
+                  aria-pressed={active}
                   className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-card text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 shrink-0" />
                   {c.label}
                 </button>
               );
@@ -248,7 +259,10 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
 
         {/* Colors */}
         <PanelGroup icon={Palette} title="Colors">
-          <div className="flex flex-wrap gap-2.5">
+          {/* Each swatch is a card showing the page it produces (white, or the
+              tint) with the accent as a dot inside. `justify-between` fits all
+              eight on one row without the gap having to be pixel-exact. */}
+          <div className="flex items-start justify-between">
             {COLORS.map((sw) => {
               const active =
                 design.color === sw.accent && (design.bg || "") === (sw.bg || "");
@@ -256,18 +270,23 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                 <button
                   key={sw.accent}
                   onClick={() => setDesign({ color: sw.accent, bg: sw.bg ?? "" })}
-                  className="flex flex-col items-center gap-1"
-                  aria-label={sw.bg ? `Theme ${sw.accent}` : `Accent ${sw.accent}`}
+                  className="flex flex-col items-center gap-1 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                  aria-pressed={active}
+                  // A hex code tells a screen-reader user nothing. Name the colour,
+                  // and say when a swatch also tints the page.
+                  aria-label={sw.bg ? `${sw.name} theme, tinted page` : `${sw.name} accent`}
                 >
                   <span
                     className={cn(
-                      "grid size-9 place-items-center rounded-xl ring-1 ring-black/5 transition-all",
-                      active && "ring-2 ring-primary ring-offset-2"
+                      // border-2, not ring: a ring grows the box and would push
+                      // the eighth swatch onto a second row when selected.
+                      "grid size-9 place-items-center rounded-lg border-2 bg-card transition-colors",
+                      active ? "border-primary" : "border-border hover:border-primary/40"
                     )}
                     style={sw.bg ? { backgroundColor: sw.bg } : undefined}
                   >
                     <span
-                      className={cn("rounded-lg", sw.bg ? "size-5 rounded-full" : "size-7")}
+                      className="size-5 rounded-full"
                       style={{ backgroundColor: sw.accent }}
                     />
                   </span>

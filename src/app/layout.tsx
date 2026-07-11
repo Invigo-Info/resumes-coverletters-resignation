@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Gabarito, Geist_Mono } from "next/font/google";
+import { Inter, Gabarito, Geist_Mono, Roboto_Flex } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -22,9 +22,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Offered as a resume body font in the Design panel. The store's font id has
+// always been "roboto"; without this it silently rendered Verdana instead.
+const robotoFlex = Roboto_Flex({
+  variable: "--font-roboto-flex",
+  subsets: ["latin"],
+});
+
 // Default document <head> metadata applied to every route unless a page overrides it.
 export const metadata: Metadata = {
-  title: "Resume.co — Build your resume",
+  title: "Resume.co - Build your resume",
   description: "Create, edit and tailor resumes with AI assistance.",
 };
 
@@ -40,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${gabarito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${gabarito.variable} ${geistMono.variable} ${robotoFlex.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>

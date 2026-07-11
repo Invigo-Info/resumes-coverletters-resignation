@@ -30,7 +30,7 @@ export const AI_PRESETS = [
     label: "More human",
     icon: Smile,
     instruction:
-      "Make it sound more natural and human — warmer and less robotic or buzzword-heavy — while staying professional.",
+      "Make it sound more natural and human, warmer and less robotic or buzzword-heavy, while staying professional.",
   },
   {
     key: "shorter",
@@ -41,32 +41,83 @@ export const AI_PRESETS = [
   },
 ] as const;
 
-/** Length feedback shown in the editor toolbar ("Good length"). */
-export function lengthInfo(
-  html: string
-): { label: string; tone: "good" | "warn" } | null {
+/** How full a writing area is: too little, getting there, or right. */
+export type Status = { label: string; tone: "bad" | "warn" | "good" };
+
+/**
+ * Bullet-count feedback for a responsibilities editor. Recruiters skim: one
+ * bullet says nothing, four or more tells a story.
+ *   1 bullet  -> "Add more"    (red)
+ *   2-3       -> "Keep going"  (amber)
+ *   4+        -> "Good length" (green)
+ * Zero bullets shows nothing - the placeholder is already doing that job.
+ */
+export function bulletStatus(count: number): Status | null {
+  if (count <= 0) return null;
+  if (count === 1) return { label: "Add more", tone: "bad" };
+  if (count <= 3) return { label: "Keep going", tone: "warn" };
+  return { label: "Good length", tone: "good" };
+}
+
+/**
+ * Word-count feedback for the professional summary, which the brief asks to be
+ * 2-4 sentences. Roughly one sentence is 15-20 words, so:
+ *   < 20    -> "Add more"    (red)    barely one sentence
+ *   20-44   -> "Keep going"  (amber)  one to two sentences
+ *   45-140  -> "Good length" (green)  the 2-4 sentence target
+ *   > 140   -> "Too long"    (amber)  recruiters stop reading
+ * Zero words shows nothing - the placeholder already prompts the user.
+ */
+export function summaryStatus(html: string): Status | null {
   const words = strip(html).split(/\s+/).filter(Boolean).length;
   if (words === 0) return null;
-  if (words < 12) return { label: "Too short", tone: "warn" };
+  if (words < 20) return { label: "Add more", tone: "bad" };
+  if (words < 45) return { label: "Keep going", tone: "warn" };
   if (words <= 140) return { label: "Good length", tone: "good" };
   return { label: "Too long", tone: "warn" };
 }
 
-/** The "Good length" dot + label badge. */
-export function LengthBadge({ html }: { html: string }) {
-  const info = lengthInfo(html);
-  if (!info) return null;
+// Text shades are the darkened -700 steps, so each label clears 4.5:1 on the
+// card: #B91C1C 6.47:1, #B45309 5.02:1, #15803D 5.02:1. The dots are graphics
+// (3:1) and use the brighter -600 steps.
+const TONE_DOT: Record<Status["tone"], string> = {
+  bad: "bg-[#DC2626]",
+  warn: "bg-[#D97706]",
+  good: "bg-[#16A34A]",
+};
+const TONE_TEXT: Record<Status["tone"], string> = {
+  bad: "text-[#B91C1C]",
+  warn: "text-[#B45309]",
+  good: "text-[#15803D]",
+};
+
+/**
+ * Coloured square + label describing how much has been written. The colour is
+ * never the only signal - the label says the same thing in words.
+ */
+export function StatusBadge({ status }: { status: Status | null }) {
+  if (!status) return null;
   return (
-    <span className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">
-      <span
-        className={cn(
-          "size-2 rounded-full",
-          info.tone === "good" ? "bg-emerald-500" : "bg-amber-500"
-        )}
-      />
-      {info.label}
+    <span
+      className={cn(
+        "hidden items-center gap-1.5 text-xs font-medium sm:inline-flex",
+        TONE_TEXT[status.tone]
+      )}
+    >
+      <span className={cn("size-2.5 rounded-[3px]", TONE_DOT[status.tone])} />
+      {status.label}
     </span>
   );
+}
+
+/** The status badge driven by how many bullets exist. */
+export function BulletStatusBadge({ count }: { count: number }) {
+  return <StatusBadge status={bulletStatus(count)} />;
+}
+
+/** The status badge driven by the summary's word count. */
+export function SummaryStatusBadge({ html }: { html: string }) {
+  return <StatusBadge status={summaryStatus(html)} />;
 }
 
 /**
@@ -80,7 +131,9 @@ export function EditWithAiMenu({
   label = "Edit with AI",
   busyLabel = "Editing…",
   idleIcon: IdleIcon = WandSparkles,
-  triggerClassName = "inline-flex items-center gap-1.5 rounded-full border border-[var(--ai-from)]/30 bg-[var(--ai-from)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--ai-from)] transition-colors hover:bg-[var(--ai-from)]/10 disabled:opacity-50",
+  // Label uses --ai-text, not --ai-from: on the 5% tint the latter is only
+  // 3.99:1, below the 4.5:1 this 12px text needs.
+  triggerClassName = "inline-flex items-center gap-1.5 rounded-full border border-[var(--ai-from)]/30 bg-[var(--ai-from)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--ai-text)] transition-colors hover:bg-[var(--ai-from)]/10 disabled:opacity-50",
   openUp = false,
 }: {
   busy: boolean;

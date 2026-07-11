@@ -19,10 +19,13 @@ export function BirthDatePicker({
   value,
   onChange,
   placeholder = "03 Feb 1996",
+  id,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  /** Links the trigger to its <label>. Supplied by FieldWrap. */
+  id?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +59,7 @@ export function BirthDatePicker({
   return (
     <div ref={ref} className="relative">
       <button
+        id={id}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(

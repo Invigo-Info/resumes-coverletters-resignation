@@ -22,6 +22,7 @@ type Task =
   | "coverLetter"
   | "parseResume"
   | "extractResume"
+  | "extractJobPosting"
   | "rewriteBullets"
   | "rankChips"
   | "resignationLetter"
@@ -94,21 +95,32 @@ Focus on impact, key skills, and years of experience. Return only the summary te
       return {
         json: false,
         prompt: `Improve and tighten this resume professional summary while keeping the facts.
+Never invent employers, metrics, or achievements that are not already in the text.
 Make it more impactful, ATS-friendly, ${p.tone || "confident"} in tone, 2-4 sentences, no markdown.
+${p.instruction ? `Follow this instruction from the user: ${p.instruction}` : ""}
 Return only the improved summary text.
 
 Current summary:
 """${p.text || ""}"""`,
       };
-    case "bullets":
+    case "bullets": {
+      // No job title on the entry -> generic, transferable bullets. We never
+      // fall back to the candidate's desired job title: these suggestions
+      // describe THIS job, not the one they are applying for.
+      const titled = Boolean((p.jobTitle as string)?.trim());
+      const page = Number(p.page ?? 0);
       return {
         json: true,
-        prompt: `Suggest 4 strong, achievement-oriented resume bullet points for a ${role}${
-          p.company ? ` at ${p.company}` : ""
+        prompt: `Suggest 4 strong, achievement-oriented resume bullet points ${
+          titled
+            ? `for a ${role}${p.company ? ` at ${p.company}` : ""}`
+            : "that would suit any professional role, describing transferable impact (ownership, collaboration, process improvement, measurable results)"
         }.
 Each bullet starts with a strong action verb and includes a concrete/quantified outcome where natural.
+${page > 0 ? `These must be different from the first ${page * 4} you would normally give - go for less obvious angles.` : ""}
 Return a JSON array of 4 strings only. No markdown.`,
       };
+    }
     case "improveBullets":
       return {
         json: true,
@@ -118,13 +130,18 @@ Keep the original meaning. Return a JSON array of strings (one per bullet). No m
 Bullets:
 """${p.text || ""}"""`,
       };
-    case "skills":
+    case "skills": {
+      // `seed` increments with each "Regenerate", so ask for a genuinely
+      // different set instead of returning the same obvious seven.
+      const round = Number(p.seed ?? 0);
       return {
         json: true,
         prompt: `Suggest resume skills for a ${role}.
 Return JSON: { "hard": [7 technical/role-specific skills], "soft": [7 interpersonal skills] }.
-Short skill names only (1-3 words). No duplicates with: ${JSON.stringify(p.exclude || [])}.`,
+Short skill names only (1-3 words). No duplicates with: ${JSON.stringify(p.exclude || [])}.
+${round > 0 ? `This is refresh number ${round}: avoid the most obvious picks you would normally list first and suggest less common but still relevant skills.` : ""}`,
       };
+    }
     case "suggest": {
       const kind = (p.kind as string) || "jobTitle";
       const query = (p.query as string) || "";
@@ -307,19 +324,40 @@ Text:
 """${(p.text as string) || ""}"""`,
       };
     }
-    case "tailor":
+    case "extractJobPosting":
+      return {
+        json: false,
+        prompt: `Extract the full text of the attached job posting (and/or the text below) as plain text.
+Keep the job title, company, responsibilities, and requirements. Drop navigation, cookie banners, and unrelated page furniture.
+Return ONLY the posting text - no markdown, no preamble, no commentary.
+
+${(p.text as string) || ""}`,
+      };
+    case "tailor": {
+      // Achievements must be REFRAMED from the candidate's real bullets, never
+      // invented - so they are only requested when real bullets were supplied.
+      const bullets = (p.bullets as string[]) || [];
       return {
         json: true,
         prompt: `Tailor a resume to this job posting.
 Return JSON: {
   "summary": "a rewritten 2-4 sentence professional summary aligned to the job (no markdown)",
-  "keywords": [8 important ATS keywords/skills pulled from the job description to include]
+  "keywords": [8 important ATS keywords/skills pulled from the job description to include],
+  "achievements": [${
+    bullets.length
+      ? "up to 3 of the candidate's OWN bullets below, rewritten to foreground what this posting asks for"
+      : "leave this an empty array"
+  }]
 }.
+Rules: every fact must stay truthful. Do NOT invent companies, metrics, tools, or responsibilities that are not already present in the candidate's material. Reframe and re-emphasise only. Preserve existing numbers exactly.
 Job description:
 """${p.jobDescription || ""}"""
 Candidate's current summary:
-"""${p.summary || ""}"""`,
+"""${p.summary || ""}"""
+Candidate's real experience bullets:
+${JSON.stringify(bullets)}`,
       };
+    }
     case "scoreJob": {
       const resume =
         (p.resume as {

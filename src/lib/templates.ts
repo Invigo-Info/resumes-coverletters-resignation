@@ -23,11 +23,14 @@ export interface ResumeTemplate {
   /** Real preview image in /public/templates. */
   image: string;
   preset: TemplatePreset;
+  /** Surfaced with a "Recommended" tag. Keep this to one or two templates -
+   *  the point is to guide a fast decision, not to label everything. */
+  recommended?: boolean;
 }
 
 /** The template gallery, mirroring resume.co's "ATS-friendly" set. */
 export const templates: ResumeTemplate[] = [
-  { id: "clear-ats", name: "Clear ATS", used: 3847, categories: ["ATS-friendly", "Simple"], image: "/templates/hopper.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#111827" } },
+  { id: "clear-ats", name: "Clear ATS", used: 3847, categories: ["ATS-friendly", "Simple"], image: "/templates/hopper.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#111827" }, recommended: true },
   { id: "professional", name: "Professional", used: 2156, categories: ["Professional"], image: "/templates/lamarr.jpg", preset: { columns: "left", dark: true, font: "roboto", color: "#0f766e" } },
   { id: "leadership", name: "Leadership", used: 4523, categories: ["Professional"], image: "/templates/napoleon.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#7c3aed" } },
   { id: "strategic", name: "Strategic", used: 3291, categories: ["Professional", "ATS-friendly"], image: "/templates/pharrell.jpg", preset: { columns: "left", dark: false, font: "roboto", color: "#2563eb" } },
@@ -35,7 +38,7 @@ export const templates: ResumeTemplate[] = [
   { id: "classic-ats", name: "Classic ATS", used: 4102, categories: ["ATS-friendly", "Simple"], image: "/templates/bentz.jpg", preset: { columns: "centered", dark: false, font: "roboto", color: "#0f172a" } },
   { id: "minimalistic", name: "Minimalistic", used: 3588, categories: ["Simple", "Student"], image: "/templates/feynman.jpg", preset: { columns: "left", dark: false, font: "roboto", color: "#334155" } },
   { id: "corporate", name: "Corporate", used: 2489, categories: ["Professional"], image: "/templates/ampere.jpg", preset: { columns: "left", dark: true, font: "roboto", color: "#0d9488" } },
-  { id: "clear", name: "Clear", used: 4815, categories: ["ATS-friendly", "Simple"], image: "/templates/stallman.jpg", preset: { columns: "right", dark: false, font: "roboto", color: "#334155" } },
+  { id: "clear", name: "Clear", used: 4815, categories: ["ATS-friendly", "Simple"], image: "/templates/stallman.jpg", preset: { columns: "right", dark: false, font: "roboto", color: "#334155" }, recommended: true },
   { id: "simple", name: "Simple", used: 3142, categories: ["Simple", "Student"], image: "/templates/ive.jpg", preset: { columns: "centered", dark: false, font: "garamond", color: "#111827" } },
   { id: "functional", name: "Functional", used: 2673, categories: ["ATS-friendly"], image: "/templates/ford.jpg", preset: { columns: "centered", dark: false, font: "roboto", color: "#0e7490", bg: "#e3f1f4" } },
   { id: "balanced", name: "Balanced", used: 4367, categories: ["Professional"], image: "/templates/newton.jpg", preset: { columns: "right", dark: true, font: "roboto", color: "#2563eb" } },
@@ -43,9 +46,22 @@ export const templates: ResumeTemplate[] = [
   { id: "executive", name: "Executive", used: 2891, categories: ["Professional"], image: "/templates/curie.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#1e3a8a" } },
 ];
 
+/**
+ * Pre-selected when the user arrives with no template chosen yet. This is the
+ * one source of truth for that default - `resume-store`'s empty resume seeds
+ * `templateId` from it, so the gallery's check mark and the live preview can
+ * never disagree.
+ */
+export const DEFAULT_TEMPLATE_ID = "clear-ats";
+
 /** Look up a template by id (undefined if unknown). */
 export function getTemplate(id: string): ResumeTemplate | undefined {
   return templates.find((t) => t.id === id);
+}
+
+/** True when a template is safe to run through applicant tracking systems. */
+export function isAtsFriendly(t: ResumeTemplate): boolean {
+  return t.categories.includes("ATS-friendly");
 }
 
 /** Tab labels for the gallery filter bar ("All" plus each category). */

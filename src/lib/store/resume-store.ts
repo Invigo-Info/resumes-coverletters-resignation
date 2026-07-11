@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./safe-storage";
-import { getTemplate } from "@/lib/templates";
+import { getTemplate, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -103,12 +103,20 @@ export interface ResumeState {
   templateId: string;
   personal: PersonalDetails;
   contact: ContactInfo;
+  /** Editable heading for the Contact section (renamable via the pencil). */
+  contactTitle: string;
   summary: string; // HTML
+  /** Editable heading for the Summary section (renamable via the pencil). */
+  summaryTitle: string;
   employment: EmploymentEntry[];
+  /** Editable heading for the Employment section (renamable via the pencil). */
+  employmentTitle: string;
   skills: SkillEntry[];
   /** Editable heading for the Skills section (renamable via the pencil). */
   skillsTitle: string;
   education: EducationEntry[];
+  /** Editable heading for the Education section (renamable via the pencil). */
+  educationTitle: string;
   additional: AdditionalSection[];
   design: DesignOptions;
 
@@ -131,26 +139,55 @@ export interface ResumeState {
   setPersonal: (patch: Partial<PersonalDetails>) => void;
   setContact: (patch: Partial<ContactInfo>) => void;
   setSummary: (html: string) => void;
+  setSummaryTitle: (title: string) => void;
 
   addEmployment: () => void;
   updateEmployment: (id: string, patch: Partial<EmploymentEntry>) => void;
   removeEmployment: (id: string) => void;
+  /** Put a deleted entry back where it was (powers the "Undo" toast). */
+  insertEmployment: (entry: EmploymentEntry, index: number) => void;
+  /** Move an entry from one position to another (drag-and-drop reorder). */
+  reorderEmployment: (from: number, to: number) => void;
+  setEmploymentTitle: (title: string) => void;
 
   addSkill: (name?: string) => void;
   updateSkill: (id: string, patch: Partial<SkillEntry>) => void;
   removeSkill: (id: string) => void;
   clearSkills: () => void;
+  /** Put a deleted skill back where it was (powers the "Undo" toast). */
+  insertSkill: (entry: SkillEntry, index: number) => void;
+  /** Move a skill from one position to another (drag-and-drop reorder). */
+  reorderSkills: (from: number, to: number) => void;
   setSkillsTitle: (title: string) => void;
+  setContactTitle: (title: string) => void;
 
   addEducation: () => void;
   updateEducation: (id: string, patch: Partial<EducationEntry>) => void;
   removeEducation: (id: string) => void;
+  /** Put a deleted entry back where it was (powers the "Undo" toast). */
+  insertEducation: (entry: EducationEntry, index: number) => void;
+  /** Move an entry from one position to another (drag-and-drop reorder). */
+  reorderEducation: (from: number, to: number) => void;
+  setEducationTitle: (title: string) => void;
 
   /** Additional sections (returns the new section id so the caller can open it). */
   addAdditionalSection: (type: AdditionalType, title: string) => string;
   updateAdditionalTitle: (id: string, title: string) => void;
   removeAdditionalSection: (id: string) => void;
-  addAdditionalEntry: (sectionId: string) => void;
+  /** Appends a blank entry and returns its id, so the caller can expand it. */
+  addAdditionalEntry: (sectionId: string) => string;
+  /** Put a deleted entry back where it was (powers the "Undo" toast). */
+  insertAdditionalEntry: (
+    sectionId: string,
+    entry: AdditionalEntry,
+    index: number
+  ) => void;
+  /** Move an entry within its section (drag-and-drop reorder). */
+  reorderAdditionalEntries: (
+    sectionId: string,
+    from: number,
+    to: number
+  ) => void;
   updateAdditionalEntry: (
     sectionId: string,
     entryId: string,
@@ -164,9 +201,15 @@ export interface ResumeState {
   /** Mark the bullet/paragraph being edited within the active entry. */
   setActiveBlockIndex: (index: number | null) => void;
   setSectionOrder: (order: SectionKey[]) => void;
+  /** Drop a built-in section from the resume. Re-addable via restoreSection. */
+  removeSection: (key: SectionKey) => void;
+  /** Put a built-in section back at its canonical position. */
+  restoreSection: (key: SectionKey) => void;
   /** Move a reorderable section up/down within the movable range (personal &
    *  contact stay pinned at the top, summary at the bottom). */
   moveSection: (key: SectionKey, dir: "up" | "down") => void;
+  /** Drop one section onto another's position (sidebar drag-and-drop). */
+  reorderSections: (fromKey: SectionKey, toKey: SectionKey) => void;
 
   /** Replace the whole resume (used by upload-parse in Phase 12). */
   hydrate: (data: Partial<ResumeState>) => void;
@@ -180,8 +223,68 @@ export interface ResumeState {
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Unique id for a repeatable entry.
+ *
+ * A plain counter is not enough: it resets to 0 on every page load while the
+ * entries themselves are persisted, so the first entry added after a reload
+ * would collide with the saved "emp-1" and React would see two children with
+ * the same key. Stamping the session start into the id keeps them distinct
+ * across reloads, and the counter keeps them distinct within one.
+ *
+ * Only ever called from user actions (never during SSR or module init), so the
+ * time component cannot cause a hydration mismatch.
+ */
 let idCounter = 0;
-const uid = (prefix: string) => `${prefix}-${++idCounter}`;
+const idSession = Date.now().toString(36);
+const uid = (prefix: string) => `${prefix}-${idSession}-${(++idCounter).toString(36)}`;
+
+/** Re-key any entries that share an id, keeping the first occurrence as-is. */
+function dedupeIds<T extends { id: string }>(list: T[] | undefined, prefix: string): T[] {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set<string>();
+  return list.map((item) => {
+    if (!item?.id || seen.has(item.id)) return { ...item, id: uid(prefix) };
+    seen.add(item.id);
+    return item;
+  });
+}
+
+/**
+ * Number any additional sections that share a title: "Custom section",
+ * "Custom section 2", "Custom section 3". Two sidebar rows reading exactly
+ * "Custom section" are impossible to tell apart, and give the two nav buttons
+ * the same accessible name. The first occurrence keeps its clean title.
+ */
+function dedupeSectionTitles(list: AdditionalSection[]): AdditionalSection[] {
+  const count = new Map<string, number>();
+  return list.map((sec) => {
+    const title = sec.title ?? "";
+    const seen = count.get(title) ?? 0;
+    count.set(title, seen + 1);
+    return seen === 0 ? sec : { ...sec, title: `${title} ${seen + 1}` };
+  });
+}
+
+/**
+ * Guarantee unique entry ids on data coming in from outside the store (a saved
+ * draft, an uploaded resume). Only the arrays actually present are touched, so
+ * this is safe on a partial patch.
+ */
+function withUniqueIds(data: Partial<ResumeState>): Partial<ResumeState> {
+  const next = { ...data };
+  if (next.employment) next.employment = dedupeIds(next.employment, "emp");
+  if (next.education) next.education = dedupeIds(next.education, "edu");
+  if (next.skills) next.skills = dedupeIds(next.skills, "skill");
+  if (next.additional)
+    next.additional = dedupeSectionTitles(
+      dedupeIds(next.additional, "sec").map((sec) => ({
+        ...sec,
+        entries: dedupeIds(sec.entries, "ent"),
+      }))
+    );
+  return next;
+}
 
 const emptyEmployment = (): EmploymentEntry => ({
   id: uid("emp"),
@@ -223,11 +326,15 @@ type ResumeData = Pick<
   | "templateId"
   | "personal"
   | "contact"
+  | "contactTitle"
   | "summary"
+  | "summaryTitle"
   | "employment"
+  | "employmentTitle"
   | "skills"
   | "skillsTitle"
   | "education"
+  | "educationTitle"
   | "additional"
   | "design"
   | "sectionOrder"
@@ -238,7 +345,7 @@ type ResumeData = Pick<
 
 const emptyResume = (): ResumeData => ({
   id: "",
-  templateId: "clear-ats",
+  templateId: DEFAULT_TEMPLATE_ID,
   personal: {
     firstName: "",
     lastName: "",
@@ -248,11 +355,15 @@ const emptyResume = (): ResumeData => ({
     birthDate: "",
   },
   contact: { email: "", phone: "", linkedin: "", location: "" },
+  contactTitle: "Contact information",
   summary: "",
+  summaryTitle: "Professional summary",
   employment: [],
+  employmentTitle: "Employment history",
   skills: [],
   skillsTitle: "Skills",
   education: [],
+  educationTitle: "Education",
   additional: [],
   design: {
     font: "georgia",
@@ -294,6 +405,7 @@ export const useResumeStore = create<ResumeState>()(
     set((s) => ({ personal: { ...s.personal, ...patch } })),
   setContact: (patch) => set((s) => ({ contact: { ...s.contact, ...patch } })),
   setSummary: (html) => set({ summary: html }),
+  setSummaryTitle: (title) => set({ summaryTitle: title }),
 
   addEmployment: () =>
     set((s) => ({ employment: [...s.employment, emptyEmployment()] })),
@@ -305,6 +417,21 @@ export const useResumeStore = create<ResumeState>()(
     })),
   removeEmployment: (id) =>
     set((s) => ({ employment: s.employment.filter((e) => e.id !== id) })),
+  insertEmployment: (entry, index) =>
+    set((s) => {
+      const next = [...s.employment];
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, entry);
+      return { employment: next };
+    }),
+  reorderEmployment: (from, to) =>
+    set((s) => {
+      if (from === to || from < 0 || from >= s.employment.length) return {};
+      const next = [...s.employment];
+      const [moved] = next.splice(from, 1);
+      next.splice(Math.max(0, Math.min(to, next.length)), 0, moved);
+      return { employment: next };
+    }),
+  setEmploymentTitle: (title) => set({ employmentTitle: title }),
 
   addSkill: (name = "") =>
     set((s) => ({
@@ -317,7 +444,22 @@ export const useResumeStore = create<ResumeState>()(
   removeSkill: (id) =>
     set((s) => ({ skills: s.skills.filter((sk) => sk.id !== id) })),
   clearSkills: () => set({ skills: [] }),
+  insertSkill: (entry, index) =>
+    set((s) => {
+      const next = [...s.skills];
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, entry);
+      return { skills: next };
+    }),
+  reorderSkills: (from, to) =>
+    set((s) => {
+      if (from === to || from < 0 || from >= s.skills.length) return {};
+      const next = [...s.skills];
+      const [moved] = next.splice(from, 1);
+      next.splice(Math.max(0, Math.min(to, next.length)), 0, moved);
+      return { skills: next };
+    }),
   setSkillsTitle: (title) => set({ skillsTitle: title }),
+  setContactTitle: (title) => set({ contactTitle: title }),
 
   addEducation: () =>
     set((s) => ({ education: [...s.education, emptyEducation()] })),
@@ -329,6 +471,21 @@ export const useResumeStore = create<ResumeState>()(
     })),
   removeEducation: (id) =>
     set((s) => ({ education: s.education.filter((e) => e.id !== id) })),
+  insertEducation: (entry, index) =>
+    set((s) => {
+      const next = [...s.education];
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, entry);
+      return { education: next };
+    }),
+  reorderEducation: (from, to) =>
+    set((s) => {
+      if (from === to || from < 0 || from >= s.education.length) return {};
+      const next = [...s.education];
+      const [moved] = next.splice(from, 1);
+      next.splice(Math.max(0, Math.min(to, next.length)), 0, moved);
+      return { education: next };
+    }),
+  setEducationTitle: (title) => set({ educationTitle: title }),
 
   addAdditionalSection: (type, title) => {
     const id = uid(type);
@@ -360,13 +517,34 @@ export const useResumeStore = create<ResumeState>()(
       sectionOrder: s.sectionOrder.filter((k) => k !== id),
       activeSection: s.activeSection === id ? "personal" : s.activeSection,
     })),
-  addAdditionalEntry: (sectionId) =>
+  addAdditionalEntry: (sectionId) => {
+    const id = uid("ent");
     set((s) => ({
       additional: s.additional.map((a) =>
-        a.id === sectionId
-          ? { ...a, entries: [...a.entries, { id: uid("ent") }] }
-          : a
+        a.id === sectionId ? { ...a, entries: [...a.entries, { id }] } : a
       ),
+    }));
+    return id;
+  },
+  insertAdditionalEntry: (sectionId, entry, index) =>
+    set((s) => ({
+      additional: s.additional.map((a) => {
+        if (a.id !== sectionId) return a;
+        const entries = [...a.entries];
+        entries.splice(Math.max(0, Math.min(index, entries.length)), 0, entry);
+        return { ...a, entries };
+      }),
+    })),
+  reorderAdditionalEntries: (sectionId, from, to) =>
+    set((s) => ({
+      additional: s.additional.map((a) => {
+        if (a.id !== sectionId) return a;
+        if (from === to || from < 0 || from >= a.entries.length) return a;
+        const entries = [...a.entries];
+        const [moved] = entries.splice(from, 1);
+        entries.splice(Math.max(0, Math.min(to, entries.length)), 0, moved);
+        return { ...a, entries };
+      }),
     })),
   updateAdditionalEntry: (sectionId, entryId, patch) =>
     set((s) => ({
@@ -399,6 +577,40 @@ export const useResumeStore = create<ResumeState>()(
   setActiveEntryId: (id) => set({ activeEntryId: id, activeBlockIndex: null }),
   setActiveBlockIndex: (index) => set({ activeBlockIndex: index }),
   setSectionOrder: (order) => set({ sectionOrder: order }),
+  removeSection: (key) =>
+    set((s) => ({ sectionOrder: s.sectionOrder.filter((k) => k !== key) })),
+  restoreSection: (key) =>
+    set((s) => {
+      if (s.sectionOrder.includes(key)) return {};
+      // Slot it back where the default layout puts it, so a restored section
+      // does not land at the bottom of the resume.
+      const home = DEFAULT_SECTION_ORDER.indexOf(key);
+      if (home < 0) return { sectionOrder: [...s.sectionOrder, key] };
+      const before = DEFAULT_SECTION_ORDER.slice(0, home);
+      const at = s.sectionOrder.findIndex((k) => !before.includes(k));
+      const next = [...s.sectionOrder];
+      next.splice(at < 0 ? next.length : at, 0, key);
+      return { sectionOrder: next };
+    }),
+  reorderSections: (fromKey, toKey) =>
+    set((s) => {
+      // Same pinning rules as moveSection: only the middle band reorders.
+      const LEADING: SectionKey[] = ["personal", "contact"];
+      const TRAILING: SectionKey[] = ["summary"];
+      const order = s.sectionOrder;
+      const movable = order.filter(
+        (k) => !LEADING.includes(k) && !TRAILING.includes(k)
+      );
+      const from = movable.indexOf(fromKey);
+      const to = movable.indexOf(toKey);
+      if (from < 0 || to < 0 || from === to) return {};
+      const next = [...movable];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      const leading = order.filter((k) => LEADING.includes(k));
+      const trailing = order.filter((k) => TRAILING.includes(k));
+      return { sectionOrder: [...leading, ...next, ...trailing] };
+    }),
   moveSection: (key, dir) =>
     set((s) => {
       // personal/contact are pinned to the top, summary to the bottom; only the
@@ -420,9 +632,9 @@ export const useResumeStore = create<ResumeState>()(
       return { sectionOrder: [...leading, ...next, ...trailing] };
     }),
 
-  hydrate: (data) => set((s) => ({ ...s, ...data })),
+  hydrate: (data) => set((s) => ({ ...s, ...withUniqueIds(data) })),
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
-  loadDocument: (id, data) => set((s) => ({ ...s, ...data, id })),
+  loadDocument: (id, data) => set((s) => ({ ...s, ...withUniqueIds(data), id })),
     }),
     {
       name: "resume-co:resume",
@@ -434,10 +646,24 @@ export const useResumeStore = create<ResumeState>()(
         activeBlockIndex: _activeBlockIndex,
         ...rest
       }) => rest,
+      /**
+       * Repair duplicate entry ids on EVERY rehydration, not just on a version
+       * bump. A migration is one-shot: once a blob carrying two "emp-1"s is
+       * stamped with the current version it would never be fixed again, and
+       * React would keep warning about duplicate keys forever. Doing it in
+       * `merge` means any corrupt blob self-heals the next time it is read.
+       */
+      merge: (persisted, current) => ({
+        ...current,
+        ...withUniqueIds((persisted ?? {}) as Partial<ResumeState>),
+      }),
       // v1: normalise built-in order (summary last) for resumes saved earlier.
       // v2: re-pin summary to the very end (fixes orders where an additional
       //     section or a reorder pushed it out of last place).
-      version: 2,
+      // v3: re-key duplicate entry ids left behind by the old reload-resetting
+      //     counter (two entries could both be "emp-1"). Kept for the record;
+      //     `merge` above now does this on every load.
+      version: 3,
       migrate: (persisted, version) => {
         const state = persisted as Partial<ResumeState> | undefined;
         if (state && version < 1 && Array.isArray(state.sectionOrder)) {

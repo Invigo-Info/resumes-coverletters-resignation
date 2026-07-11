@@ -1,11 +1,75 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Plus, Pencil, Check, Trash2, X } from "lucide-react";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { RefreshCw, Plus, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+import { useResumeStore, type SkillEntry } from "@/lib/store/resume-store";
 import { generateSkills } from "@/lib/ai/mock";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { EditableSectionHeading } from "./field";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+
+/** A resume reads as thin below this many skills, and full at the upper bound. */
+const GOOD_SKILLS = 5;
+const FULL_SKILLS = 15;
+
+/**
+ * Count + progress ring. Under five skills the ring is amber ("add more"); at
+ * five or more it turns green, filling completely by fifteen.
+ */
+function SkillCount({ count }: { count: number }) {
+  const good = count >= GOOD_SKILLS;
+  const pct = Math.min(count / FULL_SKILLS, 1);
+  const r = 9;
+  const circumference = 2 * Math.PI * r;
+  const stroke = count === 0 ? "#94A3B8" : good ? "#16A34A" : "#D97706";
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5"
+      aria-label={`${count} ${count === 1 ? "skill" : "skills"} added${
+        count === 0 ? "" : good ? ", a good number" : ", add more"
+      }`}
+    >
+      <span
+        className={cn(
+          "text-sm font-bold tabular-nums",
+          count === 0
+            ? "text-muted-foreground"
+            : good
+              ? "text-[#15803D]"
+              : "text-[#B45309]"
+        )}
+      >
+        {count}
+      </span>
+      <svg viewBox="0 0 24 24" className="size-5 -rotate-90" aria-hidden>
+        <circle cx="12" cy="12" r={r} fill="none" stroke="#E2E8F0" strokeWidth="3" />
+        {count > 0 && (
+          <circle
+            cx="12"
+            cy="12"
+            r={r}
+            fill="none"
+            stroke={stroke}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - pct)}
+            className="transition-[stroke-dashoffset] duration-300"
+          />
+        )}
+      </svg>
+    </span>
+  );
+}
 
 /** A labeled row of clickable suggestion chips (e.g. "Hard skills"); hidden when empty. */
 function SuggestionGroup({
@@ -25,8 +89,10 @@ function SuggestionGroup({
         {items.map((name) => (
           <button
             key={name}
+            type="button"
             onClick={() => onAdd(name)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/70 hover:text-foreground"
+            aria-label={`Add ${name}`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Plus className="size-4 text-muted-foreground" />
             {name}
@@ -38,25 +104,107 @@ function SuggestionGroup({
 }
 
 /**
- * Editor section for skills: a renamable title, chosen-skill chips, free-form
- * entry, and AI-generated hard/soft suggestions that can be regenerated.
+ * One chosen skill: an outlined chip, prominent against the soft suggestion
+ * chips. Clean at rest (matching the design), with the remove X sliding in on
+ * hover or keyboard focus so the affordance never costs a layout shift. The
+ * whole chip is both the remove target and the drag source; arrow keys reorder.
+ */
+function SelectedChip({
+  skill,
+  index,
+  dragging,
+  over,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onMove,
+  onRemove,
+}: {
+  skill: SkillEntry;
+  index: number;
+  dragging: boolean;
+  over: boolean;
+  onDragStart: (i: number) => void;
+  onDragOver: (i: number) => void;
+  onDrop: () => void;
+  onMove: (dir: "left" | "right") => void;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => {
+        e.preventDefault(); // required, or the drop never fires
+        onDragOver(index);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={onDrop}
+      onClick={onRemove}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          onMove("left");
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          onMove("right");
+        }
+      }}
+      aria-label={`Remove ${skill.name}. Use the left and right arrow keys to reorder.`}
+      className={cn(
+        "group inline-flex cursor-grab items-center rounded-full border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
+        "hover:border-destructive/60 hover:bg-destructive/5",
+        "focus-visible:ring-3 focus-visible:ring-ring/40",
+        dragging && "opacity-40",
+        over && !dragging && "border-primary ring-2 ring-primary/20"
+      )}
+    >
+      {skill.name}
+      {/* Width animates from 0 so the chip does not jump when the X appears. */}
+      <span
+        aria-hidden
+        className="grid w-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:ml-1.5 group-hover:w-3.5 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:w-3.5 group-focus-visible:opacity-100"
+      >
+        <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-destructive" />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Editor section for skills: a renamable title, chosen-skill chips, a custom
+ * skill row, and AI hard/soft suggestions driven by the desired job title.
+ * Regenerating refreshes suggestions only - it never touches chosen skills.
  */
 export function SkillsForm() {
   const skills = useResumeStore((s) => s.skills);
   const addSkill = useResumeStore((s) => s.addSkill);
   const removeSkill = useResumeStore((s) => s.removeSkill);
-  const clearSkills = useResumeStore((s) => s.clearSkills);
+  const insertSkill = useResumeStore((s) => s.insertSkill);
+  const reorderSkills = useResumeStore((s) => s.reorderSkills);
   const jobTitle = useResumeStore((s) => s.personal.jobTitle);
   const skillsTitle = useResumeStore((s) => s.skillsTitle);
   const setSkillsTitle = useResumeStore((s) => s.setSkillsTitle);
+  const removeSection = useResumeStore((s) => s.removeSection);
+  const restoreSection = useResumeStore((s) => s.restoreSection);
+  const setActiveSection = useResumeStore((s) => s.setActiveSection);
 
   const [hard, setHard] = useState<string[]>([]);
   const [soft, setSoft] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [seed, setSeed] = useState(0);
-  const [editingTitle, setEditingTitle] = useState(false);
+  // The custom-skill row is collapsed behind an "Add your own skill" chip until
+  // the user opens it; the row's X collapses it again.
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const selected = skills.filter((sk) => sk.name.trim());
   const chosen = new Set(selected.map((sk) => sk.name.trim().toLowerCase()));
@@ -79,11 +227,12 @@ export function SkillsForm() {
     [jobTitle]
   );
 
-  // Load an initial suggestion set once on mount.
+  // Suggestions follow the desired job title: set or change it in Personal
+  // details and the recommended skill set changes with it.
   useEffect(() => {
     loadSuggestions(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setSeed(0);
+  }, [loadSuggestions]);
 
   /** Add a skill, ignoring blanks and case-insensitive duplicates. */
   function add(name: string) {
@@ -95,112 +244,169 @@ export function SkillsForm() {
     if (!exists) addSkill(clean);
   }
 
-  // Commit the free-text "add your own" draft and reset the input.
+  const draftClean = draft.trim();
+  const draftDuplicate = !!draftClean && chosen.has(draftClean.toLowerCase());
+
+  /** Commit the custom-skill draft. The row stays open for the next skill. */
   function commitOwn() {
-    add(draft);
+    if (!draftClean || draftDuplicate) return;
+    add(draftClean);
+    setDraft("");
+  }
+
+  /** The row's X: discard whatever was typed and collapse back to the chip. */
+  function closeCustom() {
     setDraft("");
     setAdding(false);
   }
 
+  /** Delete one skill immediately, with an undo that restores its position. */
+  function handleRemove(skill: SkillEntry) {
+    const index = useResumeStore.getState().skills.findIndex((s) => s.id === skill.id);
+    removeSkill(skill.id);
+    toast.success("Successfully deleted", {
+      duration: 5000,
+      action: { label: "Undo", onClick: () => insertSkill(skill, index) },
+    });
+  }
+
+  /** Remove the whole section from the resume, with an undo. */
+  function handleDeleteSection() {
+    setConfirmOpen(false);
+    removeSection("skills");
+    setActiveSection("personal");
+    toast.success("Skills removed", {
+      duration: 6000,
+      description: "You can add it back from Additional sections.",
+      action: {
+        label: "Undo",
+        onClick: () => {
+          restoreSection("skills");
+          setActiveSection("skills");
+        },
+      },
+    });
+  }
+
+  function commitDrop() {
+    if (dragIndex !== null && overIndex !== null) reorderSkills(dragIndex, overIndex);
+    setDragIndex(null);
+    setOverIndex(null);
+  }
+
+  function move(index: number, dir: "left" | "right") {
+    const to = dir === "left" ? index - 1 : index + 1;
+    if (to < 0 || to >= skills.length) return;
+    reorderSkills(index, to);
+  }
+
   return (
     <div>
-      {/* Header: title (renamable) + count + clear-all */}
-      <div className="mb-1.5 flex items-center gap-2">
-        {editingTitle ? (
-          <Input
-            autoFocus
-            value={skillsTitle}
-            onChange={(e) => setSkillsTitle(e.target.value)}
-            onBlur={() => setEditingTitle(false)}
-            onKeyDown={(e) => e.key === "Enter" && setEditingTitle(false)}
-            className="h-10 max-w-xs rounded-lg text-2xl font-extrabold"
+      {/* Header: title (renamable) + count ring + section delete */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <EditableSectionHeading
+            title={skillsTitle}
+            fallback="Skills"
+            onChange={setSkillsTitle}
+            description="List your relevant skills - they impact automated screening the most."
           />
-        ) : (
-          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground">
-            {skillsTitle?.trim() || "Skills"}
-          </h1>
-        )}
-        <button
-          onClick={() => setEditingTitle((v) => !v)}
-          aria-label="Rename section"
-          className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {editingTitle ? <Check className="size-4" /> : <Pencil className="size-4" />}
-        </button>
-
-        <div className="ml-auto flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5" aria-label={`${count} skills`}>
-            <span
-              className={cn(
-                "text-sm font-bold tabular-nums",
-                count ? "text-emerald-600" : "text-muted-foreground"
-              )}
-            >
-              {count}
-            </span>
-            <span
-              className={cn(
-                "size-3.5 rounded-full border-2",
-                count ? "border-emerald-500" : "border-muted-foreground/40"
-              )}
-              aria-hidden
-            />
-          </span>
+        </div>
+        <div className="mt-2 flex shrink-0 items-center gap-3">
+          <SkillCount count={count} />
           <button
-            onClick={clearSkills}
-            disabled={!count}
-            aria-label="Clear all skills"
-            className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+            type="button"
+            onClick={() => setConfirmOpen(true)}
+            aria-label="Delete the skills section"
+            className="grid size-9 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Trash2 className="size-4" />
           </button>
         </div>
       </div>
 
-      <p className="mb-6 text-muted-foreground">
-        List your relevant skills — they impact automated screening the most.
-      </p>
-
-      {/* Selected skills (blue chips) + add your own */}
+      {/* Selected skills, plus the collapsed "add your own" affordance. */}
       <div className="flex flex-wrap gap-2.5">
-        {selected.map((sk) => (
-          <button
+        {selected.map((sk, i) => (
+          <SelectedChip
             key={sk.id}
-            onClick={() => removeSkill(sk.id)}
-            title="Remove skill"
-            className="group inline-flex items-center gap-1.5 rounded-full border border-primary/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-destructive/60 hover:bg-destructive/5"
-          >
-            {sk.name}
-            <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-destructive" />
-          </button>
+            skill={sk}
+            index={i}
+            dragging={dragIndex === i}
+            over={overIndex === i}
+            onDragStart={setDragIndex}
+            onDragOver={setOverIndex}
+            onDrop={commitDrop}
+            onMove={(dir) => move(i, dir)}
+            onRemove={() => handleRemove(sk)}
+          />
         ))}
 
-        {adding ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitOwn}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitOwn();
-              if (e.key === "Escape") {
-                setDraft("");
-                setAdding(false);
-              }
-            }}
-            placeholder="Type a skill"
-            className="min-w-44 rounded-full border border-dashed border-primary/60 bg-card px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary"
-          />
-        ) : (
+        {!adding && (
           <button
+            type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-4 py-2.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Plus className="size-4" />
             Add your own skill
           </button>
         )}
       </div>
+
+      {/* Custom skill row: X cancels the row, the inline + confirms the skill. */}
+      {adding && (
+        <div className="mt-6 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="custom-skill" className="text-sm text-muted-foreground">
+              Skill
+            </Label>
+            <button
+              type="button"
+              onClick={closeCustom}
+              aria-label="Cancel adding a skill"
+              className="grid size-7 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <Input
+              id="custom-skill"
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitOwn();
+                }
+                if (e.key === "Escape") closeCustom();
+              }}
+              aria-invalid={draftDuplicate || undefined}
+              aria-describedby={draftDuplicate ? "custom-skill-error" : undefined}
+              placeholder="Time Management"
+              className="h-14 rounded-xl bg-card pr-14"
+            />
+            <button
+              type="button"
+              onClick={commitOwn}
+              disabled={!draftClean || draftDuplicate}
+              aria-label="Add skill"
+              className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-primary text-primary-foreground outline-none transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/35 focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+
+          {draftDuplicate && (
+            <p id="custom-skill-error" role="alert" className="text-sm text-destructive">
+              {draftClean} is already on your list.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* AI suggestions */}
       <div className="mt-7 space-y-5">
@@ -215,13 +421,14 @@ export function SkillsForm() {
           onAdd={add}
         />
         <button
+          type="button"
           onClick={() => {
             const next = seed + 1;
             setSeed(next);
             loadSuggestions(next);
           }}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color-mix(in_oklab,var(--ai-from),white_92%)] py-4 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color-mix(in_oklab,var(--ai-from),white_92%)] py-4 text-sm font-bold outline-none transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <RefreshCw
             className={cn("size-4 text-[var(--ai-from)]", loading && "animate-spin")}
@@ -231,6 +438,40 @@ export function SkillsForm() {
           </span>
         </button>
       </div>
+
+      {/* Whole-section delete confirmation. */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="rounded-2xl p-6 pt-8 sm:max-w-md">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span className="grid size-20 place-items-center rounded-full bg-destructive/10" aria-hidden>
+              <Trash2 className="size-8 text-destructive" />
+            </span>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
+              Are you sure you want to delete this section?
+            </DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground">
+              You can&apos;t undo this action.
+            </DialogDescription>
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteSection}
+              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+            >
+              Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

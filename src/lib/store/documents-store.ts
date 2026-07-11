@@ -17,11 +17,15 @@ export type ResumeDocData = Pick<
   | "templateId"
   | "personal"
   | "contact"
+  | "contactTitle"
+  | "summaryTitle"
   | "summary"
   | "employment"
+  | "employmentTitle"
   | "skills"
   | "skillsTitle"
   | "education"
+  | "educationTitle"
   | "additional"
   | "design"
   | "sectionOrder"
@@ -109,11 +113,15 @@ function contentSignature(s: ResumeState): string {
     templateId: s.templateId,
     personal: s.personal,
     contact: s.contact,
+    contactTitle: s.contactTitle,
+    summaryTitle: s.summaryTitle,
     summary: s.summary,
     employment: s.employment,
+    employmentTitle: s.employmentTitle,
     skills: s.skills,
     skillsTitle: s.skillsTitle,
     education: s.education,
+    educationTitle: s.educationTitle,
     additional: s.additional,
     design: s.design,
     sectionOrder: s.sectionOrder,
@@ -155,11 +163,15 @@ function snapshot(s: ResumeState): ResumeRecord {
       templateId: s.templateId,
       personal: s.personal,
       contact: s.contact,
+      contactTitle: s.contactTitle,
+      summaryTitle: s.summaryTitle,
       summary: s.summary,
       employment: s.employment,
+      employmentTitle: s.employmentTitle,
       skills: s.skills,
       skillsTitle: s.skillsTitle,
       education: s.education,
+      educationTitle: s.educationTitle,
       additional: s.additional,
       design: s.design,
       sectionOrder: s.sectionOrder,

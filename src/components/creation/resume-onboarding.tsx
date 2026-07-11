@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -23,13 +23,24 @@ import {
   GoogleConsentDialog,
   LinkedInImportDialog,
 } from "@/components/creation/cloud-source-dialogs";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
 import {
   isDropboxConfigured,
   chooseFromDropbox,
   fetchDropboxFile,
 } from "@/lib/dropbox";
+
+/** True when the in-progress draft holds anything worth returning to. */
+function hasSavedProgress(s: ResumeState): boolean {
+  return Boolean(
+    s.personal.firstName.trim() ||
+      s.personal.lastName.trim() ||
+      s.personal.jobTitle.trim() ||
+      s.summary.trim() ||
+      s.employment.length > 0
+  );
+}
 
 /**
  * The resume creation onboarding ("How should we start?"). Rendered both as the
@@ -39,12 +50,19 @@ export function ResumeOnboarding() {
   const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [phase, setPhase] = useState<UploadPhase | null>(null);
-  const [showSave, setShowSave] = useState(false);
+  const [dismissedSave, setDismissedSave] = useState(false);
   const [googleOpen, setGoogleOpen] = useState(false);
   const [linkedInOpen, setLinkedInOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
+
+  // The draft lives in localStorage, so read it only after mount - otherwise the
+  // server renders "no progress" and the client disagrees on the first paint.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const progress = useResumeStore(hasSavedProgress);
+  const showSave = mounted && progress && !dismissedSave;
 
   async function handleUpload(file?: File) {
     setPhase("uploading");
@@ -121,7 +139,10 @@ export function ResumeOnboarding() {
         }}
       />
 
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4">
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center px-4 py-10">
+        {/* Heading + options stay optically centred; the resume-progress card is
+            anchored near the bottom, well clear of the two choices. */}
+        <div className="flex w-full flex-1 flex-col items-center justify-center">
         <h1 className="mb-12 text-center font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
           How should we start?
         </h1>
@@ -132,6 +153,7 @@ export function ResumeOnboarding() {
             iconClassName="bg-tile-strong"
             title="Start from scratch"
             subtitle="Our AI helper will guide you"
+            recommended
             onClick={() => {
               reset();
               router.push("/builder/template");
@@ -199,10 +221,11 @@ export function ResumeOnboarding() {
             )}
           </StartOptionCard>
         </div>
+        </div>
 
-        {/* Save your progress (returning users) */}
+        {/* Save your progress - only for a returning user with an unfinished draft */}
         {showSave && (
-          <div className="mt-8 flex w-full items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-card ring-1 ring-border">
+          <div className="mt-16 flex w-full items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-card ring-1 ring-border">
             <div className="flex-1">
               <p className="font-bold text-foreground">Save your progress</p>
               <p className="text-sm text-muted-foreground">Pick up where you left off</p>
@@ -214,7 +237,7 @@ export function ResumeOnboarding() {
               Continue
             </button>
             <button
-              onClick={() => setShowSave(false)}
+              onClick={() => setDismissedSave(true)}
               aria-label="Dismiss"
               className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
             >

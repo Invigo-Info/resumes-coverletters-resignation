@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { suggestOptions } from "@/lib/ai/mock";
 
 type Match = { text: string; ai: boolean };
+
+/**
+ * Lowercase and strip diacritics for matching, so typing "leon" finds "León".
+ * NFD splits a precomposed accented letter into base + combining mark; \p{M}
+ * then drops the mark, leaving the string the same length - which is what lets
+ * `highlight` reuse the index against the original text.
+ *
+ * Deliberately does NOT trim: trimming would shift that index.
+ */
+const fold = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
 /**
  * Text input with a suggestion dropdown. Always filters the static `options`
@@ -20,6 +32,8 @@ export function AutocompleteInput({
   options,
   aiKind,
   max = 6,
+  id,
+  icon,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -28,6 +42,10 @@ export function AutocompleteInput({
   /** When set, also fetch AI completions for this field kind (e.g. "jobTitle"). */
   aiKind?: string;
   max?: number;
+  /** Links the control to its <label>. Supplied by FieldWrap. */
+  id?: string;
+  /** Leading icon rendered inside the input. */
+  icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [aiMatches, setAiMatches] = useState<string[]>([]);
@@ -44,7 +62,7 @@ export function AutocompleteInput({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const q = value.trim().toLowerCase();
+  const q = fold(value.trim());
 
   // Debounced AI completion fetch.
   useEffect(() => {
@@ -73,22 +91,28 @@ export function AutocompleteInput({
   const matches: Match[] = [];
   const seen = new Set<string>();
   const push = (text: string, ai: boolean) => {
-    const key = text.trim().toLowerCase();
+    const key = fold(text.trim());
     if (!key || key === q || seen.has(key)) return;
     seen.add(key);
     matches.push({ text, ai });
   };
   if (q.length > 0) {
+    // Prefix matches lead. Typing "W" should surface Washington and Wisconsin
+    // before New York and Seattle, which only match on an interior letter.
+    // Array#sort is stable, so each group keeps its curated order.
     options
-      .filter((o) => o.toLowerCase().includes(q))
+      .filter((o) => fold(o).includes(q))
+      .sort((a, b) => Number(fold(b).startsWith(q)) - Number(fold(a).startsWith(q)))
       .forEach((o) => push(o, false));
   }
   aiMatches.forEach((o) => push(o, true));
   const shown = matches.slice(0, effectiveMax);
 
-  // Bold the part of a suggestion that matches the current query.
+  // Bold the part of a suggestion that matches the current query. Folding keeps
+  // the index aligned with the original text: NFD-stripping never changes length
+  // for the precomposed characters these lists use.
   function highlight(text: string) {
-    const i = text.toLowerCase().indexOf(q);
+    const i = fold(text).indexOf(q);
     if (i === -1 || q.length === 0) return text;
     return (
       <>
@@ -105,7 +129,16 @@ export function AutocompleteInput({
 
   return (
     <div ref={ref} className="relative">
+      {icon && (
+        <span
+          className="pointer-events-none absolute left-3.5 top-6 -translate-y-1/2 text-muted-foreground [&_svg]:size-4"
+          aria-hidden
+        >
+          {icon}
+        </span>
+      )}
       <Input
+        id={id}
         value={value}
         placeholder={placeholder}
         onChange={(e) => {
@@ -113,7 +146,7 @@ export function AutocompleteInput({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        className="h-12 rounded-xl bg-card"
+        className={cn("h-12 rounded-xl bg-card", icon && "pl-10")}
       />
       {showPanel && (
         <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-popover p-1 shadow-card-lg">

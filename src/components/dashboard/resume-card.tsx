@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Download, Sparkles, Trash2 } from "lucide-react";
+import { Download, Pencil, Sparkles, Trash2 } from "lucide-react";
 import type { ResumeDoc } from "@/lib/mock-data";
+import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
 import { TailorDialog } from "./tailor-dialog";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
@@ -15,26 +16,46 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+/**
+ * Visual weight for the card's action row. Download and Edit are the two
+ * most-used actions so they carry the most weight; Copy and Share sit quietly
+ * behind them; Delete is the quietest and uses the destructive role (matching
+ * its confirmation dialog) rather than reading as just another neutral pill.
+ */
+type ActionVariant = "primary" | "secondary" | "quiet" | "danger";
+
+const ACTION_VARIANTS: Record<ActionVariant, string> = {
+  primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+  secondary:
+    "bg-secondary text-foreground hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]",
+  quiet: "text-muted-foreground ring-1 ring-border hover:bg-secondary hover:text-foreground",
+  danger: "text-destructive hover:bg-destructive/10",
+};
+
 /** Pill-shaped action button used for the per-card row (Download, Edit, etc.). */
 function ActionButton({
   children,
   className,
   disabled,
   onClick,
+  variant = "secondary",
 }: {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
+  variant?: ActionVariant;
 }) {
   return (
     <button
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors",
-        "hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]",
-        disabled && "cursor-not-allowed text-muted-foreground opacity-60 hover:bg-secondary",
+        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+        "outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+        ACTION_VARIANTS[variant],
+        disabled &&
+          "cursor-not-allowed bg-secondary text-muted-foreground opacity-60 shadow-none ring-0 hover:bg-secondary",
         className
       )}
     >
@@ -50,22 +71,37 @@ function ActionButton({
  */
 export function ResumeCard({
   resume,
+  resumeBullets,
   onEdit,
   onDownload,
   onCopy,
   onDelete,
 }: {
   resume: ResumeDoc;
+  /** The candidate's real experience bullets, used to ground AI tailoring. */
+  resumeBullets?: string[];
   onEdit?: () => void;
   onDownload?: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
 }) {
   const router = useRouter();
+  const premium = usePaywall((s) => s.premium);
   // Local open/close state for each of the card's dialogs.
   const [tailorOpen, setTailorOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+
+  // AI tailoring is a premium action: free users go to the subscribe funnel
+  // first; premium users open the tailoring dialog directly. Mirrors the
+  // download gate in /tailoring.
+  function handleTailor() {
+    if (!premium) {
+      router.push("/payment");
+      return;
+    }
+    setTailorOpen(true);
+  }
 
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
@@ -86,22 +122,31 @@ export function ResumeCard({
           <h2 className="text-lg font-bold text-foreground">{resume.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{resume.updatedAt}</p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          {/* Download and Edit lead; Copy and Share sit back; Delete is quietest. */}
+          <div className="mt-5 flex flex-wrap items-center gap-2">
             <ActionButton
-              className="text-primary hover:bg-secondary"
+              variant="primary"
               onClick={onDownload ?? (() => router.push("/resumes/write/personal"))}
             >
               <Download className="size-4" />
               Download
             </ActionButton>
-            <ActionButton onClick={onEdit ?? (() => router.push("/resumes/write/personal"))}>
+            <ActionButton
+              variant="secondary"
+              onClick={onEdit ?? (() => router.push("/resumes/write/personal"))}
+            >
+              <Pencil className="size-4" />
               Edit
             </ActionButton>
-            <ActionButton onClick={onCopy} disabled={!onCopy}>
+            <ActionButton variant="quiet" onClick={onCopy} disabled={!onCopy}>
               Copy
             </ActionButton>
-            <ActionButton onClick={() => setShareOpen(true)}>Share</ActionButton>
+            <ActionButton variant="quiet" onClick={() => setShareOpen(true)}>
+              Share
+            </ActionButton>
             <ActionButton
+              variant="danger"
+              className="ml-auto"
               onClick={onDelete ? () => setConfirmOpen(true) : undefined}
               disabled={!onDelete}
             >
@@ -119,7 +164,7 @@ export function ResumeCard({
           your chances of getting an interview
         </p>
         <button
-          onClick={() => setTailorOpen(true)}
+          onClick={handleTailor}
           className="inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-ai px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
         >
           Tailor this resume
@@ -131,6 +176,7 @@ export function ResumeCard({
         open={tailorOpen}
         onClose={() => setTailorOpen(false)}
         resumeTitle={resume.title}
+        resumeBullets={resumeBullets}
       />
 
       <ShareDialog
