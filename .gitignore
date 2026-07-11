@@ -42,3 +42,14 @@ next-env.d.ts
 
 # local auth user store
 /.data
+
+# local agent tooling (not app code)
+/.agents/
+/.claude/
+/agent-skills/
+/skills-lock.json
+
+# design reference assets (screenshots + feature briefs, hundreds of MB)
+/job-search/
+/jobs-oboarding/
+/Tailor your resume/
