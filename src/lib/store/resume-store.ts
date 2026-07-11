@@ -130,6 +130,9 @@ export interface ResumeState {
   /** Index of the bullet/paragraph the caret is in within the active entry's
    *  rich-text body, for per-paragraph preview highlighting. null = none. */
   activeBlockIndex: number | null;
+  /** Skill chip the user is hovering in the editor, so the preview highlights
+   *  just that one skill in blue. null = none. */
+  hoveredSkillId: string | null;
 
   /* setters */
   setTemplate: (id: string) => void;
@@ -200,6 +203,8 @@ export interface ResumeState {
   setActiveEntryId: (id: string | null) => void;
   /** Mark the bullet/paragraph being edited within the active entry. */
   setActiveBlockIndex: (index: number | null) => void;
+  /** Mark the skill chip being hovered (null clears it). */
+  setHoveredSkillId: (id: string | null) => void;
   setSectionOrder: (order: SectionKey[]) => void;
   /** Drop a built-in section from the resume. Re-addable via restoreSection. */
   removeSection: (key: SectionKey) => void;
@@ -341,6 +346,7 @@ type ResumeData = Pick<
   | "activeSection"
   | "activeEntryId"
   | "activeBlockIndex"
+  | "hoveredSkillId"
 >;
 
 const emptyResume = (): ResumeData => ({
@@ -377,6 +383,7 @@ const emptyResume = (): ResumeData => ({
   activeSection: "personal",
   activeEntryId: null,
   activeBlockIndex: null,
+  hoveredSkillId: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -576,6 +583,7 @@ export const useResumeStore = create<ResumeState>()(
   // sets it again from the caret position.
   setActiveEntryId: (id) => set({ activeEntryId: id, activeBlockIndex: null }),
   setActiveBlockIndex: (index) => set({ activeBlockIndex: index }),
+  setHoveredSkillId: (id) => set({ hoveredSkillId: id }),
   setSectionOrder: (order) => set({ sectionOrder: order }),
   removeSection: (key) =>
     set((s) => ({ sectionOrder: s.sectionOrder.filter((k) => k !== key) })),
@@ -644,6 +652,7 @@ export const useResumeStore = create<ResumeState>()(
         activeSection: _activeSection,
         activeEntryId: _activeEntryId,
         activeBlockIndex: _activeBlockIndex,
+        hoveredSkillId: _hoveredSkillId,
         ...rest
       }) => rest,
       /**

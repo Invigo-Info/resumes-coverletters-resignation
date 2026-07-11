@@ -60,12 +60,21 @@ export function PersonalDetailsForm() {
 
   const photoHidden = hidesPhoto(location);
 
-  // The photo lives inside the disclosure. If one is already set, open it on
-  // arrival - otherwise the avatar and its Remove button are unreachable for a
-  // user who doesn't know to expand. Runs after mount so the collapsed server
-  // markup and the first client render still agree.
+  // Open the disclosure on arrival when it already holds content - a set photo,
+  // or optional fields brought in by a resume import (nationality, license,
+  // birth date). Otherwise those imported values, and the avatar's Remove
+  // button, are unreachable for a user who doesn't know to expand. Runs after
+  // mount so the collapsed server markup and the first client render still agree.
   useEffect(() => {
-    if (useResumeStore.getState().personal.photo) setShowMore(true);
+    const p = useResumeStore.getState().personal;
+    if (
+      p.photo ||
+      p.nationality.trim() ||
+      p.driverLicense.trim() ||
+      p.birthDate.trim()
+    ) {
+      setShowMore(true);
+    }
   }, []);
 
   // Release the object URL when the dialog closes or the component unmounts.

@@ -81,34 +81,114 @@ async function gemini(
  * response is expected. One case per supported AI feature (summary, bullets,
  * cover/resignation letters, resume extraction, autocomplete, etc.).
  */
+/**
+ * Compact, prompt-friendly rendering of the structured resume data passed to the
+ * summary tasks. Missing sections are labelled so the model treats them as
+ * genuinely absent (and stays generic) rather than inventing details.
+ */
+function summaryContextBlock(p: Record<string, unknown>): {
+  block: string;
+  hasData: boolean;
+} {
+  type Emp = {
+    jobTitle?: string;
+    company?: string;
+    startDate?: string;
+    endDate?: string;
+    bullets?: string[];
+  };
+  type Edu = { degree?: string; institution?: string };
+  const emp = Array.isArray(p.employment) ? (p.employment as Emp[]) : [];
+  const skills = Array.isArray(p.skills)
+    ? (p.skills as string[]).filter(Boolean)
+    : [];
+  const edu = Array.isArray(p.education) ? (p.education as Edu[]) : [];
+
+  const empLines = emp.length
+    ? emp
+        .map((e) => {
+          const head = `- ${e.jobTitle || "Role"}${e.company ? ` at ${e.company}` : ""} (${e.startDate || "?"} - ${e.endDate || "?"})`;
+          const bullets = Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : [];
+          return [head, ...bullets.map((b) => `   * ${b}`)].join("\n");
+        })
+        .join("\n")
+    : "(none provided)";
+  const eduLine = edu.length
+    ? edu
+        .map((e) => [e.degree, e.institution].filter(Boolean).join(", "))
+        .filter(Boolean)
+        .join("; ")
+    : "(none provided)";
+
+  const block = `Employment history (most recent first):
+${empLines}
+
+Skills: ${skills.length ? skills.join(", ") : "(none provided)"}
+Education: ${eduLine}`;
+  return {
+    block,
+    hasData: emp.length > 0 || skills.length > 0 || edu.length > 0,
+  };
+}
+
 function buildPrompt(task: Task, p: Record<string, unknown>): { prompt: string; json: boolean } {
   const role = (p.jobTitle as string) || "professional";
   switch (task) {
-    case "summary":
+    case "summary": {
+      const { block, hasData } = summaryContextBlock(p);
       return {
         json: false,
-        prompt: `Write a concise, ATS-friendly resume professional summary for a ${role}.
-Tone: ${p.tone || "confident"}. 2-4 sentences, first-person implied (no "I"), no markdown, no headings.
-Focus on impact, key skills, and years of experience. Return only the summary text.`,
+        prompt: `Write a resume Professional Summary for the candidate below. Target role: ${role}. Tone: ${p.tone || "confident"}.
+
+Build the summary from the STRONGEST available inputs, in this priority order:
+1. The target role above.
+2. The most recent job title and its achievements (from the employment history).
+3. Skills and tools.
+4. Education and background.
+Lead with the higher-priority inputs; do not fall back to generic phrasing when real data exists.
+
+Rules:
+- 2 to 4 sentences. First-person implied (no "I"), plain prose - no markdown, headings, or lists.
+- Start with the role and years of experience WHEN the employment dates make that inferable; otherwise start with the role.
+- Weave in the 2-3 strongest skill themes the data supports.
+- Include a measurable achievement ONLY if it appears in the bullets below. Do NOT invent companies, metrics, years of experience, certifications, or tools.
+- Avoid buzzword-heavy generic filler.${hasData ? "" : "\n- Little structured data was provided: write a solid but GENERIC summary for the target role, keep claims modest, and do not fabricate specifics."}
+
+${block}
+
+Return only the summary text.`,
       };
-    case "improveSummary":
+    }
+    case "improveSummary": {
+      const { block } = summaryContextBlock(p);
       return {
         json: false,
-        prompt: `Improve and tighten this resume professional summary while keeping the facts.
-Never invent employers, metrics, or achievements that are not already in the text.
-Make it more impactful, ATS-friendly, ${p.tone || "confident"} in tone, 2-4 sentences, no markdown.
-${p.instruction ? `Follow this instruction from the user: ${p.instruction}` : ""}
-Return only the improved summary text.
+        prompt: `Improve this resume Professional Summary. Keep it truthful to the candidate's resume data below - never invent employers, metrics, achievements, years of experience, certifications, or tools the data does not support.
+Tone: ${p.tone || "confident"}. 2-4 sentences, first-person implied (no "I", "my", or "me"), plain prose, no markdown.
+Start with role and years of experience when inferable; highlight the 2-3 strongest skill themes.
+
+Build from the STRONGEST available inputs, in priority order: (1) target role, (2) most recent job title and its achievements, (3) skills and tools, (4) education and background, (5) the user instruction. If the current summary text names a DIFFERENT role or conflicts with the resume data, prefer the target role and employment history over the existing text.
+${p.instruction ? `Also follow this free-form instruction from the user: "${p.instruction}". Interpret casual/imperfect wording charitably and apply exactly what the user asks - this is the user's OWN resume, so honour explicit edits such as a specific number of years of experience, a point to emphasise, the length, or the tone, even when it differs from the dates below. Do NOT, on your own initiative, invent additional employers, companies, metrics, achievements, tools, or certifications the user did not ask for and the data does not support.` : ""}
+
+${block}
+Target role: ${role}
 
 Current summary:
-"""${p.text || ""}"""`,
+"""${p.text || ""}"""
+
+Return only the improved summary text.`,
       };
+    }
     case "bullets": {
       // No job title on the entry -> generic, transferable bullets. We never
       // fall back to the candidate's desired job title: these suggestions
       // describe THIS job, not the one they are applying for.
       const titled = Boolean((p.jobTitle as string)?.trim());
       const page = Number(p.page ?? 0);
+      const existing = Array.isArray(p.existing)
+        ? (p.existing as string[]).map((b) => String(b).trim()).filter(Boolean)
+        : [];
+      const hasExisting = existing.length > 0;
       return {
         json: true,
         prompt: `Suggest 4 strong, achievement-oriented resume bullet points ${
@@ -116,6 +196,13 @@ Current summary:
             ? `for a ${role}${p.company ? ` at ${p.company}` : ""}`
             : "that would suit any professional role, describing transferable impact (ownership, collaboration, process improvement, measurable results)"
         }.
+${
+  hasExisting
+    ? `The candidate's resume ALREADY lists these bullets for this exact role:
+${existing.map((b) => `- ${b}`).join("\n")}
+Generate 4 ADDITIONAL bullets that clearly build on the experience above: reuse the same tools, platforms, metrics, domain and seniority shown, cover responsibilities or achievements NOT already mentioned, and never duplicate or lightly reword an existing bullet.`
+    : ""
+}
 Each bullet starts with a strong action verb and includes a concrete/quantified outcome where natural.
 ${page > 0 ? `These must be different from the first ${page * 4} you would normally give - go for less obvious angles.` : ""}
 Return a JSON array of 4 strings only. No markdown.`,
@@ -236,9 +323,38 @@ Resume:
       "endDate": string,
       "description": string      // plain text, "" if none
     }
+  ],
+  "courses": [                   // courses, certifications, training - [] if none
+    {
+      "course": string,          // course / certification name
+      "institution": string,     // provider, e.g. "Coursera", "HubSpot Academy"
+      "startDate": string,       // "" if none
+      "endDate": string          // "" if none
+    }
+  ],
+  "languages": [                 // spoken languages - [] if none
+    {
+      "language": string,        // e.g. "English"
+      "proficiency": string      // e.g. "Native", "Highly proficient", "" if none
+    }
+  ],
+  "hobbies": [string],           // interests / hobbies as short phrases - [] if none
+  "references": [                // referees - [] if none
+    {
+      "name": string,
+      "company": string,         // company / relationship
+      "email": string,
+      "phone": string
+    }
+  ],
+  "links": [                     // websites / portfolio / social links (NOT the main LinkedIn above) - [] if none
+    {
+      "title": string,           // e.g. "Portfolio", "GitHub"
+      "url": string
+    }
   ]
 }
-Rules: COPY real data verbatim (names, companies, dates, bullet text) — do NOT invent, summarize away, or substitute placeholder/sample data. Use "" or [] for anything genuinely absent. Merge "Core Skills", "Tools & Platforms" and "Certifications" into skills if no dedicated skills list exists. Return JSON only, no markdown, no extra keys.
+Rules: COPY real data verbatim (names, companies, dates, bullet text) — do NOT invent, summarize away, or substitute placeholder/sample data. Use "" or [] for anything genuinely absent. Extract EVERY section present in the resume - courses, certifications, languages, hobbies/interests, references and links must each be captured into their key, not dropped or merged into skills. Merge "Core Skills", "Tools & Platforms" into skills if no dedicated skills list exists. Return JSON only, no markdown, no extra keys.
 
 Resume text (may be empty if a document is attached):
 """${(p.resumeText as string) || ""}"""`,

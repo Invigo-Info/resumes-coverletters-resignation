@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   Loader2,
@@ -37,6 +37,19 @@ function htmlToText(html: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .trim();
+}
+
+/** Employment description HTML -> bullet strings (list items, else text lines). */
+function htmlToBullets(html: string): string[] {
+  if (!html) return [];
+  const items = Array.from(html.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi))
+    .map((m) => htmlToText(m[1]))
+    .filter(Boolean);
+  if (items.length) return items;
+  return htmlToText(html)
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Plain text -> summary HTML (<p> per blank-line block). */
@@ -79,9 +92,19 @@ export function ProfessionalSummaryForm() {
   const [index, setIndex] = useState(0);
   /** The instruction that opened the panel; "" means "write from scratch". */
   const [instruction, setInstruction] = useState("");
+  // The AI draft panel, so we can scroll it into view when it opens.
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const hasContent = htmlToText(summary).length > 0;
   const current = variants[index];
+
+  // When an "Improve with AI" / "Write with AI" action opens the draft panel,
+  // scroll it into view so the generated summary is visible right away.
+  useEffect(() => {
+    if (panelOpen) {
+      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [panelOpen]);
 
   /**
    * Produce one more draft and show it. `nextInstruction` empty = generate from
@@ -103,9 +126,28 @@ export function ProfessionalSummaryForm() {
       setIndex(0);
     }
 
+    // Ground the summary in the candidate's real resume data, read fresh so it
+    // reflects the latest employment / skills / education.
+    const st = useResumeStore.getState();
+    const ctx = {
+      employment: st.employment.slice(0, 3).map((e) => ({
+        jobTitle: e.jobTitle,
+        company: e.company,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        location: e.location,
+        bullets: htmlToBullets(e.description),
+      })),
+      skills: st.skills.map((sk) => sk.name).filter(Boolean),
+      education: st.education.map((e) => ({
+        degree: e.degree,
+        institution: e.institution,
+      })),
+    };
+
     const result = refine
-      ? await improveSummary({ tone, text, jobTitle, instruction: nextInstruction })
-      : await generateSummary({ tone, jobTitle });
+      ? await improveSummary({ tone, text, jobTitle, instruction: nextInstruction, ...ctx })
+      : await generateSummary({ tone, jobTitle, ...ctx });
 
     setBusy(false);
 
@@ -193,7 +235,10 @@ export function ProfessionalSummaryForm() {
       {/* AI draft. Sits below the editor, visibly separate, and applies to the
           resume only via Use. */}
       {panelOpen && (
-        <div className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5">
+        <div
+          ref={previewRef}
+          className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5"
+        >
           <span className="absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full bg-[var(--ai-solid)] text-white shadow-sm">
             <Sparkles className="size-3.5" />
           </span>

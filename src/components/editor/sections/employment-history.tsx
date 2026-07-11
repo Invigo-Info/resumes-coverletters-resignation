@@ -98,6 +98,8 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   const [preview, setPreview] = useState<string[] | null>(null);
   const [previewInstruction, setPreviewInstruction] = useState("");
   const loadedFor = useRef<string | null>(null);
+  // The "Edit with AI" result panel, so we can scroll it into view when it opens.
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const bullets = htmlToBullets(entry.description);
   const hasContent = strip(entry.description).length > 0;
@@ -109,21 +111,33 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       const e = useResumeStore.getState().employment.find((x) => x.id === entry.id);
       if (!e) return;
       const role = e.jobTitle.trim();
-      const cacheKey = `${role.toLowerCase()}::${nextPage}`;
+      // Suggestions build on the bullets already in this entry (e.g. parsed from
+      // an uploaded resume), so they complement the candidate's real experience.
+      const existing = htmlToBullets(e.description);
+      // Fold the existing bullets into the cache key so a different resume yields
+      // different suggestions (short signature keeps the key bounded).
+      const sig = `${existing.length}:${existing.join("|").slice(0, 60).toLowerCase()}`;
+      const cacheKey = `${role.toLowerCase()}::${sig}::${nextPage}`;
       const cached = ideaCache.get(cacheKey);
       if (cached) {
-        setIdeas((prev) => (nextPage === 0 ? cached : [...prev, ...cached]));
+        // Replace, never append: "Show more ideas" swaps in a fresh set and
+        // drops the previous one, so only the newly generated bullets show.
+        setIdeas(cached);
         setPage(nextPage);
         return;
       }
       setLoading(true);
+      // Clear the old ideas up front so they're removed while the new set loads
+      // (the skeleton rows fill their place until it arrives).
+      setIdeas([]);
       const more = await improveBullets({
         role, // "" -> generic bullets, by design
         company: e.company,
         page: nextPage,
+        existing,
       });
       ideaCache.set(cacheKey, more);
-      setIdeas((prev) => (nextPage === 0 ? more : [...prev, ...more]));
+      setIdeas(more);
       setPage(nextPage);
       setLoading(false);
     },
@@ -146,6 +160,16 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
     );
     return () => clearTimeout(t);
   }, [entry.jobTitle, fetchIdeas]);
+
+  // When an "Edit with AI" action opens the result panel (Improve / Shorter /
+  // More human / Ask AI to…), scroll it into view so the generated bullets are
+  // visible right away, even on a long entry where the panel is below the fold.
+  const previewOpen = preview !== null;
+  useEffect(() => {
+    if (previewOpen) {
+      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [previewOpen]);
 
   // "Edit with AI" - generate a rewritten version to PREVIEW (Rewrite / Use).
   // keepPanel: from the preview's Rewrite menu (keep showing the current result
@@ -220,7 +244,10 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
 
       {/* "Edit with AI" result preview - Rewrite to regenerate, Use to apply. */}
       {preview !== null && (
-        <div className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5">
+        <div
+          ref={previewRef}
+          className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5"
+        >
           <span className="absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full bg-[var(--ai-from)] text-white shadow-sm">
             <Sparkles className="size-3.5" />
           </span>

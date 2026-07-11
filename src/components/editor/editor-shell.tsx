@@ -6,7 +6,6 @@ import { Eye, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { useResumeAutosave } from "@/lib/store/documents-store";
-import { SaveStatusPill } from "./save-status-pill";
 import {
   RESUME_WRITE_BASE,
   resumeKeyFromSlug,
@@ -17,6 +16,7 @@ import { TopBar, type EditorTab } from "./top-bar";
 import { SectionNav } from "./section-nav";
 import { SectionFooter } from "./section-footer";
 import { LivePreview } from "./live-preview";
+import { PreviewPane } from "./preview-pane";
 import { PersonalDetailsForm } from "./sections/personal-details";
 import { ContactInformationForm } from "./sections/contact-information";
 import { EmploymentHistoryForm } from "./sections/employment-history";
@@ -176,24 +176,21 @@ export function EditorShell({
 
             {/* Right preview */}
             <section className="hidden min-w-0 flex-1 xl:block">
-              <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
-                <LivePreview />
-                <SaveStatusPill />
-              </div>
+              <PreviewPane paneClassName="bg-white" />
             </section>
           </div>
         )}
 
         {tab === "design" && (
           <div className="flex gap-6 px-4 pb-16">
-            <aside className="w-full shrink-0 lg:w-[380px]">
-              <DesignPanel onBack={() => setTab("write")} />
+            <aside className="w-full shrink-0 lg:w-110 xl:w-130">
+              <DesignPanel
+                onBack={() => setTab("write")}
+                onNext={() => setTab("improve")}
+              />
             </aside>
             <section className="hidden min-w-0 flex-1 lg:block">
-              <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
-                <LivePreview />
-                <SaveStatusPill />
-              </div>
+              <PreviewPane paneClassName="bg-white" />
             </section>
           </div>
         )}
@@ -211,10 +208,7 @@ export function EditorShell({
               </div>
             </main>
             <section className="hidden min-w-0 flex-1 xl:block">
-              <div className="relative min-h-[calc(100vh-7rem)] rounded-2xl bg-[#EFF4FF] shadow-card-lg ring-1 ring-border">
-                <LivePreview />
-                <SaveStatusPill className="bg-white/70" />
-              </div>
+              <PreviewPane paneClassName="bg-[#EFF4FF]" savePillClassName="bg-white/70" />
             </section>
           </div>
         )}

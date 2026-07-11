@@ -1,4 +1,8 @@
-import { DEFAULT_SECTION_ORDER, type ResumeState } from "@/lib/store/resume-store";
+import {
+  type AdditionalSection,
+  type ResumeState,
+  type SectionKey,
+} from "@/lib/store/resume-store";
 import { extractDocxText } from "@/lib/docx-text";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -25,6 +29,30 @@ interface AiEducation {
   endDate?: string;
   description?: string;
 }
+/** One course / certification entry as returned by the AI. */
+interface AiCourse {
+  course?: string;
+  institution?: string;
+  startDate?: string;
+  endDate?: string;
+}
+/** One spoken language as returned by the AI. */
+interface AiLanguage {
+  language?: string;
+  proficiency?: string;
+}
+/** One referee as returned by the AI. */
+interface AiReference {
+  name?: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+}
+/** One website / portfolio link as returned by the AI. */
+interface AiLink {
+  title?: string;
+  url?: string;
+}
 /** The full loose shape the `extractResume` AI task returns before mapping. */
 interface AiResume {
   firstName?: string;
@@ -38,6 +66,11 @@ interface AiResume {
   employment?: AiEmployment[];
   skills?: (string | { name?: string })[];
   education?: AiEducation[];
+  courses?: AiCourse[];
+  languages?: AiLanguage[];
+  hobbies?: string | string[];
+  references?: AiReference[];
+  links?: AiLink[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -84,8 +117,108 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/**
+ * Build the optional ("additional") sections the resume also contained -
+ * courses, languages, hobbies, references, links - so the upload restores the
+ * WHOLE resume, not just the core sections. Each is emitted only when it holds
+ * real content, and its id doubles as the key placed in `sectionOrder`.
+ */
+function mapAdditional(d: AiResume): AdditionalSection[] {
+  const out: AdditionalSection[] = [];
+
+  const courses = (d.courses ?? []).filter((c) =>
+    (c.course ?? c.institution ?? "").trim()
+  );
+  if (courses.length) {
+    out.push({
+      id: "add-courses",
+      type: "courses",
+      title: "Courses",
+      entries: courses.map((c, i) => ({
+        id: `crs-up-${i + 1}`,
+        course: c.course?.trim() || "",
+        institution: c.institution?.trim() || "",
+        startDate: c.startDate?.trim() || "",
+        endDate: c.endDate?.trim() || "",
+      })),
+    });
+  }
+
+  const languages = (d.languages ?? []).filter((l) => (l.language ?? "").trim());
+  if (languages.length) {
+    out.push({
+      id: "add-languages",
+      type: "languages",
+      title: "Languages",
+      entries: languages.map((l, i) => ({
+        id: `lng-up-${i + 1}`,
+        language: l.language?.trim() || "",
+        proficiency: l.proficiency?.trim() || "",
+      })),
+    });
+  }
+
+  const hobbiesText = Array.isArray(d.hobbies)
+    ? d.hobbies.map((h) => h.trim()).filter(Boolean).join(", ")
+    : (d.hobbies ?? "").trim();
+  if (hobbiesText) {
+    out.push({
+      id: "add-hobbies",
+      type: "hobbies",
+      title: "Hobbies",
+      entries: [{ id: "hob-up-1", body: toParagraphs(hobbiesText) }],
+    });
+  }
+
+  const references = (d.references ?? []).filter((r) =>
+    (r.name ?? r.company ?? "").trim()
+  );
+  if (references.length) {
+    out.push({
+      id: "add-references",
+      type: "references",
+      title: "References",
+      entries: references.map((r, i) => ({
+        id: `ref-up-${i + 1}`,
+        name: r.name?.trim() || "",
+        company: r.company?.trim() || "",
+        email: r.email?.trim() || "",
+        phone: r.phone?.trim() || "",
+      })),
+    });
+  }
+
+  const links = (d.links ?? []).filter((l) => (l.title ?? l.url ?? "").trim());
+  if (links.length) {
+    out.push({
+      id: "add-links",
+      type: "links",
+      title: "Links",
+      entries: links.map((l, i) => ({
+        id: `lnk-up-${i + 1}`,
+        title: l.title?.trim() || "",
+        url: l.url?.trim() || "",
+      })),
+    });
+  }
+
+  return out;
+}
+
 /** Map the AI extraction into the resume store shape. */
 function mapToResume(d: AiResume): Partial<ResumeState> {
+  const additional = mapAdditional(d);
+  // Keep Professional summary last in the editing order; slot the imported
+  // optional sections in just before it (after the core sections).
+  const sectionOrder: SectionKey[] = [
+    "personal",
+    "contact",
+    "employment",
+    "education",
+    "skills",
+    ...additional.map((a) => a.id),
+    "summary",
+  ];
   return {
     personal: {
       firstName: d.firstName?.trim() || "",
@@ -125,8 +258,8 @@ function mapToResume(d: AiResume): Partial<ResumeState> {
       location: e.location?.trim() || "",
       description: e.description?.trim() ? toParagraphs(e.description) : "",
     })),
-    additional: [],
-    sectionOrder: DEFAULT_SECTION_ORDER,
+    additional,
+    sectionOrder,
     activeSection: "personal",
   };
 }
@@ -269,7 +402,48 @@ const MOCK_RESUME: Partial<ResumeState> = {
       description: "",
     },
   ],
-  additional: [],
-  sectionOrder: DEFAULT_SECTION_ORDER,
+  additional: [
+    {
+      id: "add-courses",
+      type: "courses",
+      title: "Courses",
+      entries: [
+        { id: "crs-u1", course: "Advanced Digital Marketing Strategy", institution: "Coursera", startDate: "", endDate: "2022" },
+        { id: "crs-u2", course: "Marketing Analytics and Attribution", institution: "Google Skillshop", startDate: "", endDate: "2021" },
+        { id: "crs-u3", course: "Account-Based Marketing Foundations", institution: "LinkedIn Learning", startDate: "", endDate: "2020" },
+      ],
+    },
+    {
+      id: "add-languages",
+      type: "languages",
+      title: "Languages",
+      entries: [
+        { id: "lng-u1", language: "English", proficiency: "Native" },
+        { id: "lng-u2", language: "Spanish", proficiency: "Highly proficient" },
+      ],
+    },
+    {
+      id: "add-hobbies",
+      type: "hobbies",
+      title: "Hobbies",
+      entries: [
+        {
+          id: "hob-u1",
+          body: "<p>Reading marketing case studies, Public speaking, Business podcasts, Fitness, Community volunteering</p>",
+        },
+      ],
+    },
+  ],
+  sectionOrder: [
+    "personal",
+    "contact",
+    "employment",
+    "education",
+    "skills",
+    "add-courses",
+    "add-languages",
+    "add-hobbies",
+    "summary",
+  ],
   activeSection: "personal",
 };

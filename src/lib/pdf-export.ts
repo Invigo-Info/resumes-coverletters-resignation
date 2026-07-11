@@ -73,11 +73,14 @@ export async function exportElementToPdf(
       useCORS: true,
       logging: false,
       windowWidth: target === el ? undefined : captureWidth,
-      // Drop the editor-only active-bullet highlight from the exported PDF.
+      // Drop the editor-only "active section" blue text from the exported PDF:
+      // reset the inline colour on every tagged node so it falls back to its
+      // normal (neutral / accent) resume colour.
       onclone: (doc: Document) => {
-        doc
-          .querySelectorAll("[data-active-block]")
-          .forEach((node) => node.removeAttribute("data-active-block"));
+        doc.querySelectorAll<HTMLElement>("[data-edit-active]").forEach((node) => {
+          node.removeAttribute("data-edit-active");
+          node.style.color = "";
+        });
       },
     });
   } finally {

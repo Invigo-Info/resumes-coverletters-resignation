@@ -16,37 +16,6 @@ function dateRange(start: string, end: string) {
   return [start, end].filter(Boolean).join(" - ");
 }
 
-/**
- * Mark the Nth block with `data-active-block` so the editor-only CSS rule
- * highlights just that bullet/paragraph. "Blocks" are counted the same way the
- * editor counts them: each list item, plus each top-level (non-list) element, in
- * document order. The PDF exporter strips the attribute on clone, so it never
- * reaches the PDF. Client-only (DOM); returns the html unchanged on the server.
- */
-function highlightBlockHtml(html: string, index: number | null): string {
-  if (index == null || index < 0 || typeof window === "undefined") return html;
-  const doc = new DOMParser().parseFromString(
-    `<div id="rt-root">${html}</div>`,
-    "text/html"
-  );
-  const root = doc.getElementById("rt-root");
-  if (!root) return html;
-
-  const blocks: Element[] = [];
-  root.childNodes.forEach((node) => {
-    if (node.nodeType !== 1) return;
-    const el = node as Element;
-    const tag = el.tagName.toLowerCase();
-    if (tag === "ul" || tag === "ol") {
-      el.querySelectorAll(":scope > li").forEach((li) => blocks.push(li));
-    } else {
-      blocks.push(el);
-    }
-  });
-
-  blocks[index]?.setAttribute("data-active-block", "");
-  return root.innerHTML;
-}
 
 // Maps each selectable font id to the concrete CSS font-family stack applied to
 // the rendered resume (with web-safe fallbacks).
@@ -80,7 +49,7 @@ function isSidebar(key: SectionKey, additional: AdditionalSection[]) {
  * one/two-column + dark-sidebar layout), reorders sections, and overlays
  * editor-only highlights (active section/entry/block) that are stripped from export.
  */
-export function LivePreview() {
+export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } = {}) {
   const s = useResumeStore();
   const { design } = s;
   const accent = design.color;
@@ -101,6 +70,26 @@ export function LivePreview() {
     .filter(Boolean)
     .join("  •  ");
 
+  // "You're editing here" cue: the section/entry currently open in the editor
+  // renders its body text in this blue (like resume.co), instead of a box. The
+  // colour is an editor-only affordance - it is stripped from the exported PDF by
+  // `previewOnly` never being set there, and the PDF clones ignore it anyway.
+  const EDIT_BLUE = "#2563EB";
+  // Body colour for one entry: blue while that entry is the active one.
+  const entryColor = (id: string) =>
+    !previewOnly && id === s.activeEntryId ? EDIT_BLUE : undefined;
+  // Body colour for a whole section (used by entry-less sections like summary /
+  // skills / languages / hobbies): blue while that section's editor is open.
+  const sectionColor = (key: string) =>
+    !previewOnly && key === s.activeSection && s.activeEntryId == null
+      ? EDIT_BLUE
+      : undefined;
+  // Turn a colour into element props that ALSO tag the node so the PDF exporter
+  // strips the colour on clone - the editor-only blue must never ship in the
+  // downloaded resume. Returns undefined (spreads nothing) when not active.
+  const editActive = (color: string | undefined) =>
+    color ? { style: { color }, "data-edit-active": "" } : undefined;
+
   // Per-entry highlight: wraps a single inner entry (one job, one degree…) so
   // only that entry lights up when it's the one being edited. Excluded from the
   // PDF via `data-html2canvas-ignore`, same as the section highlight.
@@ -111,30 +100,19 @@ export function LivePreview() {
     id: string;
     children: React.ReactNode;
   }) {
-    const active = id === s.activeEntryId;
-    // When the caret is in a specific bullet/paragraph, that block highlights on
-    // its own - so suppress the whole-entry box (keep just the presence badge).
-    const showBox = active && s.activeBlockIndex == null;
+    const active = !previewOnly && id === s.activeEntryId;
     return (
       <div className="relative">
         {active && (
-          <>
-            {showBox && (
-              <span
-                aria-hidden
-                data-html2canvas-ignore
-                className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
-              />
-            )}
-            {/* Presence badge - "you're editing here", like resume.co. */}
-            <span
-              aria-hidden
-              data-html2canvas-ignore
-              className="pointer-events-none absolute -left-5 top-0 z-10 grid size-4 place-items-center rounded-full bg-[#2563EB] text-[8px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
-            >
-              {initials}
-            </span>
-          </>
+          // Presence badge - "you're editing here", like resume.co. The body text
+          // of the active entry also turns blue (handled at each render site).
+          <span
+            aria-hidden
+            data-html2canvas-ignore
+            className="pointer-events-none absolute -left-5 top-0 z-10 grid size-4 place-items-center rounded-full bg-[#2563EB] text-[8px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
+          >
+            {initials}
+          </span>
         )}
         <div className="relative">{children}</div>
       </div>
@@ -143,36 +121,20 @@ export function LivePreview() {
 
   function PreviewSection({
     title,
-    sectionKey,
-    entryIds,
     children,
   }: {
     title: string;
-    /** Maps this block to its editor section, so it highlights when active. */
+    /** Kept for call-site clarity; active styling is applied per body below. */
     sectionKey?: string;
-    /** Inner entry ids - when one is the active entry, the per-entry highlight
-     *  takes over and the whole-section box is suppressed. */
+    /** Kept for call-site clarity; active styling is applied per entry below. */
     entryIds?: string[];
     children: React.ReactNode;
   }) {
     // Space entries with an inline top margin (not Tailwind `space-y`, which the
     // PDF rasterizer drops) so the gaps appear in the downloaded PDF too.
     const items = Children.toArray(children);
-    const innerActive =
-      s.activeEntryId != null && (entryIds?.includes(s.activeEntryId) ?? false);
-    const isActive =
-      sectionKey != null && sectionKey === s.activeSection && !innerActive;
     return (
       <section className={`relative ${sp.section}`}>
-        {/* Active-section highlight. `data-html2canvas-ignore` keeps it out of
-            the downloaded PDF - it's an editor-only affordance. */}
-        {isActive && (
-          <span
-            aria-hidden
-            data-html2canvas-ignore
-            className="pointer-events-none absolute -inset-x-3 -inset-y-2 rounded-lg bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
-          />
-        )}
         <div className="relative">
           <h2
             className="border-b pb-1 text-[11px] font-bold uppercase tracking-wide"
@@ -228,6 +190,7 @@ export function LivePreview() {
                   {(e.description ?? "").replace(/<[^>]*>/g, "").trim() && (
                     <div
                       className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
+                      {...editActive(entryColor(e.id))}
                       dangerouslySetInnerHTML={{ __html: spaceBlocks(e.description, 0.5) }}
                     />
                   )}
@@ -257,7 +220,12 @@ export function LivePreview() {
                     </span>
                   </div>
                   {e.course && e.institution && (
-                    <p className="italic text-neutral-500">{e.institution}</p>
+                    <p
+                      className="italic text-neutral-500"
+                      {...editActive(entryColor(e.id))}
+                    >
+                      {e.institution}
+                    </p>
                   )}
                 </div>
               </EntryHighlight>
@@ -288,7 +256,9 @@ export function LivePreview() {
                       <p className="italic text-neutral-500">{e.company}</p>
                     )}
                     {(e.email || e.phone) && (
-                      <p>{[e.email, e.phone].filter(Boolean).join("  •  ")}</p>
+                      <p {...editActive(entryColor(e.id))}>
+                        {[e.email, e.phone].filter(Boolean).join("  •  ")}
+                      </p>
                     )}
                   </div>
                 </EntryHighlight>
@@ -299,7 +269,10 @@ export function LivePreview() {
         if (!has("language")) return null;
         return (
           <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
-            <p className="text-[11px] text-neutral-700">
+            <p
+              className="text-[11px] text-neutral-700"
+              {...editActive(sectionColor(sec.id))}
+            >
               {sec.entries
                 .filter((e) => e.language)
                 .map((e) =>
@@ -322,7 +295,10 @@ export function LivePreview() {
               .filter((e) => e.title || e.url)
               .map((e) => (
                 <EntryHighlight id={e.id} key={e.id}>
-                  <p className="text-[11px] break-words text-neutral-700">
+                  <p
+                    className="text-[11px] break-words text-neutral-700"
+                    {...editActive(entryColor(e.id))}
+                  >
                     {e.title && <span className="font-semibold">{e.title}: </span>}
                     {/* Reads as a person would say it ("linkedin.com"), but the
                         href keeps the full address the user typed. */}
@@ -346,6 +322,7 @@ export function LivePreview() {
           <PreviewSection title={sec.title} key={sec.id} sectionKey={sec.id}>
             <div
               className="text-[11px] text-neutral-700"
+              {...editActive(sectionColor(sec.id))}
               dangerouslySetInnerHTML={{ __html: spaceBlocks(sec.entries[0]?.body ?? "", 0.5) }}
             />
           </PreviewSection>
@@ -371,6 +348,7 @@ export function LivePreview() {
                   {(e.body ?? "").replace(/<[^>]*>/g, "").trim() && (
                     <div
                       className="mt-0.5 [&_li]:ml-4 [&_li]:list-disc"
+                      {...editActive(entryColor(e.id))}
                       dangerouslySetInnerHTML={{ __html: spaceBlocks(e.body, 0.5) }}
                     />
                   )}
@@ -401,6 +379,7 @@ export function LivePreview() {
           >
             <div
               className="text-[11px] text-neutral-700 [&_li]:ml-4 [&_li]:list-disc"
+              {...editActive(sectionColor(key))}
               dangerouslySetInnerHTML={{ __html: spaceBlocks(s.summary, 0.5) }}
             />
           </PreviewSection>
@@ -430,16 +409,10 @@ export function LivePreview() {
                   {e.description.replace(/<[^>]*>/g, "").trim() && (
                     <div
                       className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
-                      // For the entry being edited, mark the caret's block so the
-                      // exact bullet/paragraph highlights; other entries render plain.
+                      // The entry being edited renders its bullets in blue.
+                      {...editActive(entryColor(e.id))}
                       dangerouslySetInnerHTML={{
-                        __html:
-                          e.id === s.activeEntryId
-                            ? highlightBlockHtml(
-                                spaceBlocks(e.description, 0.5),
-                                s.activeBlockIndex
-                              )
-                            : spaceBlocks(e.description, 0.5),
+                        __html: spaceBlocks(e.description, 0.5),
                       }}
                     />
                   )}
@@ -448,17 +421,29 @@ export function LivePreview() {
             ))}
           </PreviewSection>
         ) : null;
-      case "skills":
-        return s.skills.some((sk) => sk.name) ? (
+      case "skills": {
+        // Each skill is its own span so the one hovered in the editor can light
+        // up blue on its own; the commas sit outside the coloured span.
+        const named = s.skills.filter((sk) => sk.name);
+        return named.length ? (
           <PreviewSection title={s.skillsTitle?.trim() || "Skills"} key={key} sectionKey={key}>
             <p className="text-[11px] text-neutral-700">
-              {s.skills
-                .filter((sk) => sk.name)
-                .map((sk) => sk.name)
-                .join(", ")}
+              {named.map((sk, i) => (
+                <span key={sk.id}>
+                  <span
+                    {...editActive(
+                      !previewOnly && sk.id === s.hoveredSkillId ? EDIT_BLUE : undefined
+                    )}
+                  >
+                    {sk.name}
+                  </span>
+                  {i < named.length - 1 ? ", " : ""}
+                </span>
+              ))}
             </p>
           </PreviewSection>
         ) : null;
+      }
       case "education":
         return s.education.some((e) => e.institution || e.degree) ? (
           <PreviewSection
@@ -477,7 +462,10 @@ export function LivePreview() {
                     </span>
                   </div>
                   {(e.institution || e.location) && (
-                    <p className="italic text-neutral-500">
+                    <p
+                      className="italic text-neutral-500"
+                      {...editActive(entryColor(e.id))}
+                    >
                       {[e.institution, e.location].filter(Boolean).join(", ")}
                     </p>
                   )}
@@ -505,16 +493,10 @@ export function LivePreview() {
     : [];
 
   const headerActive =
-    s.activeSection === "personal" || s.activeSection === "contact";
+    !previewOnly &&
+    (s.activeSection === "personal" || s.activeSection === "contact");
   const header = (
     <header className="relative">
-      {headerActive && (
-        <span
-          aria-hidden
-          data-html2canvas-ignore
-          className="pointer-events-none absolute -inset-x-3 -inset-y-2 rounded-lg bg-[#E6EEFF] ring-1 ring-[#9CB9F2]"
-        />
-      )}
       <div className="relative flex items-start gap-4">
         {s.personal.photo && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -525,7 +507,10 @@ export function LivePreview() {
           />
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+          <h1
+            className="text-2xl font-bold tracking-tight text-neutral-900"
+            {...editActive(headerActive ? EDIT_BLUE : undefined)}
+          >
             {fullName}
           </h1>
           {s.personal.jobTitle && (
@@ -534,7 +519,12 @@ export function LivePreview() {
             </p>
           )}
           {contactLine && (
-            <p className="mt-1.5 text-[11px] text-neutral-600">{contactLine}</p>
+            <p
+              className="mt-1.5 text-[11px] text-neutral-600"
+              {...editActive(headerActive ? EDIT_BLUE : undefined)}
+            >
+              {contactLine}
+            </p>
           )}
         </div>
       </div>

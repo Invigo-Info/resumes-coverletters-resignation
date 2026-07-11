@@ -33,7 +33,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** POST to the AI bridge. Returns null when the server signals fallback. */
 async function callAi<T>(
   task: string,
-  payload: Record<string, unknown>
+  payload: object
 ): Promise<T | null> {
   try {
     const res = await fetch("/api/ai", {
@@ -101,14 +101,34 @@ function fallbackSummary(tone: ToneId, jobTitle?: string): string {
 }
 
 /**
- * Generate a professional-summary draft from scratch ("Write with AI").
- * `jobTitle` is the desired job title from Personal details - here that IS the
- * right source, since the summary describes the role being applied for.
+ * Structured resume data the summary is built FROM - so the AI writes from the
+ * candidate's real experience, not just by rewording the existing summary text.
  */
-export async function generateSummary(opts: {
-  tone: ToneId;
-  jobTitle?: string;
-}): Promise<string> {
+export interface SummaryContext {
+  employment?: {
+    jobTitle?: string;
+    company?: string;
+    startDate?: string;
+    endDate?: string;
+    location?: string;
+    bullets?: string[];
+  }[];
+  skills?: string[];
+  education?: { degree?: string; institution?: string }[];
+}
+
+/**
+ * Generate a professional-summary draft from scratch ("Write with AI"), grounded
+ * in the candidate's structured resume data (employment, skills, education).
+ * `jobTitle` is the desired job title from Personal details - the role being
+ * applied for.
+ */
+export async function generateSummary(
+  opts: {
+    tone: ToneId;
+    jobTitle?: string;
+  } & SummaryContext
+): Promise<string> {
   const ai = await callAi<string>("summary", opts);
   if (ai) return ai;
   await delay(500);
@@ -117,15 +137,18 @@ export async function generateSummary(opts: {
 
 /**
  * Refine the summary already in the editor ("Improve with AI"). `instruction`
- * carries the chosen preset (Improve / More human / Shorter / Ask AI to…).
- * Facts are preserved; only the wording and tone change.
+ * carries the chosen preset (Improve / More human / Shorter / Ask AI to…). The
+ * candidate's structured data is passed too, so the rewrite stays truthful to
+ * the resume and can surface real experience - never inventing facts.
  */
-export async function improveSummary(opts: {
-  tone: ToneId;
-  text: string;
-  jobTitle?: string;
-  instruction?: string;
-}): Promise<string> {
+export async function improveSummary(
+  opts: {
+    tone: ToneId;
+    text: string;
+    jobTitle?: string;
+    instruction?: string;
+  } & SummaryContext
+): Promise<string> {
   const ai = await callAi<string>("improveSummary", opts);
   if (ai) return ai;
   await delay(500);
@@ -143,18 +166,29 @@ export async function improveBullets(opts: {
   role?: string;
   company?: string;
   page?: number;
+  /** The entry's current bullets (e.g. parsed from an uploaded resume). When
+   *  present, suggestions are generated to complement these instead of being
+   *  generic role-based ideas. */
+  existing?: string[];
 }): Promise<string[]> {
+  const existing = (opts.existing ?? []).map((b) => b.trim()).filter(Boolean);
   // The server prompt reads `jobTitle`; send it under that name or every
   // suggestion comes back for a generic "professional".
   const ai = await callAi<string[]>("bullets", {
     jobTitle: opts.role?.trim() || "",
     company: opts.company,
     page: opts.page,
+    existing,
   });
   if (ai && Array.isArray(ai)) return ai;
   await delay(500);
-  const start = ((opts.page ?? 0) * 4) % BULLET_POOL.length;
-  return Array.from({ length: 4 }, (_, i) => BULLET_POOL[(start + i) % BULLET_POOL.length]);
+  // Fallback (no AI key): draw from the generic pool but skip anything the
+  // resume already says, so suggestions never duplicate the extracted bullets.
+  const seen = new Set(existing.map((b) => b.toLowerCase()));
+  const pool = BULLET_POOL.filter((b) => !seen.has(b.toLowerCase()));
+  const src = pool.length >= 4 ? pool : BULLET_POOL;
+  const start = ((opts.page ?? 0) * 4) % src.length;
+  return Array.from({ length: 4 }, (_, i) => src[(start + i) % src.length]);
 }
 
 /** Rewrite the user's existing bullet text into stronger versions. */

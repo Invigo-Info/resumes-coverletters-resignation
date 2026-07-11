@@ -16,11 +16,8 @@ import {
   Rows2,
   Rows3,
   Rows4,
-  Download,
-  Loader2,
   type LucideIcon,
 } from "lucide-react";
-import { downloadResume } from "@/lib/download-pdf";
 import { cn } from "@/lib/utils";
 import {
   useResumeStore,
@@ -93,7 +90,13 @@ function PanelGroup({
  * density, column layout, and color theme - each writing straight into the resume
  * store so the live preview updates - plus Back and Download actions.
  */
-export function DesignPanel({ onBack }: { onBack: () => void }) {
+export function DesignPanel({
+  onBack,
+  onNext,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+}) {
   const design = useResumeStore((s) => s.design);
   const setDesign = useResumeStore((s) => s.setDesign);
   const templateId = useResumeStore((s) => s.templateId);
@@ -104,7 +107,6 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
   const PER_PAGE = 4;
   const MAX_START = Math.max(0, templates.length - PER_PAGE);
   const [start, setStart] = useState(0);
-  const [downloading, setDownloading] = useState(false);
   const visible = templates.slice(start, start + PER_PAGE);
   // Wrap at both ends, so neither arrow is ever a dead control. The reference
   // shows both fully opaque at the first page, and a disabled-looking-enabled
@@ -112,19 +114,9 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
   const prevPage = () => setStart((i) => (i === 0 ? MAX_START : i - 1));
   const nextPage = () => setStart((i) => (i === MAX_START ? 0 : i + 1));
 
-  // Trigger the PDF export, showing a spinner on the button until it resolves.
-  async function handleDownload() {
-    setDownloading(true);
-    try {
-      await downloadResume();
-    } finally {
-      setDownloading(false);
-    }
-  }
-
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col rounded-2xl bg-card p-5 shadow-card ring-1 ring-border">
-      <div className="flex-1 space-y-7 overflow-y-auto pr-1">
+    <div className="flex h-[calc(100vh-7rem)] flex-col rounded-2xl bg-card p-6 shadow-card ring-1 ring-border">
+      <div className="flex-1 space-y-8 overflow-y-auto pr-1.5">
         {/* Styles carousel */}
         <PanelGroup icon={LayoutTemplate} title="Styles">
           <div className="relative">
@@ -191,7 +183,7 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                   onClick={() => setDesign({ spacing: sp.id })}
                   aria-pressed={active}
                   className={cn(
-                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2 text-sm font-medium transition-colors",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2.5 text-sm font-medium transition-colors",
                     active
                       ? "bg-card text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -203,7 +195,7 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
               );
             })}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             {FONTS.map((f) => {
               const active = design.font === f.id;
               return (
@@ -212,19 +204,21 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                   onClick={() => setDesign({ font: f.id })}
                   aria-pressed={active}
                   className={cn(
-                    "rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    "rounded-xl border px-3 py-3.5 text-left transition-colors sm:px-4 sm:py-4",
                     active
                       ? "border-primary ring-1 ring-primary"
                       : "border-border hover:border-primary/40"
                   )}
                 >
                   <span
-                    className="block text-sm font-bold text-foreground"
+                    className="block truncate text-sm font-bold text-foreground sm:text-base"
                     style={{ fontFamily: f.family }}
                   >
                     {f.label}
                   </span>
-                  <span className="block text-xs text-muted-foreground">{f.sub}</span>
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground sm:text-sm">
+                    {f.sub}
+                  </span>
                 </button>
               );
             })}
@@ -243,7 +237,7 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                   onClick={() => setDesign({ columns: c.id })}
                   aria-pressed={active}
                   className={cn(
-                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2 text-sm font-medium transition-colors",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg py-2.5 text-sm font-medium transition-colors",
                     active
                       ? "bg-card text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -262,7 +256,7 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
           {/* Each swatch is a card showing the page it produces (white, or the
               tint) with the accent as a dot inside. `justify-between` fits all
               eight on one row without the gap having to be pixel-exact. */}
-          <div className="flex items-start justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-y-4">
             {COLORS.map((sw) => {
               const active =
                 design.color === sw.accent && (design.bg || "") === (sw.bg || "");
@@ -280,13 +274,13 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
                     className={cn(
                       // border-2, not ring: a ring grows the box and would push
                       // the eighth swatch onto a second row when selected.
-                      "grid size-9 place-items-center rounded-lg border-2 bg-card transition-colors",
+                      "grid size-9 place-items-center rounded-lg border-2 bg-card transition-colors sm:size-10",
                       active ? "border-primary" : "border-border hover:border-primary/40"
                     )}
                     style={sw.bg ? { backgroundColor: sw.bg } : undefined}
                   >
                     <span
-                      className="size-5 rounded-full"
+                      className="size-5 rounded-full sm:size-6"
                       style={{ backgroundColor: sw.accent }}
                     />
                   </span>
@@ -313,16 +307,11 @@ export function DesignPanel({ onBack }: { onBack: () => void }) {
           Back
         </button>
         <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+          onClick={onNext}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
         >
-          {downloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-          {downloading ? "Preparing…" : "Download resume"}
+          Next
+          <ChevronRight className="size-4" />
         </button>
       </div>
     </div>

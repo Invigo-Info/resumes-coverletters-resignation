@@ -105,9 +105,10 @@ function SuggestionGroup({
 
 /**
  * One chosen skill: an outlined chip, prominent against the soft suggestion
- * chips. Clean at rest (matching the design), with the remove X sliding in on
- * hover or keyboard focus so the affordance never costs a layout shift. The
- * whole chip is both the remove target and the drag source; arrow keys reorder.
+ * chips. The chip itself is a drag source (arrow keys also reorder) and hovering
+ * it highlights the matching skill in the live preview - but it NEVER deletes on
+ * click. Removal is the dedicated X button, which slides in on hover/focus so the
+ * affordance never costs a layout shift.
  */
 function SelectedChip({
   skill,
@@ -119,6 +120,7 @@ function SelectedChip({
   onDrop,
   onMove,
   onRemove,
+  onHover,
 }: {
   skill: SkillEntry;
   index: number;
@@ -129,11 +131,12 @@ function SelectedChip({
   onDrop: () => void;
   onMove: (dir: "left" | "right") => void;
   onRemove: () => void;
+  onHover: (hovering: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
+    <div
       draggable
+      tabIndex={0}
       onDragStart={() => onDragStart(index)}
       onDragOver={(e) => {
         e.preventDefault(); // required, or the drop never fires
@@ -144,7 +147,8 @@ function SelectedChip({
         onDrop();
       }}
       onDragEnd={onDrop}
-      onClick={onRemove}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
       onKeyDown={(e) => {
         if (e.key === "ArrowLeft") {
           e.preventDefault();
@@ -155,24 +159,30 @@ function SelectedChip({
           onMove("right");
         }
       }}
-      aria-label={`Remove ${skill.name}. Use the left and right arrow keys to reorder.`}
+      aria-label={`${skill.name}. Use the left and right arrow keys to reorder.`}
       className={cn(
         "group inline-flex cursor-grab items-center rounded-full border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
-        "hover:border-destructive/60 hover:bg-destructive/5",
+        "hover:border-primary hover:bg-primary/5",
         "focus-visible:ring-3 focus-visible:ring-ring/40",
         dragging && "opacity-40",
         over && !dragging && "border-primary ring-2 ring-primary/20"
       )}
     >
       {skill.name}
-      {/* Width animates from 0 so the chip does not jump when the X appears. */}
-      <span
-        aria-hidden
-        className="grid w-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:ml-1.5 group-hover:w-3.5 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:w-3.5 group-focus-visible:opacity-100"
+      {/* Dedicated remove button. Width animates from 0 so the chip does not jump
+          when it appears; shown on hover or when the chip/button has focus. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        aria-label={`Remove ${skill.name}`}
+        className="grid w-0 shrink-0 place-items-center overflow-hidden rounded-full opacity-0 outline-none transition-all duration-150 hover:text-destructive group-hover:ml-1.5 group-hover:w-5 group-hover:opacity-100 group-focus-within:ml-1.5 group-focus-within:w-5 group-focus-within:opacity-100 focus-visible:ring-2 focus-visible:ring-destructive/40"
       >
-        <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-destructive" />
-      </span>
-    </button>
+        <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-foreground/70 hover:text-destructive" />
+      </button>
+    </div>
   );
 }
 
@@ -193,6 +203,7 @@ export function SkillsForm() {
   const removeSection = useResumeStore((s) => s.removeSection);
   const restoreSection = useResumeStore((s) => s.restoreSection);
   const setActiveSection = useResumeStore((s) => s.setActiveSection);
+  const setHoveredSkillId = useResumeStore((s) => s.setHoveredSkillId);
 
   const [hard, setHard] = useState<string[]>([]);
   const [soft, setSoft] = useState<string[]>([]);
@@ -263,6 +274,7 @@ export function SkillsForm() {
   /** Delete one skill immediately, with an undo that restores its position. */
   function handleRemove(skill: SkillEntry) {
     const index = useResumeStore.getState().skills.findIndex((s) => s.id === skill.id);
+    setHoveredSkillId(null); // the chip is unmounting; don't leave it highlighted
     removeSkill(skill.id);
     toast.success("Successfully deleted", {
       duration: 5000,
@@ -339,6 +351,7 @@ export function SkillsForm() {
             onDrop={commitDrop}
             onMove={(dir) => move(i, dir)}
             onRemove={() => handleRemove(sk)}
+            onHover={(hovering) => setHoveredSkillId(hovering ? sk.id : null)}
           />
         ))}
 

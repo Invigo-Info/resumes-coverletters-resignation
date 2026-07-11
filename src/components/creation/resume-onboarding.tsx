@@ -17,12 +17,9 @@ import {
 import {
   DropboxIcon,
   GoogleDriveIcon,
-  LinkedInIcon,
 } from "@/components/brand/source-icons";
-import {
-  GoogleConsentDialog,
-  LinkedInImportDialog,
-} from "@/components/creation/cloud-source-dialogs";
+import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
+import { cn } from "@/lib/utils";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
 import {
@@ -52,7 +49,7 @@ export function ResumeOnboarding() {
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [dismissedSave, setDismissedSave] = useState(false);
   const [googleOpen, setGoogleOpen] = useState(false);
-  const [linkedInOpen, setLinkedInOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
@@ -113,12 +110,6 @@ export function ResumeOnboarding() {
     }
   }
 
-  // LinkedIn: capture the profile URL, then build a resume from it.
-  function importFromLinkedIn() {
-    setLinkedInOpen(false);
-    handleUpload();
-  }
-
   return (
     <PageShell>
       <div className="absolute left-6 top-6">
@@ -172,15 +163,40 @@ export function ResumeOnboarding() {
               <div className="space-y-3 px-5 pb-5">
                 {/* Drag & drop zone */}
                 <div
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setDragActive(true);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (!dragActive) setDragActive(true);
+                  }}
+                  onDragLeave={(e) => {
+                    // Only clear when the pointer actually leaves the zone, not
+                    // when it crosses onto a child element inside it.
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setDragActive(false);
+                    }
+                  }}
                   onDrop={(e) => {
                     e.preventDefault();
+                    setDragActive(false);
                     handleUpload(e.dataTransfer.files?.[0]);
                   }}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-background/60 px-4 py-8 text-center transition-colors hover:border-primary/50"
+                  className={cn(
+                    "flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+                    dragActive
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-background/60 hover:border-primary/50"
+                  )}
                 >
-                  <FileUp className="size-7 text-muted-foreground" />
+                  <FileUp
+                    className={cn(
+                      "size-7 transition-colors",
+                      dragActive ? "text-primary" : "text-muted-foreground"
+                    )}
+                  />
                   <span className="text-sm text-muted-foreground">
                     Drag and drop your resume here
                     <br />
@@ -197,11 +213,6 @@ export function ResumeOnboarding() {
                     label: "Google Drive",
                     Icon: GoogleDriveIcon,
                     onClick: () => setGoogleOpen(true),
-                  },
-                  {
-                    label: "LinkedIn profile",
-                    Icon: LinkedInIcon,
-                    onClick: () => setLinkedInOpen(true),
                   },
                 ].map((src) => (
                   <button
@@ -254,11 +265,6 @@ export function ResumeOnboarding() {
         open={googleOpen}
         onOpenChange={setGoogleOpen}
         onConsent={consentToGoogle}
-      />
-      <LinkedInImportDialog
-        open={linkedInOpen}
-        onOpenChange={setLinkedInOpen}
-        onImport={importFromLinkedIn}
       />
 
       <HelpPill />
