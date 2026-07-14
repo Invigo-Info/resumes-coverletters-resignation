@@ -9,6 +9,7 @@ import {
   assistanceParagraph,
 } from "@/lib/resignation-letter/suggestions";
 import { bodyToHtml } from "@/lib/resignation-letter/format";
+import { composeLetterBody } from "@/lib/resignation-letter/compose";
 
 /** Seed the editable reason paragraph (stored as HTML for the rich editor). */
 function seedReasonHtml(reason: string | null, otherText: string, company: string): string {
@@ -41,7 +42,18 @@ export type RLStep =
   | "generate"
   | "preview";
 
-export type RLFontId = "georgia" | "inter" | "garamond";
+export type RLFontId =
+  | "garamond"
+  | "georgia"
+  | "ibm-plex-sans"
+  | "ibm-plex-serif"
+  | "inria-sans"
+  | "inria-serif"
+  | "inter"
+  | "poppins"
+  | "source-sans"
+  | "ubuntu-mono"
+  | "work-sans";
 export type RLFontSize = "S" | "M" | "L";
 export type RLTheme = "light" | "dark";
 
@@ -87,6 +99,8 @@ export interface ResignationLetterState {
   contacts: RLContacts;
 
   letter: { body: string };
+  /** True once the user manually edits the letter body; stops field-driven re-sync. */
+  bodyTouched: boolean;
   design: { font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme; bg: string };
 
   /** wizard control */
@@ -111,6 +125,8 @@ export interface ResignationLetterState {
   setAssistanceText: (value: string) => void;
   patchContacts: (patch: Partial<RLContacts>) => void;
   setLetter: (patch: Partial<{ body: string }>) => void;
+  /** Manual body edit (rich-text / body Improve-with-AI): freezes field re-sync. */
+  setLetterBody: (html: string) => void;
   setDesign: (patch: Partial<{ font: RLFontId; accent: string; fontSize: RLFontSize; theme: RLTheme; bg: string }>) => void;
 
   goNext: () => void;
@@ -151,6 +167,7 @@ const initial = {
   assistanceTextTouched: false,
   contacts: { email: "", phone: "", address: "" },
   letter: { body: "" },
+  bodyTouched: false,
   design: { font: "georgia" as RLFontId, accent: "#111827", fontSize: "M" as RLFontSize, theme: "light" as RLTheme, bg: "" },
   step: "heading" as RLStep,
   mode: "onboarding" as const,
@@ -206,15 +223,40 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+/**
+ * Lenient phone check: allows a leading "+", digits, spaces, dots, hyphens and
+ * parentheses, and requires 7-15 digits overall (E.164 range) so common local
+ * and international formats pass while letters / junk are rejected.
+ */
+export function isValidPhone(phone: string): boolean {
+  const trimmed = phone.trim();
+  if (!/^\+?[\d\s().-]+$/.test(trimmed)) return false;
+  const digits = trimmed.replace(/\D/g, "");
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+/**
+ * Header progress percent per builder step. Matching the reference, every
+ * builder input step holds at 29% (the stepper segments carry the per-step
+ * progress); the big jump comes when the letter is generated and the user
+ * reaches the editor/Design stage (85%) and then Download-ready (100%).
+ */
+const RL_STEP_PERCENT: Record<string, number> = {
+  heading: 29,
+  recipient: 29,
+  position: 29,
+  reason: 29,
+  gratitude: 29,
+  assistance: 29,
+  contacts: 29,
+};
+
 /** Progress label + percent for a step within the linear sequence. */
 export function progressForStep(step: RLStep): { label: string; percent: number } {
   if (step === "generate" || step === "preview") {
     return { label: RL_STEP_LABEL[step], percent: 100 };
   }
-  const idx = RL_STEPPER_STEPS.indexOf(step);
-  const total = RL_STEPPER_STEPS.length;
-  const percent = idx < 0 ? 10 : Math.max(8, Math.round(((idx + 1) / total) * 100));
-  return { label: RL_STEP_LABEL[step], percent };
+  return { label: RL_STEP_LABEL[step], percent: RL_STEP_PERCENT[step] ?? 29 };
 }
 
 /** Whether the Next/Save button should be enabled for a step. */
@@ -232,12 +274,30 @@ export function canProceed(step: RLStep, s: ResignationLetterState): boolean {
         s.lastWorkingDay >= s.submissionDate
       );
     case "contacts":
-      // Optional step — only block on a malformed (non-empty) email.
-      return s.contacts.email.trim().length === 0 || isValidEmail(s.contacts.email);
+      // Optional step - only block on a malformed (non-empty) email or phone.
+      return (
+        (s.contacts.email.trim().length === 0 || isValidEmail(s.contacts.email)) &&
+        (s.contacts.phone.trim().length === 0 || isValidPhone(s.contacts.phone))
+      );
     // reason / gratitude / assistance are optional → always allowed.
     default:
       return true;
   }
+}
+
+/**
+ * Re-derive the letter body from a structured-field change so an already
+ * generated letter stays in sync with the fields. No-op while the body is empty
+ * (the builder shows a live template) or once the user has manually edited the
+ * body (`bodyTouched`) - their text is then preserved verbatim.
+ */
+function composeIfUntouched(
+  s: ResignationLetterState,
+  patch: Partial<ResignationLetterState>
+): Partial<ResignationLetterState> {
+  if (s.bodyTouched || !s.letter.body.trim()) return patch;
+  const merged = { ...s, ...patch } as ResignationLetterState;
+  return { ...patch, letter: { ...merged.letter, body: composeLetterBody(merged) } };
 }
 
 /* ------------------------------------------------------------------ */
@@ -257,7 +317,7 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
       setStep: (step) => set({ step }),
       setMode: (mode) => set({ mode }),
 
-      setFullName: (value) => set({ fullName: value }),
+      setFullName: (value) => set((s) => composeIfUntouched(s, { fullName: value })),
 
       patchEmployer: (patch) =>
         set((s) => {
@@ -279,10 +339,11 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
             patch.companyName !== undefined && s.gratitude.length && !s.gratitudeTextTouched
               ? seedGratitudeHtml(s.gratitude, employer.companyName, s.position)
               : s.gratitudeText;
-          return { employer, salutation, reasonText, gratitudeText };
+          return composeIfUntouched(s, { employer, salutation, reasonText, gratitudeText });
         }),
 
-      setSalutation: (value) => set({ salutation: value, salutationTouched: true }),
+      setSalutation: (value) =>
+        set((s) => composeIfUntouched(s, { salutation: value, salutationTouched: true })),
       setPosition: (value) =>
         set((s) => {
           // The gratitude paragraph references the role being left.
@@ -290,25 +351,28 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
             s.gratitude.length && !s.gratitudeTextTouched
               ? seedGratitudeHtml(s.gratitude, s.employer.companyName, value)
               : s.gratitudeText;
-          return { position: value, gratitudeText };
+          return composeIfUntouched(s, { position: value, gratitudeText });
         }),
       setSubmissionDate: (value) => set({ submissionDate: value }),
-      setLastWorkingDay: (value) => set({ lastWorkingDay: value }),
+      setLastWorkingDay: (value) => set((s) => composeIfUntouched(s, { lastWorkingDay: value })),
 
       setReason: (value) =>
         set((s) => {
           // Toggling the active chip off clears the seeded paragraph.
           if (s.reason === value) {
-            return s.reasonTextTouched
-              ? { reason: null }
-              : { reason: null, reasonText: "", reasonTextTouched: false };
+            return composeIfUntouched(
+              s,
+              s.reasonTextTouched
+                ? { reason: null }
+                : { reason: null, reasonText: "", reasonTextTouched: false }
+            );
           }
           // Selecting a different reason (re)seeds the editable paragraph.
-          return {
+          return composeIfUntouched(s, {
             reason: value,
             reasonText: seedReasonHtml(value, s.otherReasonText, s.employer.companyName),
             reasonTextTouched: false,
-          };
+          });
         }),
 
       setOtherReasonText: (value) =>
@@ -317,10 +381,11 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
             s.reason === "Other Reason" && !s.reasonTextTouched
               ? seedReasonHtml(s.reason, value, s.employer.companyName)
               : s.reasonText;
-          return { otherReasonText: value, reasonText };
+          return composeIfUntouched(s, { otherReasonText: value, reasonText });
         }),
 
-      setReasonText: (value) => set({ reasonText: value, reasonTextTouched: true }),
+      setReasonText: (value) =>
+        set((s) => composeIfUntouched(s, { reasonText: value, reasonTextTouched: true })),
 
       toggleGratitude: (value) =>
         set((s) => {
@@ -337,24 +402,28 @@ export const useResignationLetterStore = create<ResignationLetterState>()(
           const gratitudeText = s.gratitudeTextTouched
             ? s.gratitudeText
             : seedGratitudeHtml(gratitude, s.employer.companyName, s.position);
-          return { gratitude, gratitudeText };
+          return composeIfUntouched(s, { gratitude, gratitudeText });
         }),
 
-      setGratitudeText: (value) => set({ gratitudeText: value, gratitudeTextTouched: true }),
+      setGratitudeText: (value) =>
+        set((s) => composeIfUntouched(s, { gratitudeText: value, gratitudeTextTouched: true })),
 
       setAssistance: (value) =>
         set((s) => {
-          if (s.assistanceTextTouched) return { assistance: value };
+          if (s.assistanceTextTouched) return composeIfUntouched(s, { assistance: value });
           // Opting in seeds the help paragraph; skipping clears it.
-          return {
+          return composeIfUntouched(s, {
             assistance: value,
             assistanceText: value ? seedAssistanceHtml() : "",
-          };
+          });
         }),
 
-      setAssistanceText: (value) => set({ assistanceText: value, assistanceTextTouched: true }),
+      setAssistanceText: (value) =>
+        set((s) => composeIfUntouched(s, { assistanceText: value, assistanceTextTouched: true })),
       patchContacts: (patch) => set((s) => ({ contacts: { ...s.contacts, ...patch } })),
       setLetter: (patch) => set((s) => ({ letter: { ...s.letter, ...patch } })),
+      // Manual body edit takes over: freeze field-driven re-sync from here on.
+      setLetterBody: (html) => set((s) => ({ letter: { ...s.letter, body: html }, bodyTouched: true })),
       setDesign: (patch) => set((s) => ({ design: { ...s.design, ...patch } })),
 
       goNext: () => {

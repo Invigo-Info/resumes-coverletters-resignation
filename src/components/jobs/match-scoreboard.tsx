@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X, Sparkles } from "lucide-react";
+import { Check, X, Sparkles, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ringColor, type KeywordMatch } from "@/lib/jobs/keyword-match";
 
@@ -110,6 +110,16 @@ export function KeywordMatchCard({
         <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-sm font-medium text-muted-foreground">{match.label}</p>
           <ScoreRing score={match.score} size={96} />
+          {/* Strong-match positive indicator (only above the strong threshold). */}
+          {match.score >= 75 && (
+            <span
+              className="grid size-6 place-items-center rounded-full bg-[#EAF7EE] text-[#16A34A]"
+              title="Strong match"
+              aria-label="Strong match"
+            >
+              <ThumbsUp className="size-3.5" aria-hidden="true" />
+            </span>
+          )}
           <button
             type="button"
             onClick={onImprove}

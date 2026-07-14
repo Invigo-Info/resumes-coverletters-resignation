@@ -15,24 +15,22 @@ export function StepHeading({ title, subtitle }: { title: string; subtitle?: str
   );
 }
 
-/** Multi-select chips with a max limit. `hot` = number of leading chips with 🔥. */
+/** Multi-select chips with a max limit; selected chips carry a check badge. */
 export function ChipMultiSelect({
   options,
   selected,
   onToggle,
   max = 3,
-  hot = 0,
 }: {
   options: string[];
   selected: string[];
   onToggle: (value: string) => void;
   max?: number;
-  hot?: number;
 }) {
   const full = selected.length >= max;
   return (
     <div className="flex flex-wrap justify-center gap-2.5">
-      {options.map((opt, i) => {
+      {options.map((opt) => {
         const isSel = selected.includes(opt);
         const disabled = !isSel && full;
         return (
@@ -49,7 +47,6 @@ export function ChipMultiSelect({
               disabled && "cursor-not-allowed opacity-40 hover:bg-muted"
             )}
           >
-            {i < hot && <span aria-hidden>🔥</span>}
             {opt}
             {isSel && (
               <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-white">

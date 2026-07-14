@@ -20,8 +20,8 @@ import {
   type CLFontId,
   type CLSpacingId,
 } from "@/lib/store/cover-letter-store";
+import Image from "next/image";
 import { coverLetterTemplates } from "@/lib/cover-letter/templates";
-import { CoverLetterThumb } from "@/components/cover-letter/cover-letter-thumb";
 import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
@@ -131,7 +131,14 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
                       active ? "ring-2 ring-primary" : "ring-border hover:ring-primary/40"
                     )}
                   >
-                    <CoverLetterThumb template={t} />
+                    <Image
+                      src={t.image}
+                      alt={t.name}
+                      fill
+                      sizes="180px"
+                      className="object-cover object-top"
+                      unoptimized
+                    />
                     {active && (
                       <span className="absolute left-1 top-1 grid size-4 place-items-center rounded-full bg-primary text-white">
                         <Check className="size-2.5" />

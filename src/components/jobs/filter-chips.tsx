@@ -1,6 +1,6 @@
 "use client";
 
-import { SlidersHorizontal, Briefcase, MapPin } from "lucide-react";
+import { SlidersHorizontal, Briefcase, MapPin, Plus } from "lucide-react";
 import {
   type JobFilters,
   DATE_POSTED_LABEL,
@@ -76,12 +76,19 @@ export function FilterChips({
 
       <Chip onClick={onEdit}>{WORK_MODEL_LABEL[filters.workModel]}</Chip>
 
-      {filters.location && (
+      {filters.locations.length > 0 ? (
         <Chip
           icon={<MapPin className="size-4 text-muted-foreground" />}
           onClick={onEdit}
         >
-          {filters.location}
+          {filters.locations[0]}
+          {filters.locations.length > 1 && (
+            <span className="ml-0.5 text-muted-foreground">+{filters.locations.length - 1}</span>
+          )}
+        </Chip>
+      ) : (
+        <Chip icon={<Plus className="size-4 text-muted-foreground" />} onClick={onEdit}>
+          Add location
         </Chip>
       )}
 

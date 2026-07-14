@@ -19,9 +19,12 @@ export async function POST(req: Request) {
   }
 
   let planId = "trial";
+  // Where to send the user after checkout completes (must be a same-origin path).
+  let next = "";
   try {
     const body = await req.json();
     if (body?.plan) planId = String(body.plan);
+    if (typeof body?.next === "string" && body.next.startsWith("/")) next = body.next;
   } catch {
     /* default trial */
   }
@@ -31,6 +34,7 @@ export async function POST(req: Request) {
   const email = session?.user?.email ?? undefined;
 
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
+  const nextParam = next ? `&next=${encodeURIComponent(next)}` : "";
 
   try {
     const checkout = await stripe.checkout.sessions.create({
@@ -50,7 +54,7 @@ export async function POST(req: Request) {
       ],
       subscription_data:
         plan.stripe.trialDays > 0 ? { trial_period_days: plan.stripe.trialDays } : undefined,
-      return_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}${nextParam}`,
     });
 
     return NextResponse.json({ clientSecret: checkout.client_secret });

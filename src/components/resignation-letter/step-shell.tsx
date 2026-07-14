@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Meh,
+  Smile,
+  Laugh,
+  PartyPopper,
+  type LucideIcon,
+} from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { HelpPill } from "@/components/layout/help-pill";
@@ -14,12 +22,12 @@ import {
 } from "@/lib/store/resignation-letter-store";
 import { cn } from "@/lib/utils";
 
-/** Pick a reaction glyph for the header progress display based on percent complete. */
-function emojiFor(p: number) {
-  if (p < 25) return "🤔";
-  if (p < 60) return "🙂";
-  if (p < 100) return "😎";
-  return "😍";
+/** Pick a reaction icon for the header progress display based on percent complete. */
+function reactionIcon(p: number): LucideIcon {
+  if (p < 25) return Meh;
+  if (p < 60) return Smile;
+  if (p < 100) return Laugh;
+  return PartyPopper;
 }
 
 /** Top 7-segment stepper; the active segment is green with its label beneath. */
@@ -75,9 +83,10 @@ export function StepShell({
   hideBack?: boolean;
   children: React.ReactNode;
 }) {
+  const Reaction = reactionIcon(progress.percent);
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Header: logo · stepper · percent + emoji */}
+      {/* Header: logo, stepper, percent + reaction icon */}
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 sm:px-8">
         <div className="flex w-fit items-center gap-3">
           <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
@@ -91,10 +100,10 @@ export function StepShell({
         <div className="flex items-center justify-end gap-2">
           <span className="text-sm font-semibold text-foreground">{progress.percent}%</span>
           <span
-            className="grid size-8 place-items-center rounded-xl bg-card text-base shadow-card ring-1 ring-border"
+            className="grid size-8 place-items-center rounded-xl bg-card text-primary shadow-card ring-1 ring-border"
             aria-hidden
           >
-            {emojiFor(progress.percent)}
+            <Reaction className="size-4" />
           </span>
         </div>
       </header>

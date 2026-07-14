@@ -13,9 +13,17 @@ const SIZES: RLFontSize[] = ["S", "M", "L"];
 
 // Selectable letter fonts, each mapping a font id to its CSS family stack.
 const FONTS: { id: RLFontId; label: string; family: string }[] = [
+  { id: "garamond", label: "EB Garamond", family: "var(--font-eb-garamond), 'EB Garamond', Garamond, serif" },
   { id: "georgia", label: "Georgia", family: "Georgia, serif" },
+  { id: "ibm-plex-sans", label: "IBM Plex Sans", family: "var(--font-ibm-plex-sans), sans-serif" },
+  { id: "ibm-plex-serif", label: "IBM Plex Serif", family: "var(--font-ibm-plex-serif), Georgia, serif" },
+  { id: "inria-sans", label: "Inria Sans", family: "var(--font-inria-sans), sans-serif" },
+  { id: "inria-serif", label: "Inria Serif", family: "var(--font-inria-serif), Georgia, serif" },
   { id: "inter", label: "Inter", family: "var(--font-sans), sans-serif" },
-  { id: "garamond", label: "Garamond", family: "'EB Garamond', Garamond, serif" },
+  { id: "poppins", label: "Poppins", family: "var(--font-poppins), sans-serif" },
+  { id: "source-sans", label: "Source Sans Pro", family: "var(--font-source-sans), sans-serif" },
+  { id: "ubuntu-mono", label: "Ubuntu Mono", family: "var(--font-ubuntu-mono), monospace" },
+  { id: "work-sans", label: "Work Sans", family: "var(--font-work-sans), sans-serif" },
 ];
 
 /**
@@ -35,7 +43,7 @@ const COMBOS: Combo[] = [
 
 /**
  * Floating vertical design toolbar (Step 9.png): text size, font, and
- * color/theme swatches — including the dark-letterhead theme (filled square).
+ * color/theme swatches - including the dark-letterhead theme (filled square).
  */
 export function DesignToolbar() {
   const design = useResignationLetterStore((s) => s.design);
@@ -80,7 +88,7 @@ export function DesignToolbar() {
           <span className="text-base font-bold leading-none">Aa</span>
         </button>
         {fontOpen && (
-          <div className="absolute left-12 top-0 z-10 w-40 overflow-hidden rounded-xl bg-card p-1 shadow-card-lg ring-1 ring-border">
+          <div className="absolute left-12 top-0 z-10 max-h-[320px] w-44 overflow-y-auto rounded-xl bg-card p-1 shadow-card-lg ring-1 ring-border">
             {FONTS.map((f) => (
               <button
                 key={f.id}

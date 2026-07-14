@@ -7,8 +7,8 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { AutocompleteInput } from "@/components/editor/sections/autocomplete-input";
+import { JobTitleFilterInput } from "@/components/jobs/job-title-filter-input";
+import { LocationFilterInput } from "@/components/jobs/location-filter-input";
 import {
   type JobFilters,
   type DatePosted,
@@ -89,16 +89,10 @@ export function EditFiltersModal({
   onApply: (filters: JobFilters) => void;
 }) {
   const [draft, setDraft] = useState<JobFilters>(applied);
-  const [titleInput, setTitleInput] = useState("");
-  const [locationInput, setLocationInput] = useState("");
 
   // Re-seed the draft from the applied filters each time the modal opens.
   useEffect(() => {
-    if (open) {
-      setDraft(applied);
-      setTitleInput("");
-      setLocationInput(applied.location);
-    }
+    if (open) setDraft(applied);
   }, [open, applied]);
 
   const suggestions = useMemo(
@@ -109,7 +103,8 @@ export function EditFiltersModal({
   const dirty = JSON.stringify(draft) !== JSON.stringify(applied);
   const count = activeFilterCount(draft);
 
-  // Unsaved-changes guard: closing while dirty asks before dropping the edits.
+  // Unsaved-changes guard: closing while dirty prompts to Apply or discard the
+  // edits instead of silently dropping them.
   const [confirmOpen, setConfirmOpen] = useState(false);
   const requestClose = () => {
     if (dirty) setConfirmOpen(true);
@@ -137,19 +132,21 @@ export function EditFiltersModal({
         ? d
         : { ...d, jobTitles: [...d.jobTitles, t] }
     );
-    setTitleInput("");
   };
   const removeTitle = (t: string) =>
     setDraft((d) => ({ ...d, jobTitles: d.jobTitles.filter((x) => x !== t) }));
 
-  const setLocation = (loc: string) => {
-    setLocationInput(loc);
-    setDraft((d) => ({ ...d, location: loc.trim() }));
+  const addLocation = (raw: string) => {
+    const loc = raw.trim();
+    if (!loc) return;
+    setDraft((d) =>
+      d.locations.some((x) => x.toLowerCase() === loc.toLowerCase())
+        ? d
+        : { ...d, locations: [...d.locations, loc] }
+    );
   };
-  const clearLocation = () => {
-    setLocationInput("");
-    setDraft((d) => ({ ...d, location: "" }));
-  };
+  const removeLocation = (loc: string) =>
+    setDraft((d) => ({ ...d, locations: d.locations.filter((x) => x !== loc) }));
 
   const setDate = (datePosted: DatePosted) =>
     setDraft((d) => ({ ...d, datePosted }));
@@ -195,49 +192,43 @@ export function EditFiltersModal({
                 ))}
               </div>
             )}
-            <Input
-              value={titleInput}
-              onChange={(e) => setTitleInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTitle(titleInput);
-                }
-              }}
-              placeholder="Enter title"
-              className="h-12 rounded-xl bg-card"
+            <JobTitleFilterInput
+              onAdd={addTitle}
+              staticSuggestions={suggestions}
+              existing={draft.jobTitles}
             />
+
+            {/* Generated role-related suggestions - click a chip to add it. */}
             {suggestions.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {suggestions.slice(0, 4).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => addTitle(s)}
-                    className="rounded-full border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="mt-3">
+                <p className="mb-2 text-sm text-muted-foreground">Suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => addTitle(s)}
+                      className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </section>
 
-          {/* Location */}
+          {/* Location - multiple tags, suggestions from the local location DB */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-foreground">Location</h3>
-            {draft.location && (
+            {draft.locations.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
-                <Chip label={draft.location} onRemove={clearLocation} />
+                {draft.locations.map((loc) => (
+                  <Chip key={loc} label={loc} onRemove={() => removeLocation(loc)} />
+                ))}
               </div>
             )}
-            <AutocompleteInput
-              value={locationInput}
-              onChange={setLocation}
-              placeholder="Enter country or city"
-              options={[]}
-              aiKind="location"
-            />
+            <LocationFilterInput onAdd={addLocation} existing={draft.locations} />
           </section>
 
           {/* Date posted */}
@@ -277,11 +268,7 @@ export function EditFiltersModal({
         <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
           <button
             type="button"
-            onClick={() => {
-              const reset = defaultFilters(role);
-              setDraft(reset);
-              setLocationInput("");
-            }}
+            onClick={() => setDraft(defaultFilters(role))}
             className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
           >
             Reset filters
@@ -301,23 +288,21 @@ export function EditFiltersModal({
           <div className="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4">
             <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-card-lg">
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-lg font-bold text-foreground">Save new filters?</h3>
+                <h3 className="text-2xl font-extrabold tracking-tight text-foreground">
+                  Save new filters?
+                </h3>
                 <button
                   type="button"
                   onClick={() => setConfirmOpen(false)}
                   aria-label="Keep editing"
-                  className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >
                   <X className="size-4" />
                 </button>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                You changed your search filters. Apply the new set or keep your
-                previous filters.
-              </p>
 
               {/* Preview of the new filter set */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {draft.jobTitles.map((t) => (
                   <span
                     key={t}
@@ -326,31 +311,34 @@ export function EditFiltersModal({
                     {t}
                   </span>
                 ))}
-                {draft.location && (
-                  <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
-                    {draft.location}
-                  </span>
-                )}
                 <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
                   {WORK_MODEL_LABEL[draft.workModel]}
                 </span>
+                {draft.locations.map((loc) => (
+                  <span
+                    key={loc}
+                    className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground"
+                  >
+                    {loc}
+                  </span>
+                ))}
                 <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
                   {DATE_POSTED_LABEL[draft.datePosted]}
                 </span>
               </div>
 
-              <div className="mt-6 flex items-center justify-end gap-3">
+              <div className="mt-6 flex items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={discardAndClose}
-                  className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                  className="inline-flex h-11 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                 >
                   Leave previous
                 </button>
                 <button
                   type="button"
                   onClick={applyAndClose}
-                  className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                 >
                   Apply new
                 </button>

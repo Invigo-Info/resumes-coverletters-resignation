@@ -4,6 +4,7 @@ import type { CLFlow, CoverLetterState } from "@/lib/store/cover-letter-store";
 import type { ResumeState } from "@/lib/store/resume-store";
 import { parseResumeAi } from "@/lib/cover-letter/ai";
 import { parseResume } from "@/lib/ai/parseResume";
+import { useDocumentsStore } from "@/lib/store/documents-store";
 import { mockResumes } from "@/lib/mock-data";
 
 /**
@@ -98,9 +99,35 @@ export async function parseResumeForCoverLetter(
     }
   }
 
-  // Only the use-resume flow currently has parseable text (the resume title).
   if (flow !== "use-resume") return persona;
 
+  // Use your resume: the fastest path reuses the candidate's REAL saved resume.
+  // Map the stored draft straight into the cover-letter fields - no AI needed,
+  // no invented data. Strengths are the one thing a resume doesn't carry, so a
+  // sensible default is offered for the user to confirm/edit on the review step.
+  const record = sourceResumeId
+    ? useDocumentsStore.getState().getResume(sourceResumeId)
+    : undefined;
+  if (record) {
+    const r = resumeToCoverLetter(record.data as Partial<ResumeState>);
+    return {
+      jobDetails: {
+        desiredJobTitle: r.desiredJobTitle,
+        companyName: "",
+        hiringManagerName: "",
+        jobDescription: "",
+      },
+      education: r.education,
+      recentJob: r.recentJob,
+      experience: r.experience,
+      skills: r.skills,
+      strengths: persona.strengths,
+      personal: r.personal,
+    };
+  }
+
+  // No saved draft for this id (demo entry) -> infer from the title via AI, with
+  // the persona as a graceful fallback.
   const resume = mockResumes.find((r) => r.id === sourceResumeId) ?? mockResumes[0];
   const ai = await parseResumeAi({ resumeTitle: resume?.title });
   if (!ai) return persona;

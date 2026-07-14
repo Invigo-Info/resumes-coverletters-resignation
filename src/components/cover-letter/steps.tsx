@@ -46,6 +46,17 @@ function useRankedChips(pool: string[], kind: "skills" | "strengths" | "roles") 
   return { ordered, ranked, role };
 }
 
+/**
+ * Ensure the user's current picks always render as chips (selected, first) -
+ * even ones that aren't in the standard suggestion pool, e.g. skills/strengths
+ * imported from a resume. Without this, an imported "Market Research" that isn't
+ * in CL_SKILLS would silently vanish from the edit screen.
+ */
+function withSelectedFirst(selected: string[], pool: string[]): string[] {
+  const seen = new Set(selected.map((v) => v.toLowerCase()));
+  return [...selected, ...pool.filter((v) => !seen.has(v.toLowerCase()))];
+}
+
 /** Small "AI-ranked for <role>" hint shown above ranked chip grids. */
 function RankHint({ ranked, role }: { ranked: boolean; role: string }) {
   if (!ranked) return null;
@@ -64,7 +75,7 @@ import {
   OptionRadioCard,
 } from "./widgets";
 
-/* --- Job details (YES) — step 3/26 --------------------------------- */
+/* --- Job details (YES) - step 3/26 --------------------------------- */
 /** Step for users targeting a specific job: title, company, manager, and pasted JD. */
 export function JobDetailsStep() {
   const jd = useCoverLetterStore((s) => s.jobDetails);
@@ -113,7 +124,7 @@ export function JobDetailsStep() {
   );
 }
 
-/* --- Desired job title (NO) — step 12/27 --------------------------- */
+/* --- Desired job title (NO) - step 12/27 --------------------------- */
 /** Step for users without a specific job: pick/type the desired role from suggestions. */
 export function DesiredTitleStep() {
   const value = useCoverLetterStore((s) => s.jobDetails.desiredJobTitle);
@@ -131,7 +142,7 @@ export function DesiredTitleStep() {
   );
 }
 
-/* --- Skills — step 4/13 -------------------------------------------- */
+/* --- Skills - step 4/13 -------------------------------------------- */
 /** Pick up to 3 skills; chips are AI-ranked by relevance to the desired role. */
 export function SkillsStep() {
   const skills = useCoverLetterStore((s) => s.skills);
@@ -141,12 +152,17 @@ export function SkillsStep() {
     <div>
       <StepHeading title="Pick top 3 of your professional skills" />
       <RankHint ranked={ranked} role={role} />
-      <ChipMultiSelect options={ordered} selected={skills} onToggle={toggle} max={3} hot={3} />
+      <ChipMultiSelect
+        options={withSelectedFirst(skills, ordered)}
+        selected={skills}
+        onToggle={toggle}
+        max={3}
+      />
     </div>
   );
 }
 
-/* --- Experience — step 5 ------------------------------------------- */
+/* --- Experience - step 5 ------------------------------------------- */
 /** Pick years-of-experience bucket; shows a friendly label for the selection. */
 export function ExperienceStep() {
   const value = useCoverLetterStore((s) => s.experience);
@@ -183,7 +199,7 @@ export function ExperienceStep() {
   );
 }
 
-/* --- Recent job — step 6 ------------------------------------------- */
+/* --- Recent job - step 6 ------------------------------------------- */
 /** Capture the user's most recent job title and (optional) company. */
 export function RecentJobStep() {
   const rj = useCoverLetterStore((s) => s.recentJob);
@@ -209,7 +225,7 @@ export function RecentJobStep() {
   );
 }
 
-/* --- Education level — step 7/19 ----------------------------------- */
+/* --- Education level - step 7/19 ----------------------------------- */
 // Selectable education levels; the chosen level drives whether degree/field steps appear.
 const EDUCATION_OPTIONS: { level: EducationLevel; label: string; icon: React.ReactNode }[] = [
   { level: "college", label: "College graduate or higher", icon: <GraduationCap className="size-4" /> },
@@ -240,7 +256,7 @@ export function EducationStep() {
   );
 }
 
-/* --- Degree (graduate) — step 8 ------------------------------------ */
+/* --- Degree (graduate) - step 8 ------------------------------------ */
 /** Graduate-only step: where the degree was earned (university suggestions). */
 export function DegreeStep() {
   const value = useCoverLetterStore((s) => s.education.university);
@@ -258,7 +274,7 @@ export function DegreeStep() {
   );
 }
 
-/* --- Field of study (graduate) — step 9 ---------------------------- */
+/* --- Field of study (graduate) - step 9 ---------------------------- */
 /** Graduate-only step: the user's field of study (field suggestions). */
 export function FieldStep() {
   const value = useCoverLetterStore((s) => s.education.field);
@@ -276,7 +292,7 @@ export function FieldStep() {
   );
 }
 
-/* --- Strengths — step 10 ------------------------------------------- */
+/* --- Strengths - step 10 ------------------------------------------- */
 /** Pick up to 3 personal strengths; chips are AI-ranked by relevance to the role. */
 export function StrengthsStep() {
   const strengths = useCoverLetterStore((s) => s.strengths);
@@ -286,12 +302,17 @@ export function StrengthsStep() {
     <div>
       <StepHeading title="Choose 3 strengths that resonate with you" />
       <RankHint ranked={ranked} role={role} />
-      <ChipMultiSelect options={ordered} selected={strengths} onToggle={toggle} max={3} />
+      <ChipMultiSelect
+        options={withSelectedFirst(strengths, ordered)}
+        selected={strengths}
+        onToggle={toggle}
+        max={3}
+      />
     </div>
   );
 }
 
-/* --- Personal details — step 11 ------------------------------------ */
+/* --- Personal details - step 11 ------------------------------------ */
 /** Final input step: name, email (validated), phone, and address for the letter header. */
 export function PersonalStep() {
   const p = useCoverLetterStore((s) => s.personal);

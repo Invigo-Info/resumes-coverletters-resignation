@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import { useResignationLetterStore, isValidEmail } from "@/lib/store/resignation-letter-store";
+import { useResignationLetterStore, isValidEmail, isValidPhone } from "@/lib/store/resignation-letter-store";
 import { RL_REASONS, RL_OTHER_REASON, RL_GRATITUDE } from "@/lib/resignation-letter/suggestions";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { RLDatePicker } from "@/components/resignation-letter/date-picker";
@@ -79,7 +79,7 @@ function ImproveWithAIMenu({
   );
 }
 
-/* --- Step 1: Heading / Full name — Step 2.png ---------------------- */
+/* --- Step 1: Heading / Full name - Step 2.png ---------------------- */
 /** Step 1: capture the resigner's full name (top of the letter). */
 export function HeadingStep() {
   const fullName = useResignationLetterStore((s) => s.fullName);
@@ -95,7 +95,7 @@ export function HeadingStep() {
   );
 }
 
-/* --- Step 2: Recipient / Employer — Step 3.png --------------------- */
+/* --- Step 2: Recipient / Employer - Step 3.png --------------------- */
 /** Step 2: capture the employer/manager the letter is addressed to. */
 export function RecipientStep() {
   const employer = useResignationLetterStore((s) => s.employer);
@@ -131,7 +131,7 @@ export function RecipientStep() {
   );
 }
 
-/* --- Step 3: Position & Dates — Step 4.png ------------------------- */
+/* --- Step 3: Position & Dates - Step 4.png ------------------------- */
 /**
  * Step 3: salutation, position being left, and submission / last-working-day
  * dates. Validates that the last day is not before the submission date.
@@ -192,7 +192,7 @@ export function PositionStep() {
   );
 }
 
-/* --- Step 4: Reason — Step 5.png ----------------------------------- */
+/* --- Step 4: Reason - Step 5.png ----------------------------------- */
 /** Step 4 (optional): pick a resignation reason, then edit/AI-refine the paragraph. */
 export function ReasonStep() {
   const reason = useResignationLetterStore((s) => s.reason);
@@ -242,7 +242,7 @@ export function ReasonStep() {
   );
 }
 
-/* --- Step 5: Gratitude — Step 6.png -------------------------------- */
+/* --- Step 5: Gratitude - Step 6.png -------------------------------- */
 /** Step 5 (optional): pick gratitude highlights, then edit/AI-refine the paragraph. */
 export function GratitudeStep() {
   const gratitude = useResignationLetterStore((s) => s.gratitude);
@@ -278,7 +278,7 @@ export function GratitudeStep() {
   );
 }
 
-/* --- Step 6: Assistance — Step 7.png ------------------------------- */
+/* --- Step 6: Assistance - Step 7.png ------------------------------- */
 /** Step 6 (optional): offer transition help; opting in reveals an AI-refinable paragraph. */
 export function AssistanceStep() {
   const assistance = useResignationLetterStore((s) => s.assistance);
@@ -294,8 +294,8 @@ export function AssistanceStep() {
       />
       <ChoiceButtons
         options={[
-          { label: "Yes, I'd love to offer my help", emoji: "🔥", value: true },
-          { label: "I am okay with skipping this point", emoji: "✌️", value: false },
+          { label: "Yes, I'd love to offer my help", value: true },
+          { label: "I am okay with skipping this point", value: false },
         ]}
         value={assistance}
         onSelect={setAssistance}
@@ -321,7 +321,7 @@ export function AssistanceStep() {
   );
 }
 
-/* --- Step 7: Contacts — step 8.png --------------------------------- */
+/* --- Step 7: Contacts - step 8.png --------------------------------- */
 /** Step 7 (optional): the resigner's email (validated), phone, and address. */
 export function ContactsStep() {
   const contacts = useResignationLetterStore((s) => s.contacts);
@@ -329,6 +329,10 @@ export function ContactsStep() {
   const emailError =
     contacts.email.trim().length > 0 && !isValidEmail(contacts.email)
       ? "Enter a valid email address"
+      : undefined;
+  const phoneError =
+    contacts.phone.trim().length > 0 && !isValidPhone(contacts.phone)
+      ? "Enter a valid phone number"
       : undefined;
   return (
     <div>
@@ -351,6 +355,8 @@ export function ContactsStep() {
             value={contacts.phone}
             onChange={(v) => patch({ phone: v })}
             placeholder="999 888 7777"
+            type="tel"
+            error={phoneError}
           />
         </div>
         <RLField

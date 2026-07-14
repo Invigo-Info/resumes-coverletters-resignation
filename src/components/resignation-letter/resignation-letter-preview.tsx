@@ -7,9 +7,17 @@ import { cn } from "@/lib/utils";
 
 // Maps each selectable font id to its CSS family stack.
 const FONT_STACK: Record<RLFontId, string> = {
+  garamond: "var(--font-eb-garamond), 'EB Garamond', Garamond, Georgia, serif",
   georgia: "Georgia, 'Times New Roman', serif",
+  "ibm-plex-sans": "var(--font-ibm-plex-sans), system-ui, sans-serif",
+  "ibm-plex-serif": "var(--font-ibm-plex-serif), Georgia, serif",
+  "inria-sans": "var(--font-inria-sans), system-ui, sans-serif",
+  "inria-serif": "var(--font-inria-serif), Georgia, serif",
   inter: "var(--font-sans), system-ui, sans-serif",
-  garamond: "'EB Garamond', Garamond, Georgia, serif",
+  poppins: "var(--font-poppins), system-ui, sans-serif",
+  "source-sans": "var(--font-source-sans), system-ui, sans-serif",
+  "ubuntu-mono": "var(--font-ubuntu-mono), ui-monospace, monospace",
+  "work-sans": "var(--font-work-sans), system-ui, sans-serif",
 };
 
 // Font-size presets expressed as a multiplier on the base rem size.
@@ -25,6 +33,9 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
   const name = s.fullName.trim() || "Your Name";
   const date = formatLetterDate(s.submissionDate) || "April 14, 2026";
   const email = s.contacts.email.trim();
+  const phone = s.contacts.phone.trim();
+  const address = s.contacts.address.trim();
+  const hasContacts = Boolean(email || phone || address);
   const hasBody = s.letter.body.trim().length > 0;
   const scale = SIZE_SCALE[s.design.fontSize];
 
@@ -82,7 +93,7 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
             <p className="leading-relaxed opacity-90">{s.salutation.trim()}</p>
           )}
           <p className="leading-relaxed opacity-90">{previewOpeningLine(s.lastWorkingDay)}</p>
-          {/* The seeded/edited reason + gratitude paragraphs — highlighted to show
+          {/* The seeded/edited reason + gratitude paragraphs - highlighted to show
               they update live as the user fills the builder. */}
           {htmlToText(s.reasonText).trim() && (
             <p className="leading-relaxed font-medium" style={{ color: titleColor }}>
@@ -113,10 +124,16 @@ export function ResignationLetterPreview({ variant = "card" }: { variant?: "card
 
       <div className="flex-1" />
 
-      {email && (
-        <p className="mt-6 opacity-80" style={{ fontSize: isPage ? "0.9em" : "0.66em" }}>
-          {email}
-        </p>
+      {/* Contact footer - updates live as the Contacts step is filled in. */}
+      {hasContacts && (
+        <div
+          className="mt-6 space-y-0.5 opacity-80"
+          style={{ fontSize: isPage ? "0.9em" : "0.66em" }}
+        >
+          {email && <p>{email}</p>}
+          {phone && <p>{phone}</p>}
+          {address && <p>{address}</p>}
+        </div>
       )}
     </div>
   );

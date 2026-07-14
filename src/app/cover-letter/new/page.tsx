@@ -28,8 +28,13 @@ import {
 } from "@/components/creation/cloud-source-dialogs";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
+import { useDocumentsStore } from "@/lib/store/documents-store";
 import { mockResumes } from "@/lib/mock-data";
-import { isDropboxConfigured, chooseFromDropbox } from "@/lib/dropbox";
+import {
+  isDropboxConfigured,
+  chooseFromDropbox,
+  fetchDropboxFile,
+} from "@/lib/dropbox";
 import { toast } from "sonner";
 
 /**
@@ -60,6 +65,15 @@ export default function CoverLetterNewPage() {
   const startedAnswers = useCoverLetterStore((s) => s.jobIntent.hasSpecificJob !== null);
   const draftTitle = useCoverLetterStore((s) => s.jobDetails.desiredJobTitle);
   const hasDraft = mounted && (hasBody || startedAnswers);
+
+  // The user's real saved resumes drive the "Use your resume" list. Until the
+  // persisted store hydrates (or if there are none), fall back to the demo
+  // resume so the fastest path is always available.
+  const savedResumes = useDocumentsStore((st) => st.resumes);
+  const resumeList =
+    mounted && savedResumes.length > 0
+      ? savedResumes.map((r) => ({ id: r.id, title: r.title }))
+      : mockResumes.map((r) => ({ id: r.id, title: r.title }));
 
   // Resume an existing draft: go straight to preview if a body exists, else the wizard.
   function continueDraft() {
@@ -98,7 +112,7 @@ export default function CoverLetterNewPage() {
     signIn("google", { callbackUrl: "/cover-letter/new" });
   }
 
-  // Dropbox: open the real Dropbox window when configured; else pick a file.
+  // Dropbox: open the real Dropbox chooser when configured; else pick a file.
   async function handleDropbox() {
     if (!isDropboxConfigured()) {
       toast.message("Connect Dropbox to import from there", {
@@ -108,8 +122,18 @@ export default function CoverLetterNewPage() {
       fileInputRef.current?.click();
       return;
     }
-    const picked = await chooseFromDropbox();
-    if (picked) startFromResume({ uploadedFileName: picked.name }, "upload");
+    try {
+      const picked = await chooseFromDropbox();
+      if (!picked) return; // cancelled
+      // Fetch the chosen file's bytes and parse it, so the cover letter is built
+      // from the user's ACTUAL Dropbox resume (not the persona fallback).
+      const file = await fetchDropboxFile(picked.name, picked.link);
+      startFromResume({ uploadedFileName: picked.name }, "upload", file);
+    } catch {
+      toast.error("Couldn't import from Dropbox", {
+        description: "Please try again or upload the file directly.",
+      });
+    }
   }
 
   function importFromLinkedIn() {
@@ -169,13 +193,13 @@ export default function CoverLetterNewPage() {
           <StartOptionCard
             icon={<FileText className="size-6" />}
             title="Use your resume"
-            subtitle={mockResumes[0]?.title ?? "Select a saved resume"}
+            subtitle={resumeList[0]?.title ?? "Select a saved resume"}
             expanded={resumeOpen}
             onClick={() => setResumeOpen((v) => !v)}
           >
             {resumeOpen && (
               <div className="space-y-2 px-5 pb-5">
-                {mockResumes.map((r) => (
+                {resumeList.map((r) => (
                   <button
                     key={r.id}
                     type="button"

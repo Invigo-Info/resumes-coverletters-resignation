@@ -2,38 +2,55 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, PenLine, Palette, Download, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Home, PenLine, Palette, Download, Loader2, Laugh, CircleCheck } from "lucide-react";
 import { ResignationLetterPreview } from "@/components/resignation-letter/resignation-letter-preview";
 import { DesignToolbar } from "@/components/resignation-letter/design-toolbar";
-import { WriteMode } from "@/components/resignation-letter/write-mode";
-import { PaywallDialog } from "@/components/cover-letter/paywall-dialog";
+import { WriteMode, type Section as WriteSection } from "@/components/resignation-letter/write-mode";
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
-import { useResignationLetterAutosave } from "@/lib/store/resignation-letter-documents-store";
+import {
+  useResignationLetterAutosave,
+  useResignationLetterSaveStatus,
+} from "@/lib/store/resignation-letter-documents-store";
 import { generateResignationLetter } from "@/lib/resignation-letter/ai";
-import { downloadResignationLetter } from "@/lib/resignation-letter/download";
 import { bodyToHtml } from "@/lib/resignation-letter/format";
-import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
 
 type Mode = "write" | "design";
 
-// Premium upsell bullet points shown in the resignation-letter download paywall.
-const PAYWALL_PERKS = [
-  "Unlimited resignation letter downloads (PDF & Word)",
-  "AI-written letters with the perfect professional tone",
-  "All premium fonts, colors, and letterhead themes",
-  "Resume, cover letter & resignation letter in one place",
-];
+// After a successful subscription the user returns to the resignation dashboard.
+const RESIGNATION_DASHBOARD = "/resignation-letters";
+
+/** Live autosave pill for the top bar: spins on "Saving...", settles to "Saved". */
+function SaveStatusPill() {
+  const status = useResignationLetterSaveStatus((s) => s.status);
+  const saving = status === "saving";
+  return (
+    <span
+      className="hidden items-center gap-1.5 rounded-2xl bg-card px-3 py-3 text-sm font-medium text-muted-foreground shadow-card ring-1 ring-border sm:inline-flex"
+      aria-live="polite"
+    >
+      {saving ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <CircleCheck className="size-4 text-emerald-600" />
+      )}
+      {saving ? "Saving..." : "Saved"}
+    </span>
+  );
+}
 
 /**
  * Final resignation-letter screen: Write/Design toggle, autosave to the
- * dashboard, AI body generation on first load, and paywalled Download.
+ * dashboard, AI body generation on first load, and a Download that starts the
+ * Stripe subscription checkout (returning to the resignation dashboard).
  */
 export default function ResignationLetterPreviewPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("design");
+  // Which section Write mode opens on ("Edit your letter" jumps to Letter content).
+  const [writeSection, setWriteSection] = useState<WriteSection>("personal");
   const [generating, setGenerating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const requestDownload = usePaywall((s) => s.requestDownload);
 
   // Persist the finished resignation letter into the dashboard's drafts list.
   useResignationLetterAutosave();
@@ -63,26 +80,14 @@ export default function ResignationLetterPreviewPage() {
       .finally(() => setGenerating(false));
   }, []);
 
-  // Gate the download through the paywall; the callback runs only when permitted.
+  // Download is premium: start the Stripe subscription checkout, returning to the
+  // resignation-letter dashboard once the payment completes.
   function handleDownload() {
-    requestDownload(async () => {
-      setDownloading(true);
-      try {
-        await downloadResignationLetter();
-      } finally {
-        setDownloading(false);
-      }
-    });
+    router.push(`/payment?next=${encodeURIComponent(RESIGNATION_DASHBOARD)}`);
   }
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <PaywallDialog
-        title="Download your resignation letter"
-        subtitle="Upgrade to Premium to download and keep your departure polished and professional."
-        perks={PAYWALL_PERKS}
-      />
-
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
         <Link
@@ -103,7 +108,10 @@ export default function ResignationLetterPreviewPage() {
           ).map((t) => (
             <button
               key={t.key}
-              onClick={() => setMode(t.key)}
+              onClick={() => {
+                if (t.key === "write") setWriteSection("personal");
+                setMode(t.key);
+              }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
                 mode === t.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
@@ -117,20 +125,23 @@ export default function ResignationLetterPreviewPage() {
 
         {/* Progress 85% */}
         <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
-          <span className="text-base leading-none" aria-hidden>😋</span>
+          <Laugh className="size-4 text-primary" aria-hidden />
           <div className="h-2 w-32 overflow-hidden rounded-full bg-muted">
             <div className="h-full w-[85%] rounded-full bg-gradient-progress" />
           </div>
           <span className="text-sm font-semibold text-foreground">85%</span>
         </div>
 
+        {/* Autosave status */}
+        <SaveStatusPill />
+
         <button
           onClick={handleDownload}
-          disabled={downloading || generating}
+          disabled={generating}
           className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          <span className="hidden sm:inline">{downloading ? "Preparing…" : "Download"}</span>
+          <Download className="size-4" />
+          <span className="hidden sm:inline">Download</span>
         </button>
       </div>
 
@@ -144,7 +155,7 @@ export default function ResignationLetterPreviewPage() {
           </div>
         </div>
       ) : mode === "write" ? (
-        <WriteMode onSwitchToDesign={() => setMode("design")} />
+        <WriteMode initialSection={writeSection} onSwitchToDesign={() => setMode("design")} />
       ) : (
         <div className="flex justify-center gap-4 px-4 pb-28 pt-2">
           <div className="sticky top-4 self-start">
@@ -161,7 +172,10 @@ export default function ResignationLetterPreviewPage() {
         <div className="fixed bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2">
           <button
             type="button"
-            onClick={() => setMode("write")}
+            onClick={() => {
+              setWriteSection("content");
+              setMode("write");
+            }}
             className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background shadow-card-lg transition-colors hover:bg-foreground/90"
           >
             <PenLine className="size-4" />
@@ -170,11 +184,10 @@ export default function ResignationLetterPreviewPage() {
           <button
             type="button"
             onClick={handleDownload}
-            disabled={downloading}
-            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-card-lg transition-colors hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-card-lg transition-colors hover:bg-primary/90"
           >
-            {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-            {downloading ? "Preparing…" : "Download"}
+            <Download className="size-4" />
+            Download
           </button>
         </div>
       )}

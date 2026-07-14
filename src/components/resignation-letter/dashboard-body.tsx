@@ -22,6 +22,7 @@ import {
 } from "@/lib/store/documents-sync";
 import { formatLetterDate, htmlToText, previewOpeningLine } from "@/lib/resignation-letter/format";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
+import { cn } from "@/lib/utils";
 
 /** Format a timestamp as a human "Updated D Mon YYYY" label for the card. */
 function formatUpdated(ts: number): string {
@@ -68,12 +69,12 @@ export function ResignationDashboardBody() {
   const loadDocument = useResignationLetterStore((s) => s.loadDocument);
   const reset = useResignationLetterStore((s) => s.reset);
 
-  // Drafts live in localStorage (client only) — avoid SSR/client mismatch.
+  // Drafts live in localStorage (client only) - avoid SSR/client mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     let alive = true;
     // Backfill: a letter created/edited but never saved into the drafts list
-    // still lives in the active store — surface it as a draft card here.
+    // still lives in the active store - surface it as a draft card here.
     saveActiveResignationLetter();
     // Pull this user's saved resignation letters from the server, back up
     // local-only drafts, then merge them.
@@ -122,63 +123,76 @@ export function ResignationDashboardBody() {
     router.push(hasBody ? "/resignation-letter/preview" : "/resignation-letters/write/heading");
   }
 
-  if (!mounted || letters.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-6 py-10 text-center">
+  // Only reveal cards after mount (drafts are client-only), so SSR stays stable.
+  const hasLetters = mounted && letters.length > 0;
+
+  return (
+    <>
+      {/* Illustration hero - always shown, matching the reference image. The
+          headline stays welcoming whether or not there are saved letters. */}
+      <div
+        className={cn(
+          "flex flex-col items-center gap-6 text-center",
+          hasLetters ? "pb-10" : "py-10"
+        )}
+      >
         <Image
           src="/illustration.png"
           alt="Diverse professionals"
           width={544}
           height={379}
-          className="w-[420px] max-w-full"
+          className={cn("max-w-full", hasLetters ? "w-[320px]" : "w-[420px]")}
           unoptimized
           priority
         />
         <h1 className="max-w-md font-heading text-2xl font-extrabold leading-snug text-foreground">
-          If you don&apos;t have a resignation letter yet, it&apos;s a great time to create one!
+          {hasLetters
+            ? "Ready to write another resignation letter?"
+            : "If you don't have a resignation letter yet, it's a great time to create one!"}
         </h1>
         <PrimaryButton onClick={createNew}>
           <Plus className="size-4" />
           Build my resignation letter
         </PrimaryButton>
       </div>
-    );
-  }
 
-  return (
-    <>
-      <div className="space-y-6">
-        {letters.map((rec) => (
-          <ResignationLetterCard
-            key={rec.id}
-            doc={toDoc(rec)}
-            onEdit={() => open(rec)}
-            onDownload={() => open(rec)}
-            onCopy={() => {
-              const id = newResignationLetterId();
-              upsertLetter({
-                ...rec,
-                id,
-                title: `${rec.title} (copy)`,
-                updatedAt: Date.now(),
-              });
-            }}
-            onDelete={() => removeLetter(rec.id)}
-          />
-        ))}
-      </div>
+      {/* Saved resignation-letter cards */}
+      {hasLetters && (
+        <>
+          <div className="space-y-6">
+            {letters.map((rec) => (
+              <ResignationLetterCard
+                key={rec.id}
+                doc={toDoc(rec)}
+                onEdit={() => open(rec)}
+                onDownload={() => open(rec)}
+                onCopy={() => {
+                  const id = newResignationLetterId();
+                  upsertLetter({
+                    ...rec,
+                    id,
+                    title: `${rec.title} (copy)`,
+                    updatedAt: Date.now(),
+                  });
+                }}
+                onDelete={() => removeLetter(rec.id)}
+              />
+            ))}
+          </div>
 
-      {/* Create new */}
-      <div className="mt-8 flex justify-center">
-        <button
-          type="button"
-          onClick={createNew}
-          className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
-        >
-          <Plus className="size-4" />
-          Create new resignation letter
-        </button>
-      </div>
+          {/* Create new */}
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={createNew}
+              className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
+            >
+              <Plus className="size-4" />
+              Create new resignation letter
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 }

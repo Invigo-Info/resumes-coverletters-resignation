@@ -30,7 +30,7 @@ const CARD_BRANDS = ["AMEX", "VISA", "Mastercard", "Discover"];
  * client secret from /api/checkout/session on mount, then mounts Stripe's
  * embedded checkout; falls back to a config notice or error message.
  */
-function PaymentCard({ plan }: { plan: string }) {
+function PaymentCard({ plan, next }: { plan: string; next: string }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ function PaymentCard({ plan }: { plan: string }) {
     fetch("/api/checkout/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, next }),
     })
       .then(async (r) => {
         const data = await r.json();
@@ -54,7 +54,7 @@ function PaymentCard({ plan }: { plan: string }) {
     return () => {
       active = false;
     };
-  }, [plan]);
+  }, [plan, next]);
 
   let body: React.ReactNode;
   if (!stripePromise) {
@@ -67,7 +67,7 @@ function PaymentCard({ plan }: { plan: string }) {
         <p className="max-w-xs text-xs text-muted-foreground">
           Add <code className="rounded bg-muted px-1">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> and{" "}
           <code className="rounded bg-muted px-1">STRIPE_SECRET_KEY</code> (test keys) to{" "}
-          <code className="rounded bg-muted px-1">.env.local</code> and restart — the secure payment
+          <code className="rounded bg-muted px-1">.env.local</code> and restart - the secure payment
           form appears here. Test card: 4242 4242 4242 4242, any future date / CVC.
         </p>
       </div>
@@ -126,11 +126,14 @@ function PaymentCard({ plan }: { plan: string }) {
 function CheckoutInner() {
   const params = useSearchParams();
   const planId = params.get("plan") || "trial";
+  const nextRaw = params.get("next") || "";
+  // Only forward a safe same-origin path as the post-checkout destination.
+  const next = nextRaw.startsWith("/") ? nextRaw : "";
   const plan = getPlan(planId);
   const { data: session } = useSession();
 
-  const email = session?.user?.email ?? "—";
-  const fullName = session?.user?.name ?? (email !== "—" ? email.split("@")[0] : "—");
+  const email = session?.user?.email ?? "-";
+  const fullName = session?.user?.name ?? (email !== "-" ? email.split("@")[0] : "-");
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,7 +192,7 @@ function CheckoutInner() {
 
           {/* Right: payment */}
           <div>
-            <PaymentCard plan={plan.id} />
+            <PaymentCard plan={plan.id} next={next} />
 
             <ul className="mt-6 space-y-3">
               {GUARANTEES.map((g) => (

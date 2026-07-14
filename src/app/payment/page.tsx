@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Infinity as InfinityIcon,
   Sparkles,
@@ -38,7 +38,7 @@ const REVIEWS = [
   },
   {
     name: "Priya K.",
-    text: "Clean templates, easy editing, instant PDF downloads. Cancelling was simple too — no hassle.",
+    text: "Clean templates, easy editing, instant PDF downloads. Cancelling was simple too - no hassle.",
   },
 ];
 
@@ -59,13 +59,18 @@ function Stars({ count = 5, className }: { count?: number; className?: string })
  * Pricing / plan-selection page. Lets the user pick a trial or annual plan, then
  * forwards the chosen plan to the checkout page via the ?plan query param.
  */
-export default function PaymentPage() {
+function PaymentPageInner() {
   const router = useRouter();
+  const params = useSearchParams();
+  // Preserve a same-origin post-checkout destination through to the checkout page.
+  const nextRaw = params.get("next") || "";
+  const next = nextRaw.startsWith("/") ? nextRaw : "";
   const [selected, setSelected] = useState<PlanId>("trial");
 
-  // Carry the selected plan into checkout.
+  // Carry the selected plan (and post-checkout destination) into checkout.
   function onContinue() {
-    router.push(`/payment/checkout?plan=${selected}`);
+    const nextParam = next ? `&next=${encodeURIComponent(next)}` : "";
+    router.push(`/payment/checkout?plan=${selected}${nextParam}`);
   }
 
   const trial = PLANS.trial;
@@ -181,7 +186,10 @@ export default function PaymentPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               Based on <span className="font-semibold text-foreground">13,245 reviews</span>{" "}
-              <span className="font-semibold text-[#00B67A]">★ Trustpilot</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-[#00B67A]">
+                <Star className="size-3.5 fill-current" />
+                Trustpilot
+              </span>
             </p>
           </div>
 
@@ -199,5 +207,14 @@ export default function PaymentPage() {
 
       <HelpPill />
     </div>
+  );
+}
+
+// Route entry: wrap in Suspense because the body reads search params (?next).
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={null}>
+      <PaymentPageInner />
+    </Suspense>
   );
 }

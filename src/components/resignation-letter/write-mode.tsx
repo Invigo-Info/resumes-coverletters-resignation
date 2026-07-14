@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
+import { useResignationLetterSaveStatus } from "@/lib/store/resignation-letter-documents-store";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { bodyToHtml, htmlToText } from "@/lib/resignation-letter/format";
@@ -23,7 +24,29 @@ import { RLField, IMPROVE_AI_ACTIONS } from "./widgets";
 import { cn } from "@/lib/utils";
 
 // The three editable sections of the write-mode editor.
-type Section = "personal" | "employer" | "content";
+export type Section = "personal" | "employer" | "content";
+
+/** Live autosave indicator: spins on "Saving...", settles to "Saved". */
+function SaveIndicator({ className }: { className?: string }) {
+  const status = useResignationLetterSaveStatus((s) => s.status);
+  const saving = status === "saving";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
+        className
+      )}
+      aria-live="polite"
+    >
+      {saving ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : (
+        <CircleCheck className="size-3.5" />
+      )}
+      {saving ? "Saving..." : "Saved"}
+    </span>
+  );
+}
 
 // Left-hand navigation entries, one per editor section.
 const NAV: { key: Section; label: string; icon: React.ReactNode }[] = [
@@ -79,7 +102,7 @@ function EmployerSection() {
 /** "Improve with AI" dropdown for the letter body: runs the chosen action and writes the result back. */
 function ImproveWithAI() {
   const letter = useResignationLetterStore((s) => s.letter);
-  const setLetter = useResignationLetterStore((s) => s.setLetter);
+  const setLetterBody = useResignationLetterStore((s) => s.setLetterBody);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -88,7 +111,7 @@ function ImproveWithAI() {
     setBusy(true);
     try {
       const improved = await improveLetterBody(htmlToText(letter.body), instruction);
-      if (improved) setLetter({ body: bodyToHtml(improved) });
+      if (improved) setLetterBody(bodyToHtml(improved));
     } finally {
       setBusy(false);
     }
@@ -131,7 +154,7 @@ function ImproveWithAI() {
 /** Editor section for the full letter body, with an inline AI-improve action. */
 function ContentSection() {
   const letter = useResignationLetterStore((s) => s.letter);
-  const setLetter = useResignationLetterStore((s) => s.setLetter);
+  const setLetterBody = useResignationLetterStore((s) => s.setLetterBody);
   return (
     <div>
       <h2 className="font-heading text-2xl font-extrabold text-foreground">Letter content</h2>
@@ -140,7 +163,7 @@ function ContentSection() {
         <p className="mb-1.5 text-sm text-muted-foreground">Letter body</p>
         <RichTextEditor
           value={bodyToHtml(letter.body)}
-          onChange={(html) => setLetter({ body: html })}
+          onChange={(html) => setLetterBody(html)}
           minHeight={260}
           placeholder="Write your resignation letter…"
           toolbarRight={<ImproveWithAI />}
@@ -154,8 +177,14 @@ function ContentSection() {
  * Manual edit mode: left section nav, center form (personal/employer/content),
  * and a live preview. Advancing past the last section hands off to design mode.
  */
-export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }) {
-  const [section, setSection] = useState<Section>("personal");
+export function WriteMode({
+  onSwitchToDesign,
+  initialSection = "personal",
+}: {
+  onSwitchToDesign: () => void;
+  initialSection?: Section;
+}) {
+  const [section, setSection] = useState<Section>(initialSection);
   // Linear order of the sections, driving the Back/Next buttons.
   const order: Section[] = ["personal", "employer", "content"];
   const idx = order.indexOf(section);
@@ -189,14 +218,15 @@ export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }
           {section === "content" && <ContentSection />}
 
           <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">
-            {idx > 0 ? (
-              <GhostButton onClick={() => setSection(order[idx - 1])}>
-                <ChevronLeft className="size-4" />
-                Back
-              </GhostButton>
-            ) : (
-              <span />
-            )}
+            <div className="flex items-center gap-3">
+              {idx > 0 && (
+                <GhostButton onClick={() => setSection(order[idx - 1])}>
+                  <ChevronLeft className="size-4" />
+                  Back
+                </GhostButton>
+              )}
+              <SaveIndicator />
+            </div>
             <PrimaryButton
               onClick={() => (idx < order.length - 1 ? setSection(order[idx + 1]) : onSwitchToDesign())}
             >
@@ -211,10 +241,7 @@ export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }
       <section className="hidden min-w-0 flex-1 xl:block">
         <div className="relative">
           <ResignationLetterPreview variant="page" />
-          <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            <CircleCheck className="size-3.5" />
-            Saved
-          </span>
+          <SaveIndicator className="absolute bottom-4 left-4 shadow-sm" />
         </div>
       </section>
     </div>

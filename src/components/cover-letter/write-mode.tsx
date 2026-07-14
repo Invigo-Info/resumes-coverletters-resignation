@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { UserRound, Mail, CircleCheck } from "lucide-react";
+import { UserRound, Mail, CircleCheck, Loader2 } from "lucide-react";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+import { useCoverLetterSaveStatus } from "@/lib/store/cover-letter-documents-store";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { bodyToHtml } from "@/lib/cover-letter/format";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
@@ -13,6 +14,28 @@ import { CoverLetterPreview } from "./cover-letter-preview";
 
 // The two editable sections of the write-mode editor.
 type Section = "personal" | "content";
+
+/** Live autosave indicator: spins on "Saving…", settles to "Saved". */
+function SaveIndicator({ className }: { className?: string }) {
+  const status = useCoverLetterSaveStatus((s) => s.status);
+  const saving = status === "saving";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
+        className
+      )}
+      aria-live="polite"
+    >
+      {saving ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : (
+        <CircleCheck className="size-3.5" />
+      )}
+      {saving ? "Saving…" : "Saved"}
+    </span>
+  );
+}
 
 // Left-hand navigation entries, one per editor section.
 const NAV: { key: Section; label: string; icon: React.ReactNode }[] = [
@@ -121,14 +144,15 @@ export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }
           {section === "personal" ? <PersonalSection /> : <ContentSection />}
 
           <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">
-            {section === "content" ? (
-              <GhostButton onClick={() => setSection("personal")}>
-                <ChevronLeft className="size-4" />
-                Back
-              </GhostButton>
-            ) : (
-              <span />
-            )}
+            <div className="flex items-center gap-3">
+              {section === "content" && (
+                <GhostButton onClick={() => setSection("personal")}>
+                  <ChevronLeft className="size-4" />
+                  Back
+                </GhostButton>
+              )}
+              <SaveIndicator />
+            </div>
             <PrimaryButton
               onClick={() =>
                 section === "personal" ? setSection("content") : onSwitchToDesign()
@@ -145,10 +169,7 @@ export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }
       <section className="hidden min-w-0 flex-1 xl:block">
         <div className="relative rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
           <CoverLetterPreview />
-          <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            <CircleCheck className="size-3.5" />
-            Saved
-          </span>
+          <SaveIndicator className="absolute bottom-4 left-4 shadow-sm" />
         </div>
       </section>
     </div>

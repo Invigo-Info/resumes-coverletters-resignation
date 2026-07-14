@@ -28,6 +28,16 @@ function Meta({ icon, children }: { icon: React.ReactNode; children: React.React
   );
 }
 
+/** A "Label: value" row in the description's source-metadata footer. */
+function FooterRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="font-semibold text-foreground">{label}:</dt>
+      <dd className="text-muted-foreground">{value}</dd>
+    </div>
+  );
+}
+
 /**
  * The right-side job detail panel. Header (company logo, posted time, title) with
  * Save + Apply now, a metadata row (salary, location, industry, seniority, work
@@ -166,6 +176,21 @@ export function JobDetail({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Source metadata footer: normalized structured fields at the end of
+              the description (rows are hidden when the value is unavailable). */}
+          {(hasSalary || job.industry || job.employmentType || job.mode) && (
+            <dl className="mt-5 space-y-1.5 border-t border-border pt-4 text-sm">
+              {hasSalary && (
+                <FooterRow label="Salary" value={job.salaryLabel} />
+              )}
+              {job.industry && <FooterRow label="Job Category" value={job.industry} />}
+              {job.employmentType && (
+                <FooterRow label="Job Type" value={job.employmentType} />
+              )}
+              {job.mode && <FooterRow label="Job Location" value={job.mode} />}
+            </dl>
           )}
         </section>
       </div>

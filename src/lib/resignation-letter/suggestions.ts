@@ -81,15 +81,15 @@ export function assistanceParagraph(): string {
   return "I am keen to support the transition by providing insights into ongoing projects and sharing necessary documentation. Please feel free to reach out for any guidance or clarification during my notice period. I am committed to ensuring a seamless handover of my responsibilities.";
 }
 
-/** Gratitude chips — multi-select with emoji (Step 6.png). */
-export const RL_GRATITUDE: { label: string; emoji: string }[] = [
-  { label: "Professional Growth", emoji: "🔥" },
-  { label: "Mentorship and Guidance", emoji: "💪" },
-  { label: "Team Collaboration", emoji: "🤝" },
-  { label: "Learning Opportunities", emoji: "🧫" },
-  { label: "Company Culture", emoji: "✌️" },
-  { label: "Career Advancement", emoji: "🚀" },
-  { label: "Challenging Projects", emoji: "🎯" },
-  { label: "Personal Development", emoji: "⭐" },
-  { label: "Networking Opportunities", emoji: "🍇" },
+/** Gratitude chips - multi-select, max 3 (Step 6.png). */
+export const RL_GRATITUDE: { label: string }[] = [
+  { label: "Professional Growth" },
+  { label: "Mentorship and Guidance" },
+  { label: "Team Collaboration" },
+  { label: "Learning Opportunities" },
+  { label: "Company Culture" },
+  { label: "Career Advancement" },
+  { label: "Challenging Projects" },
+  { label: "Personal Development" },
+  { label: "Networking Opportunities" },
 ];

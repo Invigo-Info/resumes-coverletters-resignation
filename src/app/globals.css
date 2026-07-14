@@ -261,3 +261,32 @@
   pointer-events: none;
 }
 
+
+/* Photo-cropper zoom slider: a thin track with a large (22px) grabbable thumb,
+   per the photo-modal spec (thumb >= 20-24px). The filled portion is painted
+   with an inline linear-gradient the component sets from the current zoom. */
+.photo-zoom {
+  height: 8px;
+  border-radius: 9999px;
+}
+.photo-zoom::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  width: 22px;
+  margin-top: -7px;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+}
+.photo-zoom::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+}

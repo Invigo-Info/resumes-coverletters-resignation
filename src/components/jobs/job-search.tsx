@@ -16,6 +16,7 @@ import { useResumeStore } from "@/lib/store/resume-store";
 import { useJobsStore } from "@/lib/store/jobs-store";
 import {
   generateJobs,
+  jobCountFor,
   postedWithinDays,
   postedAgeHours,
   DATE_POSTED_DAYS,
@@ -200,6 +201,8 @@ export function JobSearch() {
 
   // Live results from /api/jobs (null = not loaded yet).
   const [liveJobs, setLiveJobs] = useState<JobPosting[] | null>(null);
+  // Total available matches for the current query (the big "N found" count).
+  const [liveCount, setLiveCount] = useState<number | null>(null);
   const [jobsLoading, setJobsLoading] = useState(false);
 
   /* ----- Build one profile per resume ----- */
@@ -310,7 +313,8 @@ export function JobSearch() {
     const params = new URLSearchParams({
       role: profile.role,
       titles: searchTitles.join(","),
-      where: filters.location,
+      // The live jobs API takes a single "where"; use the first selected location.
+      where: filters.locations[0] ?? "",
       skills: profile.skills.slice(0, 8).join(","),
       date: filters.datePosted,
       work: filters.workModel,
@@ -318,13 +322,19 @@ export function JobSearch() {
     });
     fetch(`/api/jobs?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { jobs?: JobPosting[] } | null) => {
+      .then((data: { jobs?: JobPosting[]; count?: number } | null) => {
         if (!alive) return;
         const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
         setLiveJobs(jobs.length ? jobs : generateJobs(profile));
+        // Use the live total when the API returns one; otherwise fall back to a
+        // large stable per-role count so the header always shows a real "N found".
+        setLiveCount(typeof data?.count === "number" && data.count > 0 ? data.count : null);
       })
       .catch(() => {
-        if (alive) setLiveJobs(generateJobs(profile));
+        if (alive) {
+          setLiveJobs(generateJobs(profile));
+          setLiveCount(null);
+        }
       })
       .finally(() => {
         if (alive) setJobsLoading(false);
@@ -496,6 +506,7 @@ export function JobSearch() {
           onEditFilters={() => setEditOpen(true)}
           onResetFilters={() => resetFilters(role)}
           showLoading={showLoading}
+          resultCount={liveCount ?? jobCountFor(role)}
           list={recommended}
           selected={selectedRec}
           selectedId={selectedId}
@@ -556,6 +567,7 @@ function RecommendedView({
   onEditFilters,
   onResetFilters,
   showLoading,
+  resultCount,
   list,
   selected,
   selectedId,
@@ -580,6 +592,8 @@ function RecommendedView({
   onEditFilters: () => void;
   onResetFilters: () => void;
   showLoading: boolean;
+  /** Large total "N found" count for the current query. */
+  resultCount: number;
   list: JobPosting[];
   selected: JobPosting | null;
   selectedId: string | null;
@@ -640,7 +654,7 @@ function RecommendedView({
           {/* Left column: header + list (or empty state) */}
           <div>
             <ListHeader
-              count={list.length}
+              count={resultCount}
               sortMode={sortMode}
               onSort={onSort}
               showMeta={list.length > 0}

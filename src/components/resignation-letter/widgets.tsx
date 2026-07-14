@@ -35,7 +35,7 @@ export const IMPROVE_AI_ACTIONS: {
   },
 ];
 
-/** Left-aligned step heading + optional helper text (Step 2–8.png). */
+/** Left-aligned step heading + optional helper text (Step 2-8.png). */
 export function StepHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-8">
@@ -119,14 +119,14 @@ export function ChipSingleSelect({
   );
 }
 
-/** Multi-select chips with optional emoji + max limit, e.g. Gratitude (Step 6.png). */
+/** Multi-select chips with a max limit, e.g. Gratitude (Step 6.png). */
 export function ChipMultiSelect({
   options,
   selected,
   onToggle,
   max = 3,
 }: {
-  options: { label: string; emoji?: string }[];
+  options: { label: string }[];
   selected: string[];
   onToggle: (value: string) => void;
   max?: number;
@@ -149,7 +149,6 @@ export function ChipMultiSelect({
               disabled && "cursor-not-allowed opacity-40 hover:bg-muted"
             )}
           >
-            {opt.emoji && <span aria-hidden>{opt.emoji}</span>}
             {opt.label}
             {isSel && (
               <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-white">
@@ -169,7 +168,7 @@ export function ChoiceButtons({
   value,
   onSelect,
 }: {
-  options: { label: string; emoji?: string; value: boolean }[];
+  options: { label: string; value: boolean }[];
   value: boolean | null;
   onSelect: (value: boolean) => void;
 }) {
@@ -187,7 +186,6 @@ export function ChoiceButtons({
               isSel ? "bg-card text-foreground ring-2 ring-primary" : "bg-muted text-foreground hover:bg-muted/70"
             )}
           >
-            {opt.emoji && <span aria-hidden>{opt.emoji}</span>}
             {opt.label}
           </button>
         );

@@ -40,6 +40,8 @@ export interface JobPosting {
   qualifications: string[];
   /** Seniority level, e.g. "Senior", "Mid", "Lead" (best-effort). */
   seniority?: string;
+  /** Employment type, e.g. "Full Time", "Contract" (footer metadata). */
+  employmentType?: string;
   /** When the job was posted (epoch ms) - used for the date filter + sorting. */
   postedAt?: number;
   /** Industry / sector label, e.g. "Hospitals and Health Care". */
@@ -61,8 +63,8 @@ export type WorkModelFilter = "remote_and_onsite" | "remote_only" | "onsite_only
 export interface JobFilters {
   /** One or more target job titles (OR logic in the query). */
   jobTitles: string[];
-  /** Free-text location ("Tampa, FL (US)"); empty = anywhere. */
-  location: string;
+  /** One or more locations from the local DB ("Los Angeles, CA (US)"); [] = anywhere. */
+  locations: string[];
   datePosted: DatePosted;
   workModel: WorkModelFilter;
   sort: "best_match";
@@ -73,7 +75,7 @@ export function defaultFilters(role: string): JobFilters {
   const r = role.trim();
   return {
     jobTitles: r ? [r] : [],
-    location: "",
+    locations: [],
     datePosted: "month",
     workModel: "remote_and_onsite",
     sort: "best_match",
@@ -292,7 +294,7 @@ export function relatedTitles(role: string): string[] {
 export function activeFilterCount(f: JobFilters): number {
   return (
     f.jobTitles.length +
-    (f.location.trim() ? 1 : 0) +
+    f.locations.length +
     (f.datePosted !== "month" ? 1 : 0) +
     (f.workModel !== "remote_and_onsite" ? 1 : 0)
   );
@@ -450,6 +452,7 @@ export function generateJobs(profile: ResumeProfile): JobPosting[] {
       postedLabel: buildPosted(seed),
       matchScore,
       seniority: seniorityFor(title),
+      employmentType: pick(["Full Time", "Full Time", "Full Time", "Contract", "Part Time"], seed),
       industry: industryFor(`${title} ${parsed.head}`),
       summary: `Own and grow the ${parsed.head.toLowerCase()} function as a ${title} at ${pick(
         COMPANIES,

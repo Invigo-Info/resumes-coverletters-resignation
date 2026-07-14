@@ -140,6 +140,17 @@ export const useJobsStore = create<JobsState>()(
       storage: createJSONStorage(() => safeLocalStorage),
       // Don't persist the transient undo stack - a reload should start clean.
       partialize: ({ pendingRemovals: _pending, ...rest }) => rest,
+      // v1: migrate the single `location` string to the `locations` array.
+      version: 1,
+      migrate: (persisted, version) => {
+        const s = persisted as { filters?: Record<string, unknown> } | undefined;
+        if (version < 1 && s?.filters && !Array.isArray(s.filters.locations)) {
+          const loc = typeof s.filters.location === "string" ? s.filters.location.trim() : "";
+          s.filters.locations = loc ? [loc] : [];
+          delete s.filters.location;
+        }
+        return s as unknown;
+      },
     }
   )
 );

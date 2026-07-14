@@ -31,7 +31,16 @@ export type EducationLevel = "college" | "highschool" | "student" | "none";
 
 export type CLFontId = "georgia" | "inter" | "garamond";
 export type CLSpacingId = "dense" | "normal" | "loose";
-export type CLLayoutId = "accent-top" | "split";
+export type CLLayoutId =
+  | "left-right"
+  | "contacts"
+  | "centered"
+  | "stars"
+  | "ribbon"
+  | "smallcaps"
+  | "center-top"
+  | "sidebar"
+  | "leftmeta";
 
 export interface CLDesign {
   font: CLFontId;
@@ -135,13 +144,13 @@ const initial = {
   personal: { firstName: "", lastName: "", email: "", phone: "", address: "" },
   letter: { companyName: "", hiringManagerName: "", body: "" },
   design: {
-    font: "georgia" as CLFontId,
+    font: "inter" as CLFontId,
     accent: "#111827",
     spacing: "normal" as CLSpacingId,
     bg: "",
     dark: false,
-    layout: "accent-top" as CLLayoutId,
-    template: "classic",
+    layout: "left-right" as CLLayoutId,
+    template: "feynman",
   },
   step: "intent" as CLStep,
   mode: "onboarding" as const,

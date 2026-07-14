@@ -80,6 +80,21 @@ export const useCoverLetterDocumentsStore = create<CoverLetterDocumentsState>()(
 );
 
 /* ------------------------------------------------------------------ */
+/* Save status (drives the "Saving… / Saved" indicator)               */
+/* ------------------------------------------------------------------ */
+
+export type CoverLetterSaveStatus = "idle" | "saving" | "saved";
+
+/** Live autosave status so the editor can show real "Saving… / Saved" feedback. */
+export const useCoverLetterSaveStatus = create<{
+  status: CoverLetterSaveStatus;
+  setStatus: (status: CoverLetterSaveStatus) => void;
+}>((set) => ({
+  status: "idle",
+  setStatus: (status) => set({ status }),
+}));
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -99,15 +114,14 @@ export function coverLetterTitle(s: CoverLetterState): string {
   return company ? `Cover letter for ${company}` : "Untitled cover letter";
 }
 
-/** Has the user entered anything worth saving as a draft? */
+/**
+ * Is there a real cover letter worth listing on the dashboard? Only an actual
+ * generated/edited letter body counts - filling personal details or a job title
+ * (e.g. while reviewing an imported resume) must NOT create a phantom draft card.
+ * In-progress wizard state is resumed separately via "Continue your draft".
+ */
 function hasContent(s: CoverLetterState): boolean {
-  return Boolean(
-    s.personal.firstName.trim() ||
-      s.personal.lastName.trim() ||
-      s.jobDetails.desiredJobTitle.trim() ||
-      s.jobDetails.companyName.trim() ||
-      stripHtml(s.letter.body)
-  );
+  return Boolean(stripHtml(s.letter.body));
 }
 
 /** Build a savable draft record from the live cover-letter state. */
@@ -156,22 +170,34 @@ export function saveActiveCoverLetter(): string | null {
 
 /**
  * Auto-save the active cover letter into the dashboard's drafts list. Mount once
- * in the builder/preview; it debounces store changes and upserts the record.
+ * in the builder/preview; it debounces store changes, upserts the record, and
+ * publishes a live "saving -> saved" status for the editor's Saved indicator.
  */
 export function useCoverLetterAutosave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let mounted = true;
+    const { setStatus } = useCoverLetterSaveStatus.getState();
 
-    const save = () => saveActiveCoverLetter();
+    const save = () => {
+      const id = saveActiveCoverLetter();
+      if (mounted) setStatus(id ? "saved" : "idle");
+    };
 
-    const schedule = () => {
+    const schedule = (initial: boolean) => {
       if (timer) clearTimeout(timer);
+      // An edit is now in flight: show "Saving…" (but not for the mount capture,
+      // which just re-persists already-saved state).
+      if (!initial && hasContent(useCoverLetterStore.getState())) {
+        setStatus("saving");
+      }
       timer = setTimeout(save, 700);
     };
 
-    const unsub = useCoverLetterStore.subscribe(schedule);
-    schedule(); // capture the current state on mount too
+    const unsub = useCoverLetterStore.subscribe(() => schedule(false));
+    schedule(true); // capture the current state on mount too
     return () => {
+      mounted = false;
       if (timer) clearTimeout(timer);
       unsub();
     };

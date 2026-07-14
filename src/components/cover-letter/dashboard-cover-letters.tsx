@@ -19,12 +19,25 @@ import {
   pushServerDocument,
 } from "@/lib/store/documents-sync";
 
-/** Format a timestamp as a human "Updated D Mon YYYY" label for the card. */
+/** Strip HTML tags to test whether a letter body has real text. */
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+/**
+ * Format a timestamp as a relative "Updated about 4 hours ago" label for the
+ * card, falling back to an absolute date once a draft is over a month old.
+ */
 function formatUpdated(ts: number): string {
+  const diff = Date.now() - ts;
+  const minutes = Math.round(diff / 60_000);
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 45) return `Updated ${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.round(diff / 3_600_000);
+  if (hours < 24) return `Updated about ${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(diff / 86_400_000);
+  if (days < 30) return `Updated ${days} day${days === 1 ? "" : "s"} ago`;
   const d = new Date(ts);
-  const day = d.getDate();
   const month = d.toLocaleString("en-US", { month: "short" });
-  return `Updated ${day} ${month} ${d.getFullYear()}`;
+  return `Updated ${d.getDate()} ${month} ${d.getFullYear()}`;
 }
 
 /**
@@ -39,12 +52,12 @@ export function DashboardCoverLetters() {
   const upsertLetter = useCoverLetterDocumentsStore((s) => s.upsertLetter);
   const loadDocument = useCoverLetterStore((s) => s.loadDocument);
 
-  // Drafts live in localStorage (client only) — avoid SSR/client mismatch.
+  // Drafts live in localStorage (client only) - avoid SSR/client mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     let alive = true;
     // Backfill: a cover letter created/edited but never saved into the drafts
-    // list still lives in the active store — surface it as a draft card here.
+    // list still lives in the active store - surface it as a draft card here.
     saveActiveCoverLetter();
     // Pull this user's saved cover letters from the server, back up local-only
     // drafts, then merge them in.
@@ -83,7 +96,11 @@ export function DashboardCoverLetters() {
     };
   }, []);
 
-  if (!mounted || letters.length === 0) {
+  // Only real cover letters (with an actual body) show as cards; a stray draft
+  // that only carries imported personal details is not a cover letter.
+  const realLetters = letters.filter((rec) => stripHtml(rec.data.letter.body));
+
+  if (!mounted || realLetters.length === 0) {
     return (
       <EmptyState
         heading="If you don't have a cover letter yet, it's a great time to create one!"
@@ -95,7 +112,7 @@ export function DashboardCoverLetters() {
 
   return (
     <div className="space-y-7">
-      {letters.map((rec) => {
+      {realLetters.map((rec) => {
         const open = () => {
           loadDocument(rec.id, rec.data);
           // A generated letter opens straight to the preview; otherwise resume
@@ -106,10 +123,9 @@ export function DashboardCoverLetters() {
         return (
           <CoverLetterCard
             key={rec.id}
-            id={rec.id}
             title={rec.title}
             updatedAt={formatUpdated(rec.updatedAt)}
-            templateId={rec.templateId}
+            data={rec.data}
             onEdit={open}
             onDownload={open}
             onCopy={() => {

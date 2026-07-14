@@ -12,9 +12,11 @@ import { getStripe } from "@/lib/stripe/server";
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; next?: string }>;
 }) {
-  const { session_id } = await searchParams;
+  const { session_id, next } = await searchParams;
+  // Return the user to where they started checkout (same-origin path only).
+  const dashboardHref = next && next.startsWith("/") ? next : "/";
 
   // Confirm the Checkout Session status server-side (best-effort).
   let status: string | null = null;
@@ -57,7 +59,7 @@ export default async function PaymentSuccessPage({
         </p>
 
         <div className="mt-8">
-          <Link href="/">
+          <Link href={dashboardHref}>
             <PrimaryButton>Go to dashboard</PrimaryButton>
           </Link>
         </div>

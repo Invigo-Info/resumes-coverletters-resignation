@@ -33,6 +33,7 @@ export type ResignationLetterDocData = Pick<
   | "assistanceTextTouched"
   | "contacts"
   | "letter"
+  | "bodyTouched"
   | "design"
 >;
 
@@ -85,6 +86,21 @@ export const useResignationLetterDocumentsStore =
       }
     )
   );
+
+/* ------------------------------------------------------------------ */
+/* Save status (drives the "Saving... / Saved" indicator)             */
+/* ------------------------------------------------------------------ */
+
+export type ResignationSaveStatus = "idle" | "saving" | "saved";
+
+/** Live autosave status so the editor can show real "Saving... / Saved" feedback. */
+export const useResignationLetterSaveStatus = create<{
+  status: ResignationSaveStatus;
+  setStatus: (status: ResignationSaveStatus) => void;
+}>((set) => ({
+  status: "idle",
+  setStatus: (status) => set({ status }),
+}));
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -147,6 +163,7 @@ function snapshot(s: ResignationLetterState): ResignationLetterRecord {
       assistanceTextTouched: s.assistanceTextTouched,
       contacts: s.contacts,
       letter: s.letter,
+      bodyTouched: s.bodyTouched,
       design: s.design,
     },
   };
@@ -173,22 +190,34 @@ export function saveActiveResignationLetter(): string | null {
 
 /**
  * Auto-save the active resignation letter into the dashboard's drafts list.
- * Mount once in the builder/preview; it debounces store changes and upserts.
+ * Mount once in the builder/preview; it debounces store changes, upserts the
+ * record, and publishes a live "saving -> saved" status for the Saved indicator.
  */
 export function useResignationLetterAutosave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let mounted = true;
+    const { setStatus } = useResignationLetterSaveStatus.getState();
 
-    const save = () => saveActiveResignationLetter();
+    const save = () => {
+      const id = saveActiveResignationLetter();
+      if (mounted) setStatus(id ? "saved" : "idle");
+    };
 
-    const schedule = () => {
+    const schedule = (initial: boolean) => {
       if (timer) clearTimeout(timer);
+      // An edit is now in flight: show "Saving..." (but not for the mount capture,
+      // which just re-persists already-saved state).
+      if (!initial && hasContent(useResignationLetterStore.getState())) {
+        setStatus("saving");
+      }
       timer = setTimeout(save, 700);
     };
 
-    const unsub = useResignationLetterStore.subscribe(schedule);
-    schedule(); // capture the current state on mount too
+    const unsub = useResignationLetterStore.subscribe(() => schedule(false));
+    schedule(true); // capture the current state on mount too
     return () => {
+      mounted = false;
       if (timer) clearTimeout(timer);
       unsub();
     };

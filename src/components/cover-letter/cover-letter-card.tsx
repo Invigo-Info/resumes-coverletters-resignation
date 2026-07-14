@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Download, Trash2 } from "lucide-react";
-import { CoverLetterThumb } from "@/components/cover-letter/cover-letter-thumb";
-import { coverLetterTemplates } from "@/lib/cover-letter/templates";
-import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
+import {
+  CoverLetterMiniPreview,
+  type CoverLetterPreviewData,
+} from "@/components/cover-letter/cover-letter-preview";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -46,36 +47,45 @@ function ActionButton({
  * share dialog, and a delete-confirmation dialog.
  */
 export function CoverLetterCard({
-  id,
   title,
   updatedAt,
-  templateId,
+  data,
   onEdit,
   onDownload,
   onCopy,
   onDelete,
 }: {
-  id: string;
   title: string;
   updatedAt: string;
-  templateId: string;
+  data: CoverLetterPreviewData;
   onEdit?: () => void;
   onDownload?: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const template =
-    coverLetterTemplates.find((t) => t.id === templateId) ?? coverLetterTemplates[0];
 
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
       <div className="flex flex-col gap-5 p-4 sm:flex-row sm:gap-7">
-        {/* Thumbnail */}
-        <div className="h-[200px] w-[150px] shrink-0 overflow-hidden rounded-lg ring-1 ring-border">
-          <CoverLetterThumb template={template} />
-        </div>
+        {/* Thumbnail - a real, scaled-down render of the saved letter; opens it. */}
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={!onEdit}
+          aria-label={`Open ${title}`}
+          className={cn(
+            "group relative h-[200px] w-[150px] shrink-0 overflow-hidden rounded-lg ring-1 ring-border transition-all",
+            onEdit
+              ? "cursor-pointer hover:ring-2 hover:ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              : "cursor-default"
+          )}
+        >
+          <CoverLetterMiniPreview data={data} width={150} />
+          {onEdit && (
+            <span className="pointer-events-none absolute inset-0 bg-primary/0 transition-colors group-hover:bg-primary/5" />
+          )}
+        </button>
 
         {/* Details + actions */}
         <div className="flex flex-1 flex-col">
@@ -91,7 +101,6 @@ export function CoverLetterCard({
             <ActionButton onClick={onCopy} disabled={!onCopy}>
               Copy
             </ActionButton>
-            <ActionButton onClick={() => setShareOpen(true)}>Share</ActionButton>
             <ActionButton
               onClick={onDelete ? () => setConfirmOpen(true) : undefined}
               disabled={!onDelete}
@@ -101,13 +110,6 @@ export function CoverLetterCard({
           </div>
         </div>
       </div>
-
-      <ShareDialog
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        shareUrl={buildShareUrl(id)}
-        label="cover letter"
-      />
 
       {/* Delete confirmation */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
