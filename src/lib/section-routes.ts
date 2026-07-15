@@ -61,8 +61,8 @@ const COVER_LETTER_STEPS = [
   "experience",
   "recent-job",
   "education",
-  "degree",
-  "field",
+  "institution",
+  "field-of-study",
   "strengths",
   "personal",
 ] as const;

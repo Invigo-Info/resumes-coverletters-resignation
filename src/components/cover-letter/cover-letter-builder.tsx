@@ -69,9 +69,9 @@ function StepBody({ step }: { step: CLStep }) {
       return <RecentJobStep />;
     case "education":
       return <EducationStep />;
-    case "degree":
+    case "institution":
       return <DegreeStep />;
-    case "field":
+    case "field-of-study":
       return <FieldStep />;
     case "strengths":
       return <StrengthsStep />;
@@ -151,6 +151,17 @@ export function CoverLetterBuilder({ routedStep }: { routedStep?: string }) {
   const isFirst = idx <= 0;
   const isLastInput = seq[idx + 1] === "generate";
 
+  // In edit mode the education group is a mini multi-step walk: choosing
+  // "College graduate or higher" reveals Institution then Field of study, so
+  // Next advances within the group and only the last step shows "Save changes".
+  const eduWalk: CLStep[] =
+    s.education.level === "college"
+      ? ["education", "institution", "field-of-study"]
+      : ["education"];
+  const eduIdx = eduWalk.indexOf(step);
+  const eduNext = eduIdx >= 0 && eduIdx < eduWalk.length - 1 ? eduWalk[eduIdx + 1] : null;
+  const eduPrev = eduIdx > 0 ? eduWalk[eduIdx - 1] : null;
+
   function handleNext() {
     if (isLastInput) {
       s.setStep("preview");
@@ -166,13 +177,21 @@ export function CoverLetterBuilder({ routedStep }: { routedStep?: string }) {
       progress={progressForStep(step, s)}
       onBack={
         editMode
-          ? returnToReview
+          ? eduPrev
+            ? () => s.setStep(eduPrev)
+            : returnToReview
           : isFirst
             ? () => router.push("/cover-letter/new")
             : () => s.goBack()
       }
-      onNext={editMode ? returnToReview : handleNext}
-      nextLabel={editMode ? "Save changes" : "Next"}
+      onNext={
+        editMode
+          ? eduNext
+            ? () => s.setStep(eduNext)
+            : returnToReview
+          : handleNext
+      }
+      nextLabel={editMode ? (eduNext ? "Next" : "Save changes") : "Next"}
       nextDisabled={!canProceed(step, s)}
     >
       <StepBody step={step} />

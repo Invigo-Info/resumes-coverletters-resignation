@@ -64,6 +64,27 @@
 }
 
 /*
+  App-wide text bump: every Tailwind text-* utility is ~2-3px larger than the
+  default scale (spacing, radii and fixed-px values are unchanged). Line-heights
+  keep Tailwind's default unitless ratios, so they scale with the new sizes.
+*/
+@theme {
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-base: 18px;
+  --text-lg: 21px;
+  --text-xl: 23px;
+  --text-2xl: 27px;
+  --text-3xl: 33px;
+  --text-4xl: 39px;
+  --text-5xl: 51px;
+  --text-6xl: 63px;
+  --text-7xl: 75px;
+  --text-8xl: 99px;
+  --text-9xl: 131px;
+}
+
+/*
   resume.co clone — light theme only.
   Brand blue CTA, light-gray page, white cards, soft shadows, rounded pills.
 */
@@ -154,7 +175,7 @@
     /* Typography */
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu,
       Cantarell, "Noto Sans", sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 400;
     font-style: normal;
     font-variant: normal;

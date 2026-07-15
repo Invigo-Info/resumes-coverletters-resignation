@@ -60,18 +60,32 @@ export function ChipMultiSelect({
   );
 }
 
-/** Single value: free-text input + suggestion chips that fill the input. */
+/**
+ * Single value: free-text input + suggestion chips that fill the input.
+ * `extracted` values (e.g. pulled from the user's resume) are listed first and
+ * outlined with a blue border to mark them as coming from the resume.
+ */
 export function ChipSingleSelectInput({
   value,
   onChange,
   options,
   placeholder,
+  extracted = [],
 }: {
   value: string;
   onChange: (value: string) => void;
   options: string[];
   placeholder?: string;
+  /** Resume-extracted values, shown first with a blue border. */
+  extracted?: string[];
 }) {
+  // Extracted first (blue border), then the generic suggestions, deduped.
+  const extractedSet = new Set(extracted.map((e) => e.trim().toLowerCase()));
+  const chips = [
+    ...extracted,
+    ...options.filter((o) => !extractedSet.has(o.trim().toLowerCase())),
+  ];
+
   return (
     <div className="space-y-5">
       <input
@@ -81,8 +95,9 @@ export function ChipSingleSelectInput({
         className="h-12 w-full rounded-xl border border-border bg-card px-4 text-center text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
       />
       <div className="flex flex-wrap justify-center gap-2.5">
-        {options.map((opt) => {
-          const isSel = value.trim().toLowerCase() === opt.toLowerCase();
+        {chips.map((opt) => {
+          const isSel = value.trim().toLowerCase() === opt.trim().toLowerCase();
+          const isExtracted = extractedSet.has(opt.trim().toLowerCase());
           return (
             <button
               key={opt}
@@ -92,7 +107,9 @@ export function ChipSingleSelectInput({
                 "rounded-full px-4 py-2 text-sm font-medium transition-all",
                 isSel
                   ? "bg-card text-foreground ring-2 ring-primary"
-                  : "bg-muted text-foreground hover:bg-muted/70"
+                  : isExtracted
+                    ? "border border-primary bg-card text-foreground hover:bg-primary/5"
+                    : "bg-muted text-foreground hover:bg-muted/70"
               )}
             >
               {opt}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Type,
   Palette,
@@ -12,7 +13,6 @@ import {
   ChevronRight,
   Check,
   Download,
-  Loader2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,9 +22,10 @@ import {
 } from "@/lib/store/cover-letter-store";
 import Image from "next/image";
 import { coverLetterTemplates } from "@/lib/cover-letter/templates";
-import { downloadCoverLetter } from "@/lib/cover-letter/download";
-import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
+
+// After a successful subscription the user returns to the cover-letters dashboard.
+const COVER_LETTER_DASHBOARD = "/cover-letters";
 
 // Selectable letter fonts, each mapping a font id to its CSS family stack.
 const FONTS: { id: CLFontId; label: string; sub: string; family: string }[] = [
@@ -80,11 +81,10 @@ function PanelGroup({
  * font + spacing, and color/theme swatches, plus the paywalled download action.
  */
 export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
+  const router = useRouter();
   const design = useCoverLetterStore((s) => s.design);
   const setDesign = useCoverLetterStore((s) => s.setDesign);
   const [start, setStart] = useState(0);
-  const [downloading, setDownloading] = useState(false);
-  const requestDownload = usePaywall((s) => s.requestDownload);
 
   const visible = coverLetterTemplates.slice(start, start + 3);
   const canPrev = start > 0;
@@ -92,21 +92,17 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
 
   const spacing = design.spacing ?? "normal";
 
-  // Route download through the paywall: it runs the export only once unlocked.
+  // Download is premium: start the Stripe subscription checkout, returning to the
+  // cover-letters dashboard once the payment completes.
   function handleDownload() {
-    requestDownload(async () => {
-      setDownloading(true);
-      try {
-        await downloadCoverLetter();
-      } finally {
-        setDownloading(false);
-      }
-    });
+    router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
   }
 
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col rounded-2xl bg-card p-5 shadow-card ring-1 ring-border">
-      <div className="flex-1 space-y-7 overflow-y-auto pr-1">
+      {/* px-1.5 leaves room for the selection rings on the left/right-most
+          controls so overflow-x-hidden doesn't clip them. */}
+      <div className="flex-1 space-y-7 overflow-y-auto overflow-x-hidden px-1.5">
         {/* Styles */}
         <PanelGroup icon={LayoutTemplate} title="Styles">
           <div className="relative">
@@ -122,8 +118,9 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
                         font: t.preset.font,
                         accent: t.preset.accent,
                         layout: t.preset.layout,
-                        bg: "",
-                        dark: false,
+                        bg: t.preset.bg,
+                        dark: t.preset.dark,
+                        spacing: t.preset.spacing,
                       })
                     }
                     className={cn(
@@ -157,7 +154,7 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
               <button
                 onClick={() => setStart((i) => Math.max(0, i - 1))}
                 aria-label="Previous styles"
-                className="absolute -left-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
+                className="absolute left-0 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -166,7 +163,7 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
               <button
                 onClick={() => setStart((i) => Math.min(coverLetterTemplates.length - 3, i + 1))}
                 aria-label="More styles"
-                className="absolute -right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
+                className="absolute right-0 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700"
               >
                 <ChevronRight className="size-4" />
               </button>
@@ -268,11 +265,10 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
         </button>
         <button
           onClick={handleDownload}
-          disabled={downloading}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
         >
-          {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          {downloading ? "Preparing…" : "Download"}
+          <Download className="size-4" />
+          Download
         </button>
       </div>
     </div>

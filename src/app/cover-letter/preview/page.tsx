@@ -2,22 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, PenLine, Palette, Download, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Home, PenLine, Palette, Download, Loader2, PartyPopper } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { CoverLetterPreview } from "@/components/cover-letter/cover-letter-preview";
 import { CoverLetterDesignPanel } from "@/components/cover-letter/design-panel";
-import { WriteMode } from "@/components/cover-letter/write-mode";
-import { PaywallDialog } from "@/components/cover-letter/paywall-dialog";
+import { WriteMode, type Section as WriteSection } from "@/components/cover-letter/write-mode";
 import { HelpPill } from "@/components/layout/help-pill";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
-import { downloadCoverLetter } from "@/lib/cover-letter/download";
-import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
 
 type Mode = "write" | "design";
+
+// After a successful subscription the user returns to the cover-letters dashboard.
+const COVER_LETTER_DASHBOARD = "/cover-letters";
 
 /**
  * Final cover-letter screen: toggles between Write and Design modes, autosaves
@@ -25,16 +26,17 @@ type Mode = "write" | "design";
  * the paywall.
  */
 export default function CoverLetterPreviewPage() {
+  const router = useRouter();
   const s = useCoverLetterStore();
   const [mode, setMode] = useState<Mode>("design");
+  // Which section Write mode opens on ("Edit your letter" jumps to Letter content).
+  const [writeSection, setWriteSection] = useState<WriteSection>("personal");
   const [generating, setGenerating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const requestDownload = usePaywall((s) => s.requestDownload);
 
   // Persist the finished cover letter into the dashboard's drafts list.
   useCoverLetterAutosave();
 
-  // Generate on mount if we don't have a body yet — or regenerate a stale one
+  // Generate on mount if we don't have a body yet - or regenerate a stale one
   // that still contains an unresolved "[placeholder]" (old format/alignment).
   useEffect(() => {
     const store = useCoverLetterStore.getState();
@@ -60,21 +62,14 @@ export default function CoverLetterPreviewPage() {
       .finally(() => setGenerating(false));
   }, []);
 
-  // Route the download through the paywall, which runs the callback only if allowed.
+  // Download is premium: start the Stripe subscription checkout, returning to the
+  // cover-letters dashboard once the payment completes.
   function handleDownload() {
-    requestDownload(async () => {
-      setDownloading(true);
-      try {
-        await downloadCoverLetter();
-      } finally {
-        setDownloading(false);
-      }
-    });
+    router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <PaywallDialog />
       <HelpPill />
 
       {/* Top bar */}
@@ -97,7 +92,10 @@ export default function CoverLetterPreviewPage() {
           ).map((t) => (
             <button
               key={t.key}
-              onClick={() => setMode(t.key)}
+              onClick={() => {
+                if (t.key === "write") setWriteSection("personal");
+                setMode(t.key);
+              }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
                 mode === t.key
@@ -113,7 +111,7 @@ export default function CoverLetterPreviewPage() {
 
         {/* Progress 100% */}
         <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
-          <span className="text-lg leading-none" aria-hidden>😍</span>
+          <PartyPopper className="size-4 text-primary" aria-hidden />
           <div className="h-2.5 w-40 overflow-hidden rounded-full bg-muted">
             <div className="h-full w-full rounded-full bg-gradient-progress" />
           </div>
@@ -122,11 +120,11 @@ export default function CoverLetterPreviewPage() {
 
         <button
           onClick={handleDownload}
-          disabled={downloading || generating}
+          disabled={generating}
           className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          <span className="hidden sm:inline">{downloading ? "Preparing…" : "Download"}</span>
+          <Download className="size-4" />
+          <span className="hidden sm:inline">Download</span>
         </button>
       </div>
 
@@ -142,11 +140,16 @@ export default function CoverLetterPreviewPage() {
           </div>
         </div>
       ) : mode === "write" ? (
-        <WriteMode onSwitchToDesign={() => setMode("design")} />
+        <WriteMode initialSection={writeSection} onSwitchToDesign={() => setMode("design")} />
       ) : (
         <div className="flex gap-6 px-4 pb-16">
           <aside className="w-full shrink-0 lg:w-[560px]">
-            <CoverLetterDesignPanel onEdit={() => setMode("write")} />
+            <CoverLetterDesignPanel
+              onEdit={() => {
+                setWriteSection("content");
+                setMode("write");
+              }}
+            />
           </aside>
           <section className="hidden min-w-0 flex-1 overflow-auto lg:block">
             <CoverLetterPreview />

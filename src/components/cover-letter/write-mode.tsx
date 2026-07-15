@@ -13,7 +13,7 @@ import { CLField } from "./widgets";
 import { CoverLetterPreview } from "./cover-letter-preview";
 
 // The two editable sections of the write-mode editor.
-type Section = "personal" | "content";
+export type Section = "personal" | "content";
 
 /** Live autosave indicator: spins on "Saving…", settles to "Saved". */
 function SaveIndicator({ className }: { className?: string }) {
@@ -112,8 +112,14 @@ function ContentSection() {
  * Manual edit mode: left section nav, center form (personal/content), and a live
  * preview. Advancing past the last section hands off to design mode.
  */
-export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }) {
-  const [section, setSection] = useState<Section>("personal");
+export function WriteMode({
+  onSwitchToDesign,
+  initialSection = "personal",
+}: {
+  onSwitchToDesign: () => void;
+  initialSection?: Section;
+}) {
+  const [section, setSection] = useState<Section>(initialSection);
 
   return (
     <div className="flex gap-6 px-4 pb-16">
@@ -165,9 +171,10 @@ export function WriteMode({ onSwitchToDesign }: { onSwitchToDesign: () => void }
         </div>
       </main>
 
-      {/* Right live preview */}
+      {/* Right live preview - a single preview card (the preview supplies its
+          own background, shadow and rounding, so no extra wrapper card). */}
       <section className="hidden min-w-0 flex-1 xl:block">
-        <div className="relative rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
+        <div className="relative mx-auto w-full max-w-[760px]">
           <CoverLetterPreview />
           <SaveIndicator className="absolute bottom-4 left-4 shadow-sm" />
         </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GraduationCap, School, BookOpen, SquareX, Sparkles } from "lucide-react";
 import { useCoverLetterStore, isValidEmail, type EducationLevel } from "@/lib/store/cover-letter-store";
+import { useDocumentsStore } from "@/lib/store/documents-store";
 import {
   CL_SKILLS,
   CL_STRENGTHS,
@@ -275,10 +276,23 @@ export function DegreeStep() {
 }
 
 /* --- Field of study (graduate) - step 9 ---------------------------- */
-/** Graduate-only step: the user's field of study (field suggestions). */
+/** Graduate-only step: the user's field of study (field suggestions, plus any
+ *  fields extracted from the source resume shown first with a blue border). */
 export function FieldStep() {
   const value = useCoverLetterStore((s) => s.education.field);
   const patch = useCoverLetterStore((s) => s.patchEducation);
+  const sourceResumeId = useCoverLetterStore((s) => s.sourceResumeId);
+  const getResume = useDocumentsStore((s) => s.getResume);
+
+  // Fields of study pulled from the source resume's education entries.
+  const extracted = useMemo(() => {
+    const rec = sourceResumeId ? getResume(sourceResumeId) : undefined;
+    const degrees = (rec?.data.education ?? [])
+      .map((e) => e.degree?.trim())
+      .filter((d): d is string => Boolean(d));
+    return Array.from(new Set(degrees));
+  }, [sourceResumeId, getResume]);
+
   return (
     <div>
       <StepHeading title="Your field of study" />
@@ -286,6 +300,7 @@ export function FieldStep() {
         value={value}
         onChange={(v) => patch({ field: v })}
         options={CL_FIELDS}
+        extracted={extracted}
         placeholder="Computer engineering"
       />
     </div>

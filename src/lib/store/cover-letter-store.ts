@@ -20,8 +20,8 @@ export type CLStep =
   | "experience"
   | "recent-job"
   | "education"
-  | "degree"
-  | "field"
+  | "institution"
+  | "field-of-study"
   | "strengths"
   | "personal"
   | "generate"
@@ -184,7 +184,7 @@ export function stepSequence(s: Pick<CoverLetterState, "flow" | "jobIntent" | "e
   seq.push("skills", "experience");
   if (s.experience && s.experience !== "~1") seq.push("recent-job");
   seq.push("education");
-  if (s.education.level === "college") seq.push("degree", "field");
+  if (s.education.level === "college") seq.push("institution", "field-of-study");
   seq.push("strengths", "personal", "generate");
   return seq;
 }
@@ -203,8 +203,8 @@ const STEP_PHASE: Record<CLStep, CLPhase> = {
   experience: "personalize",
   "recent-job": "add-details",
   education: "add-details",
-  degree: "add-details",
-  field: "add-details",
+  institution: "add-details",
+  "field-of-study": "add-details",
   strengths: "personalize",
   personal: "add-details",
   generate: "download",
@@ -219,8 +219,8 @@ const STEP_MESSAGE: Record<CLStep, { message: string; gain: string }> = {
   experience: { message: "Tell us about your relevant experience", gain: "+17%" },
   "recent-job": { message: "Tell us about your relevant experience", gain: "+17%" },
   education: { message: "Share your educational background", gain: "+14%" },
-  degree: { message: "Share your educational background", gain: "+14%" },
-  field: { message: "Share your educational background", gain: "+14%" },
+  institution: { message: "Share your educational background", gain: "+14%" },
+  "field-of-study": { message: "Share your educational background", gain: "+14%" },
   strengths: { message: "Let us know what you're good at", gain: "+14%" },
   personal: { message: "Provide your contact information", gain: "+19%" },
   generate: { message: "Generating your cover letter", gain: "" },
@@ -254,9 +254,9 @@ export function canProceed(step: CLStep, s: CoverLetterState): boolean {
       return s.recentJob.jobTitle.trim().length > 0;
     case "education":
       return s.education.level !== null;
-    case "degree":
+    case "institution":
       return s.education.university.trim().length > 0;
-    case "field":
+    case "field-of-study":
       return s.education.field.trim().length > 0;
     case "strengths":
       return s.strengths.length >= 1;
@@ -271,19 +271,25 @@ export function canProceed(step: CLStep, s: CoverLetterState): boolean {
   }
 }
 
-/** Progress message + percent for a step within its computed sequence. */
+/**
+ * Progress message + percent for a step. The percent reflects real completion:
+ * it counts how many of the sequence's input steps actually have their data /
+ * chips filled (via `canProceed`), so selecting chips or filling fields on any
+ * step raises the bar - not just moving forward.
+ */
 export function progressForStep(
   step: CLStep,
-  s: Pick<CoverLetterState, "flow" | "jobIntent" | "experience" | "education">
+  s: CoverLetterState
 ): { message: string; gain: string; percent: number } {
+  if (step === "preview" || step === "generate") {
+    return { ...STEP_MESSAGE[step], percent: 100 };
+  }
   const seq = stepSequence(s);
-  const idx = seq.indexOf(step);
-  const percent =
-    step === "preview" || step === "generate"
-      ? 100
-      : idx < 0
-        ? 10
-        : Math.max(8, Math.round(((idx + 1) / seq.length) * 100));
+  // The steps the user actually fills (exclude the terminal generate/preview).
+  const inputSteps = seq.filter((st) => st !== "generate" && st !== "preview");
+  const total = Math.max(inputSteps.length, 1);
+  const completed = inputSteps.filter((st) => canProceed(st, s)).length;
+  const percent = Math.max(8, Math.round((completed / total) * 100));
   return { ...STEP_MESSAGE[step], percent };
 }
 
