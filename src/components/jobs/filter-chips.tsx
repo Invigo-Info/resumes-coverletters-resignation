@@ -59,7 +59,7 @@ export function FilterChips({
         icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
         onClick={onEdit}
       >
-        <span className="font-medium">Edit filters</span>
+        <span className="font-medium">Filters</span>
       </Chip>
 
       {firstTitle && (

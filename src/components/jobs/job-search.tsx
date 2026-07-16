@@ -55,16 +55,16 @@ type Tab = "recommended" | "saved";
 type SortMode = "match" | "new" | "old";
 
 const SORT_LABEL: Record<SortMode, string> = {
-  match: "Best match",
+  match: "Match",
   new: "Newest",
   old: "Oldest",
 };
 
 /**
- * The "Recommended jobs / Saved jobs" sub-tabs shown above the page heading -
- * blue active tab with an underline (matches the jobs reference).
+ * The Search / Saved view toggle at the top of the job list - a segmented pill
+ * with the active view highlighted (matches the jobs reference).
  */
-function JobsTabs({
+function ViewToggle({
   tab,
   onTab,
   savedCount,
@@ -73,32 +73,32 @@ function JobsTabs({
   onTab: (t: Tab) => void;
   savedCount: number;
 }) {
-  const tabClass = (active: boolean) =>
+  const seg = (active: boolean) =>
     cn(
-      "relative -mb-px inline-flex items-center gap-1.5 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition-colors",
+      "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors",
       active
-        ? "border-primary text-primary"
-        : "border-transparent text-muted-foreground hover:text-foreground"
+        ? "bg-card text-foreground shadow-sm"
+        : "text-muted-foreground hover:text-foreground"
     );
   return (
-    <div className="flex items-center gap-6 border-b border-border">
+    <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
       <button
         type="button"
         onClick={() => onTab("recommended")}
         aria-current={tab === "recommended" ? "page" : undefined}
-        className={tabClass(tab === "recommended")}
+        className={seg(tab === "recommended")}
       >
-        Recommended jobs
+        Search
       </button>
       <button
         type="button"
         onClick={() => onTab("saved")}
         aria-current={tab === "saved" ? "page" : undefined}
-        className={tabClass(tab === "saved")}
+        className={seg(tab === "saved")}
       >
         <Heart className={cn("size-3.5", tab === "saved" && "fill-current")} />
-        Saved jobs
-        {savedCount > 0 && <span className="ml-0.5 opacity-70">{savedCount}</span>}
+        Saved
+        {savedCount > 0 && <span className="opacity-70">{savedCount}</span>}
       </button>
     </div>
   );
@@ -131,25 +131,35 @@ function SortMenu({ value, onChange }: { value: SortMode; onChange: (v: SortMode
   );
 }
 
-/** The list-column header: result count + sort control. */
+/** The list-column header: Search/Saved toggle + result count + sort control. */
 function ListHeader({
   count,
   sortMode,
   onSort,
   showMeta,
+  tab,
+  onTab,
+  savedCount,
 }: {
   count: number;
   sortMode: SortMode;
   onSort: (v: SortMode) => void;
   showMeta: boolean;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  savedCount: number;
 }) {
-  if (!showMeta) return null;
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="whitespace-nowrap text-sm text-muted-foreground">
-        {count} {count === 1 ? "job" : "jobs"} found
-      </span>
-      <SortMenu value={sortMode} onChange={onSort} />
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <ViewToggle tab={tab} onTab={onTab} savedCount={savedCount} />
+      {showMeta && (
+        <div className="flex items-center gap-3">
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            {count} found
+          </span>
+          <SortMenu value={sortMode} onChange={onSort} />
+        </div>
+      )}
     </div>
   );
 }
@@ -613,16 +623,11 @@ function RecommendedView({
 }) {
   return (
     <div>
-      {/* Recommended jobs / Saved jobs sub-tabs */}
-      <div className="mt-2">
-        <JobsTabs tab={tab} onTab={onTab} savedCount={savedCount} />
-      </div>
-
       {/* Heading + role switcher */}
-      <div className="mt-6">
+      <div className="mt-2">
         <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
           Top picks for{" "}
-          {profiles.length > 1 ? (
+          {profiles.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex items-center gap-1 text-primary outline-none hover:opacity-80">
                 {role}
@@ -650,7 +655,7 @@ function RecommendedView({
       {showLoading ? (
         <JobsLoading />
       ) : (
-        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
           {/* Left column: header + list (or empty state) */}
           <div>
             <ListHeader
@@ -658,6 +663,9 @@ function RecommendedView({
               sortMode={sortMode}
               onSort={onSort}
               showMeta={list.length > 0}
+              tab={tab}
+              onTab={onTab}
+              savedCount={savedCount}
             />
 
             {list.length === 0 ? (
@@ -693,7 +701,7 @@ function RecommendedView({
                 </div>
               </div>
             ) : (
-              <div className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
                 {list.map((job) => (
                   <JobCard
                     key={job.id}
@@ -769,22 +777,20 @@ function SavedView({
 
   return (
     <div>
-      {/* Recommended jobs / Saved jobs sub-tabs */}
-      <div className="mt-2">
-        <JobsTabs tab={tab} onTab={onTab} savedCount={savedJobs.length} />
-      </div>
-
-      <h1 className="mt-6 text-2xl font-bold text-foreground sm:text-3xl">
+      <h1 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
         Your saved jobs
       </h1>
 
-      <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+      <div className="mt-4 grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
         <div>
           <ListHeader
             count={savedJobs.length}
             sortMode={sortMode}
             onSort={onSort}
             showMeta={savedJobs.length > 0}
+            tab={tab}
+            onTab={onTab}
+            savedCount={savedJobs.length}
           />
 
           {empty ? (
@@ -813,7 +819,7 @@ function SavedView({
               ))}
 
               {savedJobs.length > 0 && (
-                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
                   {savedJobs.map((job) => (
                     <JobCard
                       key={job.id}

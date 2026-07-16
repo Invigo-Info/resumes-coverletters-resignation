@@ -1,34 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X, Sparkles, ThumbsUp } from "lucide-react";
+import { Check, X, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ringColor, type KeywordMatch } from "@/lib/jobs/keyword-match";
 
 /**
- * Circular progress ring around a match percentage. Sized via `size` so it can
- * be small on job cards and large in the detail panel.
+ * Circular progress ring around a match percentage. Sized via `size` (small on
+ * job cards, large in the detail panel). Colors default to the semantic
+ * green/amber triage on cards; the detail card passes the brand-green spec
+ * (progress #116B3A on a #E4EEE8 track) plus a thumbs-up for a positive match.
+ * The value is clamped to 0-100 so it accepts any dynamic score.
  */
-export function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
-  const stroke = size >= 60 ? 5 : 4;
+export function ScoreRing({
+  score,
+  size = 72,
+  strokeWidth,
+  trackColor = "#E5E7EB",
+  progressColor,
+  numberClassName,
+  thumb = false,
+}: {
+  score: number;
+  size?: number;
+  /** Stroke width in px (defaults scale with size). */
+  strokeWidth?: number;
+  /** Remaining-track color. */
+  trackColor?: string;
+  /** Progress-stroke color (defaults to the semantic ringColor). */
+  progressColor?: string;
+  /** Override for the centered number's color class. */
+  numberClassName?: string;
+  /** Show a thumbs-up near the bottom of the ring (positive match). */
+  thumb?: boolean;
+}) {
+  const stroke = strokeWidth ?? (size >= 60 ? 5 : 4);
   const r = (size - stroke) / 2 - 1;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
   const offset = c * (1 - pct / 100);
-  const fontClass = size >= 84 ? "text-2xl" : size >= 60 ? "text-xl" : "text-sm";
+  const fontClass =
+    size >= 110 ? "text-4xl" : size >= 84 ? "text-2xl" : size >= 60 ? "text-xl" : "text-sm";
+  const progress = progressColor ?? ringColor(score);
+
+  // Position the thumb at the leading tip of the green arc so it reads as part
+  // of the progress bar. The ring fills counterclockwise from 12 o'clock (green
+  // descends on the left, gap on the upper-right - matching the reference), so
+  // the tip mirrors on X. It sits just inside the stroke to stay legible on the
+  // ring's white interior.
+  const theta = (2 * Math.PI * pct) / 100;
+  const thumbR = r - stroke * 1.1;
+  const thumbSize = Math.round(size * 0.16);
+  const thumbX = size / 2 - thumbR * Math.sin(theta);
+  const thumbY = size / 2 - thumbR * Math.cos(theta);
+
   return (
     <span
       className="relative grid shrink-0 place-items-center"
       style={{ width: size, height: size }}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ transform: "scaleX(-1) rotate(-90deg)" }}
+      >
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={ringColor(score)}
+          stroke={progress}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
@@ -36,7 +79,30 @@ export function ScoreRing({ score, size = 72 }: { score: number; size?: number }
           className="transition-[stroke-dashoffset,stroke] duration-700 ease-out"
         />
       </svg>
-      <span className={cn("absolute font-bold text-foreground", fontClass)}>{score}</span>
+      <span
+        className={cn(
+          "absolute font-bold tabular-nums",
+          numberClassName ?? "text-foreground",
+          fontClass
+        )}
+      >
+        {Math.round(pct)}
+      </span>
+      {thumb && (
+        <ThumbsUp
+          aria-hidden="true"
+          className="absolute"
+          style={{
+            left: thumbX,
+            top: thumbY,
+            width: thumbSize,
+            height: thumbSize,
+            transform: "translate(-50%, -50%)",
+            color: progress,
+            fill: progress,
+          }}
+        />
+      )}
     </span>
   );
 }
@@ -105,27 +171,25 @@ export function KeywordMatchCard({
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="grid gap-5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-6">
-        {/* Left: ring + label + improve CTA */}
-        <div className="flex flex-col items-center gap-2 text-center">
+      <div className="grid gap-5 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] sm:gap-6">
+        {/* Left: the match score card - label, brand-green progress ring with a
+            thumbs-up for a positive match, and the Improve-keywords CTA. */}
+        <div className="flex flex-col items-center gap-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{match.label}</p>
-          <ScoreRing score={match.score} size={96} />
-          {/* Strong-match positive indicator (only above the strong threshold). */}
-          {match.score >= 75 && (
-            <span
-              className="grid size-6 place-items-center rounded-full bg-[#EAF7EE] text-[#16A34A]"
-              title="Strong match"
-              aria-label="Strong match"
-            >
-              <ThumbsUp className="size-3.5" aria-hidden="true" />
-            </span>
-          )}
+          <ScoreRing
+            score={match.score}
+            size={120}
+            strokeWidth={7}
+            trackColor="#E4EEE8"
+            progressColor="#116B3A"
+            numberClassName="text-[#17352A]"
+            thumb={match.score >= 55}
+          />
           <button
             type="button"
             onClick={onImprove}
-            className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-foreground/20"
+            className="inline-flex items-center rounded-full bg-[#F6F6F6] px-5 py-2.5 text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#ECECEC]"
           >
-            <Sparkles className="size-3.5 text-[var(--ai-from)]" />
             Improve keywords
           </button>
         </div>

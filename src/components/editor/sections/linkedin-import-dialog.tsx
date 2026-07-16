@@ -33,9 +33,12 @@ const STEPS = [
 export function LinkedInImportDialog({
   open,
   onOpenChange,
+  onImported,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after a successful import (e.g. to route into the editor). */
+  onImported?: () => void;
 }) {
   const hydrate = useResumeStore((s) => s.hydrate);
   const [busy, setBusy] = useState(false);
@@ -59,6 +62,7 @@ export function LinkedInImportDialog({
       toast.success("Imported from LinkedIn", {
         description: "Check each section - we kept the contact details you entered.",
       });
+      onImported?.();
     } catch {
       toast.error("We couldn't read that export", {
         description:

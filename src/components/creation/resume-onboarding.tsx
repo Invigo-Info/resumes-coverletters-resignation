@@ -17,8 +17,10 @@ import {
 import {
   DropboxIcon,
   GoogleDriveIcon,
+  LinkedInIcon,
 } from "@/components/brand/source-icons";
 import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
+import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
 import { cn } from "@/lib/utils";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
@@ -49,6 +51,7 @@ export function ResumeOnboarding() {
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [dismissedSave, setDismissedSave] = useState(false);
   const [googleOpen, setGoogleOpen] = useState(false);
+  const [linkedInOpen, setLinkedInOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
@@ -214,6 +217,11 @@ export function ResumeOnboarding() {
                     Icon: GoogleDriveIcon,
                     onClick: () => setGoogleOpen(true),
                   },
+                  {
+                    label: "LinkedIn profile",
+                    Icon: LinkedInIcon,
+                    onClick: () => setLinkedInOpen(true),
+                  },
                 ].map((src) => (
                   <button
                     key={src.label}
@@ -265,6 +273,12 @@ export function ResumeOnboarding() {
         open={googleOpen}
         onOpenChange={setGoogleOpen}
         onConsent={consentToGoogle}
+      />
+
+      <LinkedInLinkDialog
+        open={linkedInOpen}
+        onOpenChange={setLinkedInOpen}
+        onImported={() => router.push("/resumes/write/personal?source=linkedin")}
       />
 
       <HelpPill />

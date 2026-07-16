@@ -342,6 +342,31 @@ export async function parseResume(file?: File): Promise<Partial<ResumeState>> {
   return MOCK_RESUME;
 }
 
+/**
+ * Extract a resume from raw profile text (e.g. a fetched public LinkedIn page).
+ *
+ * Same extractor as the file path, so the candidate's REAL details are read
+ * rather than invented. Throws when the text can't be turned into a usable
+ * resume (private profile, login wall, or no key) so the caller can fall back.
+ */
+export async function parseResumeText(text: string): Promise<Partial<ResumeState>> {
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      task: "extractResume",
+      payload: { resumeText: text },
+    }),
+  });
+  if (!res.ok) throw new Error(`parse-failed-${res.status}`);
+  const json = await res.json();
+  if (json.fallback) throw new Error("parse-unavailable"); // no API key on server
+  if (!json.data) throw new Error("parse-empty");
+  const mapped = mapToResume(json.data as AiResume);
+  if (!isUsable(mapped)) throw new Error("parse-unreadable");
+  return mapped;
+}
+
 /* ------------------------------ fallback ----------------------------- */
 
 /** Canned sample resume used when no real file is parsed (cloud-import demo). */
