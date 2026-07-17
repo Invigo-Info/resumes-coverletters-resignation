@@ -169,8 +169,9 @@ function SelectedChip({
       )}
     >
       {skill.name}
-      {/* Dedicated remove button. Width animates from 0 so the chip does not jump
-          when it appears; shown on hover or when the chip/button has focus. */}
+      {/* Remove button, always present at a fixed size so the chip never grows,
+          reflows or jitters on hover. It's subtle at rest and only its color
+          shifts (never its size) on hover/focus. */}
       <button
         type="button"
         onClick={(e) => {
@@ -178,9 +179,9 @@ function SelectedChip({
           onRemove();
         }}
         aria-label={`Remove ${skill.name}`}
-        className="grid w-0 shrink-0 place-items-center overflow-hidden rounded-full opacity-0 outline-none transition-all duration-150 hover:text-destructive group-hover:ml-1.5 group-hover:w-5 group-hover:opacity-100 group-focus-within:ml-1.5 group-focus-within:w-5 group-focus-within:opacity-100 focus-visible:ring-2 focus-visible:ring-destructive/40"
+        className="ml-1.5 grid size-4 shrink-0 place-items-center rounded-full text-muted-foreground/50 outline-none transition-colors duration-150 hover:text-destructive group-hover:text-foreground/60 focus-visible:ring-2 focus-visible:ring-destructive/40"
       >
-        <X className="size-3.5 text-muted-foreground transition-colors group-hover:text-foreground/70 hover:text-destructive" />
+        <X className="size-3.5" />
       </button>
     </div>
   );
