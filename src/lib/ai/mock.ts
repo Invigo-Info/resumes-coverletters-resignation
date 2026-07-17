@@ -75,6 +75,14 @@ const BULLET_POOL = [
   "Coordinated conference-room bookings and AV setups for client meetings and internal reviews.",
   "Maintained inventory of office supplies and negotiated with suppliers to keep stock levels consistent.",
   "Scheduled travel arrangements and expense reports for senior staff, shortening reimbursement turnaround.",
+  "Led cross-functional projects from kickoff to delivery, aligning stakeholders on scope, timeline and owners.",
+  "Built and maintained reporting dashboards that gave leadership weekly visibility into key operational metrics.",
+  "Trained and mentored new team members, creating documentation that shortened ramp-up time.",
+  "Streamlined a recurring manual process into a repeatable workflow, cutting turnaround time and errors.",
+  "Owned communication with external partners, resolving issues quickly to keep deliverables on schedule.",
+  "Analyzed operational data to spot bottlenecks and recommended changes that improved throughput.",
+  "Coordinated with vendors and internal teams to launch initiatives on time and within budget.",
+  "Improved team documentation and knowledge sharing, reducing repeat questions and rework.",
 ];
 
 const HARD_SKILLS = [
@@ -186,9 +194,9 @@ export async function improveBullets(opts: {
   // resume already says, so suggestions never duplicate the extracted bullets.
   const seen = new Set(existing.map((b) => b.toLowerCase()));
   const pool = BULLET_POOL.filter((b) => !seen.has(b.toLowerCase()));
-  const src = pool.length >= 4 ? pool : BULLET_POOL;
-  const start = ((opts.page ?? 0) * 4) % src.length;
-  return Array.from({ length: 4 }, (_, i) => src[(start + i) % src.length]);
+  const src = pool.length >= 7 ? pool : BULLET_POOL;
+  const start = ((opts.page ?? 0) * 7) % src.length;
+  return Array.from({ length: 7 }, (_, i) => src[(start + i) % src.length]);
 }
 
 /** Rewrite the user's existing bullet text into stronger versions. */

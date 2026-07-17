@@ -228,6 +228,7 @@ export function ConfigurePhotoDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
       <DialogContent
         showCloseButton={false}
+        overlayClassName="bg-black/15 supports-backdrop-filter:backdrop-blur-none"
         className="rounded-2xl p-7 sm:max-w-120"
       >
         <div className="flex items-start justify-between gap-4">

@@ -191,7 +191,7 @@ Return only the improved summary text.`,
       const hasExisting = existing.length > 0;
       return {
         json: true,
-        prompt: `Suggest 4 strong, achievement-oriented resume bullet points ${
+        prompt: `Suggest 7 strong, achievement-oriented resume bullet points ${
           titled
             ? `for a ${role}${p.company ? ` at ${p.company}` : ""}`
             : "that would suit any professional role, describing transferable impact (ownership, collaboration, process improvement, measurable results)"
@@ -200,12 +200,12 @@ ${
   hasExisting
     ? `The candidate's resume ALREADY lists these bullets for this exact role:
 ${existing.map((b) => `- ${b}`).join("\n")}
-Generate 4 ADDITIONAL bullets that clearly build on the experience above: reuse the same tools, platforms, metrics, domain and seniority shown, cover responsibilities or achievements NOT already mentioned, and never duplicate or lightly reword an existing bullet.`
+Generate 7 ADDITIONAL bullets that clearly build on the experience above: reuse the same tools, platforms, metrics, domain and seniority shown, cover responsibilities or achievements NOT already mentioned, and never duplicate or lightly reword an existing bullet.`
     : ""
 }
 Each bullet starts with a strong action verb and includes a concrete/quantified outcome where natural.
-${page > 0 ? `These must be different from the first ${page * 4} you would normally give - go for less obvious angles.` : ""}
-Return a JSON array of 4 strings only. No markdown.`,
+${page > 0 ? `These must be different from the first ${page * 7} you would normally give - go for less obvious angles.` : ""}
+Return a JSON array of 7 strings only. No markdown.`,
       };
     }
     case "improveBullets":

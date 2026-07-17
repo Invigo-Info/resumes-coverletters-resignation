@@ -52,7 +52,6 @@ function ActiveSectionForm({ onFinish }: { onFinish: () => void }) {
     return (
       <AdditionalPicker
         onBack={() => setActive(order[order.length - 1])}
-        onReorder={() => setActive("reorder")}
         onNext={onFinish}
       />
     );
@@ -169,7 +168,7 @@ export function EditorShell({
                   </motion.div>
                 </AnimatePresence>
                 {active !== "reorder" && active !== "additional" && (
-                  <SectionFooter onReorder={() => setActive("reorder")} />
+                  <SectionFooter />
                 )}
               </div>
             </main>

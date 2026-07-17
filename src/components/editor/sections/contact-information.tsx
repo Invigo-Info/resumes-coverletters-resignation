@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Mail, Phone, MapPin, Sparkles } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 import { LinkedInIcon } from "@/components/brand/source-icons";
 import { useResumeStore } from "@/lib/store/resume-store";
 import {
@@ -17,7 +17,6 @@ import {
 import { LOCATION_SUGGESTIONS } from "@/lib/suggestions";
 import { Field, FieldWrap, EditableSectionHeading } from "./field";
 import { AutocompleteInput } from "./autocomplete-input";
-import { LinkedInImportDialog } from "./linkedin-import-dialog";
 
 /**
  * Editor section for the resume's contact details.
@@ -36,7 +35,6 @@ export function ContactInformationForm() {
 
   // Errors surface only after a field has been left, never mid-typing.
   const [touched, setTouched] = useState({ email: false, phone: false });
-  const [importOpen, setImportOpen] = useState(false);
 
   // Prefill the email from the signed-in account, but only into an empty field -
   // never overwrite something the user typed, and never on a later re-render.
@@ -108,20 +106,6 @@ export function ContactInformationForm() {
           }
           placeholder="linkedin.com/in/yourname"
         />
-
-        {showLinkedInImport && (
-          <button
-            type="button"
-            onClick={() => setImportOpen(true)}
-            className="mt-2.5 flex w-full items-center gap-3 rounded-xl bg-[var(--ai-from)]/5 px-4 py-3 text-left ring-1 ring-[var(--ai-from)]/20 outline-none transition-colors hover:bg-[var(--ai-from)]/10 focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <Sparkles className="size-4 shrink-0 text-[var(--ai-from)]" />
-            <span className="flex-1 text-sm font-semibold text-foreground">
-              Fill your resume from LinkedIn in one click
-            </span>
-            <span className="text-sm font-semibold text-[var(--ai-from)]">Import</span>
-          </button>
-        )}
       </div>
 
       {/* Row 3: location, full width, with the suggestion dropdown. */}
@@ -138,8 +122,6 @@ export function ContactInformationForm() {
           />
         </FieldWrap>
       </div>
-
-      <LinkedInImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

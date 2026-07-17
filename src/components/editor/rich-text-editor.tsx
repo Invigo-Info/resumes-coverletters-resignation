@@ -36,6 +36,39 @@ function blockIndexAtSelection(editor: ReturnType<typeof useEditor>): number {
 }
 
 /**
+ * Apply a link to the current selection from a prompted URL.
+ *
+ * Fixes what a naive setLink misses: a bare domain (example.com) gets an https://
+ * scheme so it becomes a real absolute link instead of a broken relative one; an
+ * empty prompt clears an existing link; and with NO text selected the URL is
+ * inserted as its own linked text rather than silently doing nothing. The link
+ * is styled (primary color + underline) via the editor content classes.
+ */
+function setLinkOnEditor(editor: NonNullable<ReturnType<typeof useEditor>>) {
+  const prev = (editor.getAttributes("link").href as string | undefined) ?? "";
+  const input = window.prompt("Enter URL", prev);
+  if (input === null) return; // cancelled - leave the text untouched
+  const raw = input.trim();
+  if (!raw) {
+    editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    return;
+  }
+  const href = /^(https?:\/\/|mailto:|tel:)/i.test(raw) ? raw : `https://${raw}`;
+  if (editor.state.selection.empty) {
+    // No selection: drop the URL in as its own linked, clickable text.
+    const safeText = raw
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const safeHref = href.replace(/"/g, "%22");
+    editor.chain().focus().insertContent(`<a href="${safeHref}">${safeText}</a> `).run();
+  } else {
+    // Extend across the whole existing link (if any) so re-linking replaces it.
+    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
+  }
+}
+
+/**
  * A single formatting button in the editor toolbar. Uses onMouseDown-preventDefault
  * so clicking it doesn't blur/move the caret before the command runs.
  */
@@ -163,12 +196,7 @@ export function RichTextEditor({
         <ToolbarButton
           label="Link"
           active={editor.isActive("link")}
-          onClick={() => {
-            // Prompt for a URL: a value sets the link; cancel/empty removes it.
-            const url = window.prompt("Enter URL");
-            if (url) editor.chain().focus().setLink({ href: url }).run();
-            else editor.chain().focus().unsetLink().run();
-          }}
+          onClick={() => setLinkOnEditor(editor)}
         >
           <LinkIcon className="size-4" />
         </ToolbarButton>
@@ -179,7 +207,7 @@ export function RichTextEditor({
       <EditorContent
         editor={editor}
         style={{ minHeight }}
-        className="px-3 py-2.5 text-sm text-foreground [&_.tiptap]:min-h-[inherit] [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal"
+        className="px-3 py-2.5 text-sm text-foreground [&_.tiptap]:min-h-[inherit] [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal [&_a]:cursor-pointer [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2"
       />
     </div>
   );

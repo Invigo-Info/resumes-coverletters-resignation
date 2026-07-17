@@ -1,30 +1,26 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, AlignJustify } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 
 /**
- * Reusable editor footer: Back (left) · Reorder sections (center) · Next (right).
- * Any slot is omitted when its handler isn't provided.
+ * Reusable editor footer: Back (left) · Next (right). Either slot is omitted
+ * when its handler isn't provided.
  */
 export function EditorFooter({
   onBack,
-  onReorder,
   onNext,
   nextLabel = "Next",
 }: {
   onBack?: () => void;
-  onReorder?: () => void;
   onNext?: () => void;
   nextLabel?: string;
 }) {
   return (
     <div className="mt-8 border-t border-border pt-6">
-      {/* Back (left, hidden on the first section) · Reorder sections · Next. The
-          sections menu (Reorder) stays visible on mobile, matching resume.co. */}
-      {/* Wraps rather than overflowing: Back + Reorder + Next do not fit side by
-          side on a 280px screen. */}
+      {/* Back (left, hidden on the first section) · Next (right). Wraps rather
+          than overflowing on a narrow (280px) screen. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           {onBack && (
@@ -34,17 +30,6 @@ export function EditorFooter({
             </GhostButton>
           )}
         </div>
-
-        {onReorder && (
-          <button
-            onClick={onReorder}
-            className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <AlignJustify className="size-4" />
-            <span className="sm:hidden">Reorder</span>
-            <span className="hidden sm:inline">Reorder sections</span>
-          </button>
-        )}
 
         <div className="flex min-w-0 flex-1 justify-end">
           {onNext && (
@@ -59,7 +44,7 @@ export function EditorFooter({
   );
 }
 
-export function SectionFooter({ onReorder }: { onReorder: () => void }) {
+export function SectionFooter() {
   const order = useResumeStore((s) => s.sectionOrder);
   const active = useResumeStore((s) => s.activeSection);
   const setActive = useResumeStore((s) => s.setActiveSection);
@@ -71,7 +56,6 @@ export function SectionFooter({ onReorder }: { onReorder: () => void }) {
   return (
     <EditorFooter
       onBack={isFirst ? undefined : () => setActive(order[idx - 1])}
-      onReorder={onReorder}
       // After the final section, Next offers the optional extra sections; the
       // picker's own Next then closes out the Write step. Otherwise it just
       // advances to the next section in the editing order.

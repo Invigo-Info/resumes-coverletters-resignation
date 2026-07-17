@@ -47,15 +47,18 @@ function DialogOverlay({
 /** Centered dialog panel with overlay and optional top-right close button. */
 function DialogContent({
   className,
+  overlayClassName,
   children,
   showCloseButton = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  /** Extra classes for the backdrop (e.g. a stronger scrim to dim the page). */
+  overlayClassName?: string
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(

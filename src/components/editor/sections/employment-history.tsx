@@ -145,19 +145,22 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   );
 
   // Surface bullet ideas for the entry's job title, debounced so we don't call
-  // the AI on every keystroke. An empty title is a valid key: it loads the
-  // generic set immediately rather than showing nothing.
+  // the AI on every keystroke. Suggestions are role-driven: with NO job title we
+  // show nothing (and clear any previous set) - they appear only once the user
+  // enters a title, tailored to it.
   useEffect(() => {
     const key = entry.jobTitle.trim().toLowerCase();
     if (loadedFor.current === key) return;
-    const t = setTimeout(
-      () => {
-        loadedFor.current = key;
-        setIdeas([]);
-        fetchIdeas(0);
-      },
-      key ? 500 : 0
-    );
+    if (!key) {
+      loadedFor.current = key;
+      setIdeas([]); // no title yet -> no suggestions
+      return;
+    }
+    const t = setTimeout(() => {
+      loadedFor.current = key;
+      setIdeas([]);
+      fetchIdeas(0);
+    }, 500);
     return () => clearTimeout(t);
   }, [entry.jobTitle, fetchIdeas]);
 
@@ -222,7 +225,13 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       : `${current}<ul>${li}</ul>`;
     updateEmployment(entry.id, { description: next });
     // Remove the chosen suggestion so it no longer shows in the list.
-    setIdeas((prev) => prev.filter((_, i) => i !== index));
+    const remaining = ideas.filter((_, i) => i !== index);
+    setIdeas(remaining);
+    // Once every suggestion in the batch has been added, automatically generate
+    // the next 7 so the user always has a fresh set to pick from.
+    if (remaining.length === 0 && !loading) {
+      fetchIdeas(page + 1);
+    }
   }
 
   return (
@@ -307,12 +316,12 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
           {/* Skeleton rows while the first page loads, so the block does not pop in. */}
           {ideas.length === 0 ? (
             <ul className="divide-y divide-border" aria-busy>
-              {[0, 1, 2, 3].map((i) => (
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                 <li key={i} className="flex items-start gap-2.5 py-3">
                   <span className="mt-0.5 size-4 shrink-0 animate-pulse rounded bg-muted" />
                   <span
                     className="h-4 animate-pulse rounded bg-muted"
-                    style={{ width: `${88 - i * 9}%` }}
+                    style={{ width: `${90 - i * 8}%` }}
                   />
                 </li>
               ))}

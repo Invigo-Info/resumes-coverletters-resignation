@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown, GripVertical, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,8 @@ export function EntryCard({
   children: React.ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  // The card surface, used as the drag image so the whole card follows the grip.
+  const cardRef = useRef<HTMLDivElement>(null);
   // Controlled if `open` prop is passed; otherwise track open state internally.
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
@@ -66,8 +68,6 @@ export function EntryCard({
 
   return (
     <div
-      draggable={!!drag}
-      onDragStart={() => drag?.onDragStart(drag.index)}
       onDragOver={(e) => {
         if (!drag) return;
         e.preventDefault(); // required, or the drop never fires
@@ -78,7 +78,6 @@ export function EntryCard({
         e.preventDefault();
         drag.onDrop();
       }}
-      onDragEnd={() => drag?.onDragEnd()}
       onFocusCapture={onActivate}
       onPointerDownCapture={onActivate}
       className={cn(
@@ -96,6 +95,17 @@ export function EntryCard({
         <button
           type="button"
           aria-label={`Reorder ${title || "entry"}. Use the up and down arrow keys.`}
+          // Only the grip is draggable, so selecting text inside the card is a
+          // normal text selection - not an accidental card drag. The whole card
+          // is used as the drag image so it still visibly follows the pointer.
+          draggable
+          onDragStart={(e) => {
+            drag.onDragStart(drag.index);
+            if (cardRef.current) {
+              e.dataTransfer.setDragImage(cardRef.current, 20, 20);
+            }
+          }}
+          onDragEnd={() => drag.onDragEnd()}
           onKeyDown={(e) => {
             if (e.key === "ArrowUp") {
               e.preventDefault();
@@ -113,6 +123,7 @@ export function EntryCard({
       )}
 
       <div
+        ref={cardRef}
         className={cn(
           "min-w-0 flex-1 rounded-xl border border-border bg-card transition-all duration-200",
           drag?.over && !drag.dragging && "border-primary ring-2 ring-primary/20"
@@ -171,7 +182,7 @@ export function AddMoreButton({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-xl bg-muted px-5 py-4 text-left font-semibold text-foreground outline-none transition-colors hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-muted px-5 py-4 text-left font-semibold text-foreground outline-none transition-colors hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <span className="text-lg leading-none">+</span>
       {label}

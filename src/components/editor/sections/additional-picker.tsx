@@ -65,11 +65,9 @@ function AddSectionCard({
  */
 export function AdditionalPicker({
   onBack,
-  onReorder,
   onNext,
 }: {
   onBack: () => void;
-  onReorder: () => void;
   onNext: () => void;
 }) {
   const addAdditionalSection = useResumeStore((s) => s.addAdditionalSection);
@@ -126,7 +124,7 @@ export function AdditionalPicker({
         ))}
       </div>
 
-      <EditorFooter onBack={onBack} onReorder={onReorder} onNext={onNext} />
+      <EditorFooter onBack={onBack} onNext={onNext} />
     </div>
   );
 }

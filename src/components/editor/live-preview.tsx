@@ -445,7 +445,9 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
         ) : null;
       }
       case "education":
-        return s.education.some((e) => e.institution || e.degree) ? (
+        return s.education.some(
+          (e) => e.institution || e.degree || e.description.replace(/<[^>]*>/g, "").trim()
+        ) ? (
           <PreviewSection
             title="Education"
             key={key}
@@ -468,6 +470,16 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
                     >
                       {[e.institution, e.location].filter(Boolean).join(", ")}
                     </p>
+                  )}
+                  {e.description.replace(/<[^>]*>/g, "").trim() && (
+                    <div
+                      className="mt-1 [&_li]:ml-4 [&_li]:list-disc"
+                      // The entry being edited renders its details in blue.
+                      {...editActive(entryColor(e.id))}
+                      dangerouslySetInnerHTML={{
+                        __html: spaceBlocks(e.description, 0.5),
+                      }}
+                    />
                   )}
                 </div>
               </EntryHighlight>
