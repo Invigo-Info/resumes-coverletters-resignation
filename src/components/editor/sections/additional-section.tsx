@@ -134,7 +134,13 @@ function FieldControl({
         value={value ?? ""}
         onValueChange={(v) => onChange((v as string) ?? "")}
       >
-        <SelectTrigger id={id} className="h-12 w-full rounded-xl bg-card">
+        {/* Match the text inputs' height. The trigger's own `data-[size]:h-8`
+            has higher specificity than a plain `h-12`, so override at the same
+            variant to win. */}
+        <SelectTrigger
+          id={id}
+          className="w-full rounded-xl bg-card data-[size=default]:h-12"
+        >
           <SelectValue placeholder={field.placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -342,6 +348,13 @@ export function AdditionalSectionForm({
   }
 
   const sectionName = section.title || cfg.title;
+  // Confirm deletion only when the section actually holds content; an empty,
+  // just-added section deletes straight away (per the custom-section brief).
+  const hasData = section.entries.some((e) =>
+    Object.entries(e).some(
+      ([k, v]) => k !== "id" && String(v).replace(/<[^>]*>/g, "").trim()
+    )
+  );
 
   return (
     <div>
@@ -356,7 +369,7 @@ export function AdditionalSectionForm({
         </div>
         <button
           type="button"
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => (hasData ? setConfirmOpen(true) : removeSection(section.id))}
           aria-label={`Delete the ${sectionName} section`}
           className="mt-1 grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/40"
         >

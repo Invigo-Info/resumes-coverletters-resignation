@@ -21,8 +21,6 @@ import {
   Trash2,
   Plus,
   ChevronLeft,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { SECTION_META } from "../section-nav";
@@ -79,19 +77,11 @@ function SortableRow({
   label,
   Icon,
   onDelete,
-  canUp,
-  canDown,
-  onMoveUp,
-  onMoveDown,
 }: {
   id: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
   onDelete: () => void;
-  canUp: boolean;
-  canDown: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -114,29 +104,6 @@ function SortableRow({
       </button>
       <Icon className="size-4 text-muted-foreground" />
       <span className="flex-1 font-medium text-foreground">{label}</span>
-
-      {/* Up/down move buttons (alternative to dragging) */}
-      <div className="flex items-center overflow-hidden rounded-lg ring-1 ring-border">
-        <button
-          type="button"
-          onClick={onMoveUp}
-          disabled={!canUp}
-          aria-label={`Move ${label} up`}
-          className="grid size-8 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-        >
-          <ChevronUp className="size-4" />
-        </button>
-        <span className="h-5 w-px bg-border" aria-hidden />
-        <button
-          type="button"
-          onClick={onMoveDown}
-          disabled={!canDown}
-          aria-label={`Move ${label} down`}
-          className="grid size-8 place-items-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-        >
-          <ChevronDown className="size-4" />
-        </button>
-      </div>
 
       <button
         onClick={onDelete}
@@ -164,7 +131,6 @@ export function ReorderSections({
   const order = useResumeStore((s) => s.sectionOrder);
   const setOrder = useResumeStore((s) => s.setSectionOrder);
   const removeAdditional = useResumeStore((s) => s.removeAdditionalSection);
-  const moveSection = useResumeStore((s) => s.moveSection);
   const meta = useMeta();
 
   const sensors = useSensors(
@@ -221,7 +187,7 @@ export function ReorderSections({
         >
           <SortableContext items={movable} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
-              {movable.map((key, i) => {
+              {movable.map((key) => {
                 const m = meta(key)!;
                 return (
                   <SortableRow
@@ -230,10 +196,6 @@ export function ReorderSections({
                     label={m.label}
                     Icon={m.icon}
                     onDelete={() => remove(key)}
-                    canUp={i > 0}
-                    canDown={i < movable.length - 1}
-                    onMoveUp={() => moveSection(key, "up")}
-                    onMoveDown={() => moveSection(key, "down")}
                   />
                 );
               })}

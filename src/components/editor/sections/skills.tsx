@@ -161,7 +161,7 @@ function SelectedChip({
       }}
       aria-label={`${skill.name}. Use the left and right arrow keys to reorder.`}
       className={cn(
-        "group inline-flex cursor-grab items-center rounded-full border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
+        "group relative inline-flex cursor-grab items-center rounded-full border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
         "hover:border-primary hover:bg-primary/5",
         "focus-visible:ring-3 focus-visible:ring-ring/40",
         dragging && "opacity-40",
@@ -169,9 +169,9 @@ function SelectedChip({
       )}
     >
       {skill.name}
-      {/* Remove button, always present at a fixed size so the chip never grows,
-          reflows or jitters on hover. It's subtle at rest and only its color
-          shifts (never its size) on hover/focus. */}
+      {/* Remove button: a small circular badge at the top-right corner, shown on
+          hover/focus. Absolutely positioned, so revealing it never resizes,
+          reflows or jitters the chip. */}
       <button
         type="button"
         onClick={(e) => {
@@ -179,9 +179,9 @@ function SelectedChip({
           onRemove();
         }}
         aria-label={`Remove ${skill.name}`}
-        className="ml-1.5 grid size-4 shrink-0 place-items-center rounded-full text-muted-foreground/50 outline-none transition-colors duration-150 hover:text-destructive group-hover:text-foreground/60 focus-visible:ring-2 focus-visible:ring-destructive/40"
+        className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm outline-none transition-opacity duration-150 hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-destructive/40"
       >
-        <X className="size-3.5" />
+        <X className="size-3" />
       </button>
     </div>
   );

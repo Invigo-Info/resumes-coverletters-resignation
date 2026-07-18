@@ -68,6 +68,10 @@ interface Variant {
   tone: ToneId;
 }
 
+/** Instruction used when auto-improving an existing summary on entering the section. */
+const AUTO_IMPROVE_INSTRUCTION =
+  "Improve the clarity, wording and impact of this summary while keeping it truthful to the resume.";
+
 /**
  * Editor section for the professional summary.
  *
@@ -167,8 +171,27 @@ export function ProfessionalSummaryForm() {
   /** Toolbar action: write from scratch, or refine with the chosen preset. */
   const runAi = (nextInstruction: string) => draft(nextInstruction, false);
 
-  /** Panel action: another draft in the next tone, keeping the earlier ones. */
-  const rewrite = () => draft(instruction, true);
+  /** Panel action: another draft with the chosen rewrite option, keeping the
+   *  earlier ones so the pager can walk back to them. */
+  const rewriteWith = (nextInstruction: string) => draft(nextInstruction, true);
+
+  // On entering the section, automatically draft a summary so an AI suggestion
+  // shows straight away - refining the EXISTING summary when there is one, or
+  // writing a first version grounded in the resume data. Runs once per visit and
+  // only when there's something to build on, so a blank resume isn't given a
+  // generic draft. It stays a suggestion until the user clicks Use.
+  const didAutoDraft = useRef(false);
+  useEffect(() => {
+    if (didAutoDraft.current) return;
+    const st = useResumeStore.getState();
+    const hasSummary = htmlToText(st.summary).length > 0;
+    const hasBasis =
+      hasSummary || st.employment.length > 0 || st.skills.length > 0;
+    if (!hasBasis) return;
+    didAutoDraft.current = true;
+    draft(hasSummary ? AUTO_IMPROVE_INSTRUCTION : "", false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Apply the shown draft to the editor. Only now does the preview change. */
   function usePreview() {
@@ -295,28 +318,19 @@ export function ProfessionalSummaryForm() {
                       </button>
                     </div>
                   )}
-                  {/* Names the voice of this draft, so two rewrites are
-                      comparable at a glance. */}
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--ai-from)]/30 bg-card px-2.5 py-1 text-xs font-semibold text-[var(--ai-text)]">
-                    <Sparkles className="size-3" aria-hidden />
-                    {toneLabel(current.tone)}
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={rewrite}
-                    disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                  >
-                    {busy ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="size-4" />
-                    )}
-                    {busy ? "Rewriting…" : "Rewrite"}
-                  </button>
+                  {/* Rewrite is a menu of options (Improve / More human /
+                      Shorter / Ask AI to…); each appends a new paged draft. */}
+                  <EditWithAiMenu
+                    busy={busy}
+                    onRun={rewriteWith}
+                    label="Rewrite"
+                    busyLabel="Rewriting…"
+                    idleIcon={RefreshCw}
+                    triggerClassName="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  />
                   <button
                     type="button"
                     onClick={usePreview}
@@ -342,9 +356,4 @@ export function ProfessionalSummaryForm() {
       )}
     </div>
   );
-}
-
-/** "visionary" -> "Visionary". */
-function toneLabel(tone: ToneId): string {
-  return tone.charAt(0).toUpperCase() + tone.slice(1);
 }

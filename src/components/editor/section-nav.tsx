@@ -52,6 +52,22 @@ export function SectionNav({
   const moveSection = useResumeStore((s) => s.moveSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
 
+  // The editable per-section titles, so renaming a section's heading updates its
+  // label here in the nav too. Read separately (a combined selector would return
+  // a new object each render and loop Zustand's store subscription).
+  const contactTitle = useResumeStore((s) => s.contactTitle);
+  const summaryTitle = useResumeStore((s) => s.summaryTitle);
+  const employmentTitle = useResumeStore((s) => s.employmentTitle);
+  const skillsTitle = useResumeStore((s) => s.skillsTitle);
+  const educationTitle = useResumeStore((s) => s.educationTitle);
+  const customTitles: Record<string, string | undefined> = {
+    contact: contactTitle,
+    summary: summaryTitle,
+    employment: employmentTitle,
+    skills: skillsTitle,
+    education: educationTitle,
+  };
+
   const [dragKey, setDragKey] = useState<SectionKey | null>(null);
   const [overKey, setOverKey] = useState<SectionKey | null>(null);
 
@@ -61,14 +77,30 @@ export function SectionNav({
     setOverKey(null);
   }
 
+  // Custom sections are numbered in the sidebar (display only) when more than
+  // one exists, based on their CURRENT order - e.g. "1 Custom section",
+  // "2 Publications". Deleting or reordering recomputes these automatically; the
+  // number is never part of the stored title.
+  const customIds = order.filter(
+    (k) => additional.find((a) => a.id === k)?.type === "custom"
+  );
+  const customNumber = new Map(customIds.map((id, i) => [id, i + 1]));
+
   // Resolve label/icon/reorderable for a key: built-in sections come from
   // SECTION_META; user-added ones derive theirs from the additional-section config.
   const metaFor = (key: SectionKey) => {
-    if (SECTION_META[key]) return SECTION_META[key];
+    const base = SECTION_META[key];
+    if (base) {
+      // Prefer the user's renamed heading; fall back to the built-in label.
+      const custom = customTitles[key]?.trim();
+      return custom ? { ...base, label: custom } : base;
+    }
     const sec = additional.find((a) => a.id === key);
     if (sec) {
+      const num =
+        sec.type === "custom" && customIds.length > 1 ? customNumber.get(sec.id) : null;
       return {
-        label: sec.title,
+        label: num ? `${num} ${sec.title}` : sec.title,
         icon: ADDITIONAL_CONFIG[sec.type].icon,
         reorderable: true,
       };

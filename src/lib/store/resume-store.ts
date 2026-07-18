@@ -256,25 +256,14 @@ function dedupeIds<T extends { id: string }>(list: T[] | undefined, prefix: stri
 }
 
 /**
- * Number any additional sections that share a title: "Custom section",
- * "Custom section 2", "Custom section 3". Two sidebar rows reading exactly
- * "Custom section" are impossible to tell apart, and give the two nav buttons
- * the same accessible name. The first occurrence keeps its clean title.
- */
-function dedupeSectionTitles(list: AdditionalSection[]): AdditionalSection[] {
-  const count = new Map<string, number>();
-  return list.map((sec) => {
-    const title = sec.title ?? "";
-    const seen = count.get(title) ?? 0;
-    count.set(title, seen + 1);
-    return seen === 0 ? sec : { ...sec, title: `${title} ${seen + 1}` };
-  });
-}
-
-/**
  * Guarantee unique entry ids on data coming in from outside the store (a saved
  * draft, an uploaded resume). Only the arrays actually present are touched, so
  * this is safe on a partial patch.
+ *
+ * Section titles are deliberately NOT deduped: repeated Custom sections all keep
+ * the clean title "Custom section" and are told apart by a display-only number
+ * the sidebar computes from their order, so the number never leaks into the
+ * stored title (and renaming stays exactly what the user typed).
  */
 function withUniqueIds(data: Partial<ResumeState>): Partial<ResumeState> {
   const next = { ...data };
@@ -282,12 +271,10 @@ function withUniqueIds(data: Partial<ResumeState>): Partial<ResumeState> {
   if (next.education) next.education = dedupeIds(next.education, "edu");
   if (next.skills) next.skills = dedupeIds(next.skills, "skill");
   if (next.additional)
-    next.additional = dedupeSectionTitles(
-      dedupeIds(next.additional, "sec").map((sec) => ({
-        ...sec,
-        entries: dedupeIds(sec.entries, "ent"),
-      }))
-    );
+    next.additional = dedupeIds(next.additional, "sec").map((sec) => ({
+      ...sec,
+      entries: dedupeIds(sec.entries, "ent"),
+    }));
   return next;
 }
 

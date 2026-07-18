@@ -117,9 +117,7 @@ export function AdditionalPicker({
             icon={ADDITIONAL_CONFIG[type].icon}
             // addAdditionalSection also makes the new section active, so its
             // blank form opens straight away.
-            onAdd={() =>
-              addAdditionalSection(type, nextSectionTitle(type, countOf(type)))
-            }
+            onAdd={() => addAdditionalSection(type, nextSectionTitle(type))}
           />
         ))}
       </div>

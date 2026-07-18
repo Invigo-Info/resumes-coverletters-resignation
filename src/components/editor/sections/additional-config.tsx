@@ -107,7 +107,7 @@ export const ADDITIONAL_CONFIG: Record<AdditionalType, AdditionalConfig> = {
       // "Jan 2016" needs 60px of the 56px it gets, so the year gets cut.
       { key: "institution", label: "Institution", placeholder: "Harvard University", span: 4 },
       { key: "startDate", label: "Start date", placeholder: "Jan 2016", span: 4, type: "monthYear" },
-      { key: "endDate", label: "End date", placeholder: "Feb 2019", span: 4, type: "monthYear", minKey: "startDate" },
+      { key: "endDate", label: "End date", placeholder: "Feb 2019", span: 4, type: "monthYear", present: true, minKey: "startDate" },
       { key: "course", label: "Course", placeholder: "e.g., Advanced Product Design", span: 12, titleCase: true },
     ],
   },
@@ -171,7 +171,7 @@ export const ADDITIONAL_CONFIG: Record<AdditionalType, AdditionalConfig> = {
     icon: Code2,
     title: "Custom section",
     description: "Use this custom section for anything that adds value to your resume - mentoring, publications, awards, or side projects.",
-    addLabel: "Add one more",
+    addLabel: "Add item",
     // The header names the item; the subheader is the context it happened in,
     // so it belongs on the card's second line rather than in its title.
     titleKeys: ["header"],
@@ -203,15 +203,12 @@ export const ADDITIONAL_ORDER: AdditionalType[] = [
 export const REPEATABLE_TYPES: ReadonlySet<AdditionalType> = new Set(["custom"]);
 
 /**
- * Title for a newly added section. Repeatable types get a numeric suffix so two
- * of them are tellable apart in the sidebar (and have distinct accessible
- * names); the first keeps the clean, unnumbered title.
+ * Title for a newly added section. Every section - including a repeatable Custom
+ * one - starts from the clean default title. Repeated Custom sections are told
+ * apart by a DISPLAY-only number the sidebar computes from their current order
+ * (see SectionNav); the number is never stored in the title, so the main heading
+ * stays "Custom section" and renaming/reordering stay consistent.
  */
-export function nextSectionTitle(
-  type: AdditionalType,
-  existingCount: number
-): string {
-  const { title } = ADDITIONAL_CONFIG[type];
-  if (!REPEATABLE_TYPES.has(type) || existingCount === 0) return title;
-  return `${title} ${existingCount + 1}`;
+export function nextSectionTitle(type: AdditionalType): string {
+  return ADDITIONAL_CONFIG[type].title;
 }
