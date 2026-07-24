@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * White rounded-square Home button (house icon) used at the top-left of every
- * builder inner page — resume, cover letter and resignation letter flows.
+ * builder inner page - resume, cover letter and resignation letter flows.
  * Returns the user to the dashboard home (now the site root "/").
  */
 export function HomeButton({

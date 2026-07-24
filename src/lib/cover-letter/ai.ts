@@ -5,7 +5,7 @@ import type { CoverLetterState } from "@/lib/store/cover-letter-store";
 /**
  * Cover-letter AI helpers. Each call hits the server-side Gemini bridge
  * (/api/ai) first and transparently falls back to canned content if the key
- * is missing or the call fails — same contract as the resume builder.
+ * is missing or the call fails - same contract as the resume builder.
  */
 
 async function callAi<T>(task: string, payload: Record<string, unknown>): Promise<T | null> {

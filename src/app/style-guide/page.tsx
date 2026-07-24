@@ -62,7 +62,7 @@ export default function StyleGuidePage() {
             Design System
           </h1>
           <p className="text-muted-foreground">
-            Phase 1 — tokens & primitives for the resume.co clone.
+            Phase 1 - tokens & primitives for the resume.co clone.
           </p>
         </header>
 
@@ -105,14 +105,14 @@ export default function StyleGuidePage() {
               How should we start?
             </p>
             <p className="font-heading text-2xl font-bold">
-              Heading — Gabarito Bold
+              Heading - Gabarito Bold
             </p>
             <p className="text-base text-foreground">
-              Body — Inter regular. Fill in your details and the job title you
+              Body - Inter regular. Fill in your details and the job title you
               are aiming for to make a clear first impression.
             </p>
             <p className="text-sm text-muted-foreground">
-              Muted — secondary helper text used under labels and titles.
+              Muted - secondary helper text used under labels and titles.
             </p>
           </div>
         </Section>

@@ -121,7 +121,7 @@ export function resignationLetterTitle(s: ResignationLetterState): string {
 
 /**
  * Has the user entered anything worth saving as a draft? The builder prefills a
- * placeholder name/email/dates, so those don't count — we only save once the
+ * placeholder name/email/dates, so those don't count - we only save once the
  * user supplies recipient, role, reason, gratitude or a generated body.
  */
 function hasContent(s: ResignationLetterState): boolean {
@@ -171,7 +171,7 @@ function snapshot(s: ResignationLetterState): ResignationLetterRecord {
 
 /**
  * Snapshot the active resignation letter into the dashboard's drafts list if it
- * has real content (assigning an id the first time). Safe to call repeatedly —
+ * has real content (assigning an id the first time). Safe to call repeatedly -
  * upserts by id. Returns the record id, or null when there's nothing to save.
  */
 export function saveActiveResignationLetter(): string | null {

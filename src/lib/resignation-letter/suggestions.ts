@@ -1,6 +1,6 @@
 /** Static chip data for the resignation-letter builder (from the screenshots). */
 
-/** Reason chips — single-select, no emoji (Step 5.png). */
+/** Reason chips - single-select, no emoji (Step 5.png). */
 export const RL_REASONS = [
   "Personal Reasons",
   "Relocation",

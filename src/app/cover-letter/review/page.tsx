@@ -37,17 +37,17 @@ export default function CoverLetterReviewPage() {
   ].filter(Boolean);
 
   const rows: { label: string; step: CLStep; content: React.ReactNode }[] = [
-    { label: "Education", step: "education", content: education || "—" },
-    { label: "Recent job", step: "recent-job", content: recentJob || "—" },
-    { label: "Experience", step: "experience", content: experience || "—" },
-    { label: "Skills", step: "skills", content: s.skills.join(", ") || "—" },
-    { label: "Strengths", step: "strengths", content: s.strengths.join(", ") || "—" },
+    { label: "Education", step: "education", content: education || "-" },
+    { label: "Recent job", step: "recent-job", content: recentJob || "-" },
+    { label: "Experience", step: "experience", content: experience || "-" },
+    { label: "Skills", step: "skills", content: s.skills.join(", ") || "-" },
+    { label: "Strengths", step: "strengths", content: s.strengths.join(", ") || "-" },
     {
       label: "Personal details",
       step: "personal",
       content: (
         <div className="space-y-0.5">
-          {personalLines.length ? personalLines.map((l, i) => <div key={i}>{l}</div>) : "—"}
+          {personalLines.length ? personalLines.map((l, i) => <div key={i}>{l}</div>) : "-"}
         </div>
       ),
     },

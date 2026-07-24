@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Meh, Smile, Laugh, PartyPopper } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { HomeButton } from "@/components/layout/home-button";
@@ -16,12 +16,17 @@ const PHASES: { key: CLPhase; label: string }[] = [
   { key: "download", label: "Download" },
 ];
 
-/** Pick a reaction glyph for the footer progress bar based on percent complete. */
-function emojiFor(p: number) {
-  if (p < 25) return "🤔";
-  if (p < 60) return "🙂";
-  if (p < 100) return "😎";
-  return "😍";
+/**
+ * The footer progress reaction icon for a given percent. A stable module-level
+ * component rendering fixed lucide icons (no emoji, and never created during
+ * render), matching the resignation wizard's ReactionIcon.
+ */
+function ReactionIcon({ percent, className }: { percent: number; className?: string }) {
+  const p = { className, "aria-hidden": true } as const;
+  if (percent < 25) return <Meh {...p} />;
+  if (percent < 60) return <Smile {...p} />;
+  if (percent < 100) return <Laugh {...p} />;
+  return <PartyPopper {...p} />;
 }
 
 /** Top-right "1 Add details → 2 Personalize → 3 Download" indicator. */
@@ -120,9 +125,7 @@ export function StepShell({
           {/* Progress (omitted on the Review screen) */}
           {progress ? (
             <div className="mx-auto flex w-full max-w-md items-center gap-3">
-              <span className="text-lg leading-none" aria-hidden>
-                {emojiFor(progress.percent)}
-              </span>
+              <ReactionIcon percent={progress.percent} className="size-5 shrink-0 text-primary" />
               <div className="flex-1">
                 <p className="mb-1 truncate text-xs font-medium text-muted-foreground">
                   {progress.message}{" "}
@@ -156,7 +159,7 @@ export function StepShell({
         </div>
       </footer>
 
-      {/* Help — lifted above the fixed footer so it doesn't overlap Next. */}
+      {/* Help - lifted above the fixed footer so it doesn't overlap Next. */}
       <HelpPill className="bottom-24" />
     </div>
   );

@@ -299,8 +299,8 @@ function isWordFile(file: File): boolean {
  * With a GEMINI_API_KEY configured, the candidate's REAL details are extracted:
  * a PDF is sent to the model directly (it reads PDFs natively); a Word .docx is
  * converted to text HERE first, because the model can't read Word's binary
- * format. Without a key — or if the call fails, or no file is provided (cloud-
- * import demo buttons) — it falls back to canned sample content.
+ * format. Without a key - or if the call fails, or no file is provided (cloud-
+ * import demo buttons) - it falls back to canned sample content.
  */
 export async function parseResume(file?: File): Promise<Partial<ResumeState>> {
   // Real file → extract the candidate's actual data. We deliberately DO NOT

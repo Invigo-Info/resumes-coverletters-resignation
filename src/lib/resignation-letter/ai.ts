@@ -7,7 +7,7 @@ import { RL_OTHER_REASON } from "@/lib/resignation-letter/suggestions";
 /**
  * Resignation-letter AI helpers. Each call hits the server-side Gemini bridge
  * (/api/ai) first and transparently falls back to a deterministic template if
- * the key is missing or the call fails — same contract as the cover letter.
+ * the key is missing or the call fails - same contract as the cover letter.
  */
 
 async function callAi<T>(task: string, payload: Record<string, unknown>): Promise<T | null> {

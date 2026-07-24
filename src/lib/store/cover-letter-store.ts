@@ -49,7 +49,7 @@ export interface CLDesign {
   spacing: CLSpacingId;
   /** Tinted or dark page background ("" = white). */
   bg: string;
-  /** Dark page (white text) — set by "dark combination" color swatches. */
+  /** Dark page (white text) - set by "dark combination" color swatches. */
   dark: boolean;
   /** Header arrangement, set by the selected Style template. */
   layout: CLLayoutId;
@@ -173,7 +173,7 @@ export function stepSequence(s: Pick<CoverLetterState, "flow" | "jobIntent" | "e
   if (s.jobIntent.hasSpecificJob === true) seq.push("job-details");
   else if (s.jobIntent.hasSpecificJob === false) seq.push("desired-title");
 
-  // Resume / upload flows skip the manual middle — they merge straight to generate.
+  // Resume / upload flows skip the manual middle - they merge straight to generate.
   if (s.flow !== "scratch") {
     if (s.jobIntent.hasSpecificJob !== null) seq.push("generate");
     return seq;

@@ -5,14 +5,14 @@ import bcrypt from "bcryptjs";
 
 /**
  * Minimal file-backed user store for email + password auth (no database in this
- * project). Users live in `.data/users.json` (gitignored). Server-only — used
+ * project). Users live in `.data/users.json` (gitignored). Server-only - used
  * by the Auth.js Credentials provider and the /api/register route.
  */
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
-/** A user as persisted on disk — includes the bcrypt password hash. */
+/** A user as persisted on disk - includes the bcrypt password hash. */
 interface StoredUser {
   id: string;
   email: string;
@@ -20,7 +20,7 @@ interface StoredUser {
   passwordHash: string;
 }
 
-/** A user safe to expose to the client — no password hash. */
+/** A user safe to expose to the client - no password hash. */
 export interface PublicUser {
   id: string;
   email: string;
@@ -84,7 +84,7 @@ export async function createUser(
 
 /**
  * Update a user's display name. No-op (returns false) for accounts that don't
- * live in the file store — e.g. Google-only sign-ins, whose name comes from the
+ * live in the file store - e.g. Google-only sign-ins, whose name comes from the
  * OAuth profile / session instead.
  */
 export async function updateUserName(email: string, name: string): Promise<boolean> {

@@ -6,7 +6,7 @@ export interface CoverLetterDoc {
   thumb: string;
 }
 
-/** Dashboard usage / insight stats (docs §1 — Dashboard brief). */
+/** Dashboard usage / insight stats (docs §1 - Dashboard brief). */
 export const coverLetterStats = {
   written: { used: 0, limit: 5, note: "Submitting more job applications daily could triple the speed of your job search" },
   applications: { value: "~250", note: "Required on average to get a single job offer" },

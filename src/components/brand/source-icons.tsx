@@ -1,7 +1,7 @@
 /**
  * Brand logos for the "upload from a cloud source" rows (Dropbox, Google Drive,
- * LinkedIn). These are official brand marks rendered as inline SVG icons — not
- * emoji — so they stay crisp and themeable in size.
+ * LinkedIn). These are official brand marks rendered as inline SVG icons - not
+ * emoji - so they stay crisp and themeable in size.
  */
 
 /** Dropbox brand logo as an inline SVG icon. */

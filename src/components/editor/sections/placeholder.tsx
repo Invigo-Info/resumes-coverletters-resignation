@@ -1,6 +1,6 @@
 import { SectionHeading } from "./field";
 
-/** Temporary stand-in for sections built in later phases (6–8). */
+/** Temporary stand-in for sections built in later phases (6-8). */
 export function PlaceholderForm({
   title,
   description,

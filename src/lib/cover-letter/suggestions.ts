@@ -1,6 +1,6 @@
 /** Static chip/suggestion data for the cover-letter wizard (from screenshots). */
 
-/** Professional skills — first 3 render with a 🔥 (step 4). */
+/** Professional skills - first 3 render with a flame icon (step 4). */
 export const CL_SKILLS = [
   "SEO Optimization",
   "Content Marketing",

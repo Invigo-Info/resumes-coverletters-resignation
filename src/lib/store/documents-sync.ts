@@ -6,7 +6,7 @@
  * resignation letters follow their account across browsers/devices instead of
  * living only in one browser.
  *
- * Writes are best-effort and fire-and-forget — the local store stays the source
+ * Writes are best-effort and fire-and-forget - the local store stays the source
  * of truth for instant UI; the server is the durable, cross-device backup that
  * the dashboards pull from on load.
  */
@@ -50,7 +50,7 @@ export function pushServerDocument(
       body: JSON.stringify({ type, record }),
     }).catch(() => {});
   } catch {
-    /* ignore — local store already has it */
+    /* ignore - local store already has it */
   }
 }
 

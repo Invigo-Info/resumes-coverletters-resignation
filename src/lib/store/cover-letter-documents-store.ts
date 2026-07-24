@@ -151,7 +151,7 @@ function snapshot(s: CoverLetterState): CoverLetterRecord {
 
 /**
  * Snapshot the active cover letter into the dashboard's drafts list if it has
- * real content (assigning an id the first time). Safe to call repeatedly — it
+ * real content (assigning an id the first time). Safe to call repeatedly - it
  * upserts by id. Returns the record id, or null when there's nothing to save.
  */
 export function saveActiveCoverLetter(): string | null {

@@ -11,7 +11,7 @@ const base =
   "transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 " +
   "focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
-/** Primary blue pill CTA — the strongest action (Download, Next, Create). */
+/** Primary blue pill CTA - the strongest action (Download, Next, Create). */
 export const PrimaryButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button
@@ -29,7 +29,7 @@ export const PrimaryButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 PrimaryButton.displayName = "PrimaryButton";
 
-/** Quiet gray pill — secondary actions (Back, Reorder, Share). */
+/** Quiet gray pill - secondary actions (Back, Reorder, Share). */
 export const GhostButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button
@@ -47,7 +47,7 @@ export const GhostButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 GhostButton.displayName = "GhostButton";
 
-/** Purple→fuchsia gradient pill with a sparkle — the "Write with AI" action. */
+/** Purple→fuchsia gradient pill with a sparkle - the "Write with AI" action. */
 export const AiButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button

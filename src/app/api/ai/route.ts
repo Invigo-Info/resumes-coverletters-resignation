@@ -358,7 +358,7 @@ Resume:
     }
   ]
 }
-Rules: COPY real data verbatim (names, companies, dates, bullet text) — do NOT invent, summarize away, or substitute placeholder/sample data. Use "" or [] for anything genuinely absent. Extract EVERY section present in the resume - courses, certifications, languages, hobbies/interests, references and links must each be captured into their key, not dropped or merged into skills. Merge "Core Skills", "Tools & Platforms" into skills if no dedicated skills list exists. Return JSON only, no markdown, no extra keys.
+Rules: COPY real data verbatim (names, companies, dates, bullet text) - do NOT invent, summarize away, or substitute placeholder/sample data. Use "" or [] for anything genuinely absent. Extract EVERY section present in the resume - courses, certifications, languages, hobbies/interests, references and links must each be captured into their key, not dropped or merged into skills. Merge "Core Skills", "Tools & Platforms" into skills if no dedicated skills list exists. Return JSON only, no markdown, no extra keys.
 
 Resume text (may be empty if a document is attached):
 """${(p.resumeText as string) || ""}"""`,
@@ -372,7 +372,7 @@ Resume text (may be empty if a document is attached):
         json: true,
         prompt: `Rewrite the following resume bullet points for a ${role}.
 Instruction: ${instruction}.
-Rules: keep every fact truthful — do NOT invent companies, metrics, or responsibilities that aren't implied by the originals. Keep them ATS-friendly, each starting with a strong action verb, concrete and outcome-focused. Return a JSON array of strings (one rewritten bullet per original, or fewer if merging tightens them). No markdown, no numbering, no leading bullet glyphs.
+Rules: keep every fact truthful - do NOT invent companies, metrics, or responsibilities that aren't implied by the originals. Keep them ATS-friendly, each starting with a strong action verb, concrete and outcome-focused. Return a JSON array of strings (one rewritten bullet per original, or fewer if merging tightens them). No markdown, no numbering, no leading bullet glyphs.
 
 Bullets:
 ${JSON.stringify(bullets)}`,
@@ -412,7 +412,7 @@ ${
   reasonText
     ? `Use the following reason paragraph as the second paragraph, preserving its meaning and keeping the tone positive and professional (light polishing only): "${reasonText}".`
     : reason
-      ? `Include one brief, positive, professional sentence referencing the reason for leaving: "${reason}". Keep it gracious — never negative.`
+      ? `Include one brief, positive, professional sentence referencing the reason for leaving: "${reason}". Keep it gracious - never negative.`
       : ""
 }
 ${
@@ -430,7 +430,7 @@ ${
       : ""
 }
 Close with a courteous sign-off (e.g. "Sincerely,") and the candidate's full name on the final line.
-Plain text only — no markdown, no subject line, no recipient address block, no date line, no email. 3 to 5 short paragraphs.`,
+Plain text only - no markdown, no subject line, no recipient address block, no date line, no email. 3 to 5 short paragraphs.`,
       };
     }
     case "improveText": {
@@ -438,7 +438,7 @@ Plain text only — no markdown, no subject line, no recipient address block, no
         (p.instruction as string) || "Improve the writing while keeping the original meaning";
       return {
         json: false,
-        prompt: `${instruction}. Keep it professional and warm. Return ONLY the revised text as plain text — no markdown, no preamble, no quotes, preserve paragraph breaks.
+        prompt: `${instruction}. Keep it professional and warm. Return ONLY the revised text as plain text - no markdown, no preamble, no quotes, preserve paragraph breaks.
 
 Text:
 """${(p.text as string) || ""}"""`,
@@ -629,7 +629,7 @@ export async function GET() {
 }
 
 /**
- * POST /api/ai — runs one AI task. Returns { fallback: true } whenever the key
+ * POST /api/ai - runs one AI task. Returns { fallback: true } whenever the key
  * is missing or generation ultimately fails, so the client uses canned content
  * instead of erroring. Parses JSON-mode replies (stripping ```json fences).
  */

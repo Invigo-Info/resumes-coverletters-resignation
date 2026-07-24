@@ -4,7 +4,7 @@ import path from "path";
 /**
  * Minimal file-backed, per-user document store (no database in this project).
  * Mirrors `users.ts`: documents live in `.data/documents.json` (gitignored),
- * keyed by the signed-in user's email. Server-only — used by /api/documents so a
+ * keyed by the signed-in user's email. Server-only - used by /api/documents so a
  * user's resumes / cover letters / resignation letters follow their account
  * across browsers and devices, instead of living only in one browser's
  * localStorage.
@@ -25,7 +25,7 @@ export function isDocType(t: unknown): t is DocType {
   return typeof t === "string" && (DOC_TYPES as string[]).includes(t);
 }
 
-/** A stored document — kept intentionally generic; the client owns the shape. */
+/** A stored document - kept intentionally generic; the client owns the shape. */
 export interface StoredDocument {
   id: string;
   title: string;

@@ -94,7 +94,7 @@ function splitBullets(desc: string): string[] {
     rawParts = stripTags(desc).split(/(?<=[.!?])\s+(?=[A-Z])/);
   }
   return rawParts
-    .map((p) => stripTags(p).replace(/^[\s•*.\-–—]+/, "").trim())
+    .map((p) => stripTags(p).replace(/^[\s•*.\---]+/, "").trim())
     .filter(Boolean);
 }
 

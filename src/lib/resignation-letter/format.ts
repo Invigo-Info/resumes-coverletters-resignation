@@ -27,7 +27,7 @@ export function toISODate(d: Date): string {
 
 /**
  * The single live-preview sentence shown in the builder before AI generation
- * (matches Step 2–8.png — stays generic, does not inject the position).
+ * (matches Step 2-8.png - stays generic, does not inject the position).
  */
 export function previewOpeningLine(lastWorkingDayIso: string): string {
   const last = formatLetterDate(lastWorkingDayIso) || "your last day";

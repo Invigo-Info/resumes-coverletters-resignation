@@ -12,7 +12,7 @@ interface Faq {
 const FAQS: Faq[] = [
   {
     q: "How do I share my resume?",
-    a: 'To share your resume, simply follow these two steps: Click the "Share" button located at the top right corner of the screen. Copy the sharing link by clicking the "Copy Link" button. That\'s it! You can now send that link to anyone — they will be able to view your resume in their browser without needing an account.',
+    a: 'To share your resume, simply follow these two steps: Click the "Share" button located at the top right corner of the screen. Copy the sharing link by clicking the "Copy Link" button. That\'s it! You can now send that link to anyone - they will be able to view your resume in their browser without needing an account.',
   },
   {
     q: "What is the maximum number of unique resumes and cover letters that can be created?",
@@ -32,7 +32,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "How do I change the design, font or colors?",
-    a: "Open the Design tab while editing. There you can switch templates, choose a font and spacing, pick a single or two-column layout, and apply a color theme — every change previews instantly.",
+    a: "Open the Design tab while editing. There you can switch templates, choose a font and spacing, pick a single or two-column layout, and apply a color theme - every change previews instantly.",
   },
   {
     q: "Is my information secure?",

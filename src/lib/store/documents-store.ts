@@ -106,7 +106,7 @@ export const useSaveStatusStore = create<SaveStatusState>((set) => ({
 // Strip HTML tags to inspect the underlying plain text of a rich field.
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
-/** A signature of the resume's CONTENT only — excludes transient UI cursor
+/** A signature of the resume's CONTENT only - excludes transient UI cursor
  *  state (active section/entry/block) so moving the caret isn't seen as an edit. */
 function contentSignature(s: ResumeState): string {
   return JSON.stringify({
@@ -181,7 +181,7 @@ function snapshot(s: ResumeState): ResumeRecord {
 
 /**
  * Snapshot the active resume into the dashboard's drafts list if it has real
- * content (assigning an id the first time). Safe to call any number of times —
+ * content (assigning an id the first time). Safe to call any number of times -
  * it upserts by id. Returns the record id, or null when there's nothing to save.
  *
  * Used by both the editor autosave and the dashboard (to backfill a draft that

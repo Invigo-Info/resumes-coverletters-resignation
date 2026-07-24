@@ -189,7 +189,7 @@ export const RL_SEQUENCE: RLStep[] = [
   "generate",
 ];
 
-/** Labels shown beneath the top stepper (Step 2–8.png). */
+/** Labels shown beneath the top stepper (Step 2-8.png). */
 export const RL_STEP_LABEL: Record<RLStep, string> = {
   heading: "Heading",
   recipient: "Recipient",
@@ -213,7 +213,7 @@ export const RL_STEPPER_STEPS: RLStep[] = [
   "contacts",
 ];
 
-/** The ordered wizard steps (linear — no branching for resignation letters). */
+/** The ordered wizard steps (linear - no branching for resignation letters). */
 export function stepSequence(): RLStep[] {
   return RL_SEQUENCE;
 }

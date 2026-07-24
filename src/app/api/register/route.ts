@@ -5,7 +5,7 @@ import { createUser } from "@/lib/users";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * POST /api/register — creates a new account from { email, password, name }.
+ * POST /api/register - creates a new account from { email, password, name }.
  * Validates input, then maps the createUser "exists" error to a 409 conflict.
  */
 export async function POST(req: Request) {

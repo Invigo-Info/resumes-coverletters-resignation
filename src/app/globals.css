@@ -91,7 +91,7 @@
 }
 
 /*
-  resume.co clone — light theme only.
+  resume.co clone - light theme only.
   Brand blue CTA, light-gray page, white cards, soft shadows, rounded pills.
 */
 :root {
@@ -253,7 +253,7 @@
     );
   }
 
-  /* Active bullet/paragraph highlight in the live resume preview. Editor-only —
+  /* Active bullet/paragraph highlight in the live resume preview. Editor-only -
      the PDF exporter strips the attribute on clone so it never reaches the PDF. */
   [data-active-block] {
     background-color: #e6eeff;
