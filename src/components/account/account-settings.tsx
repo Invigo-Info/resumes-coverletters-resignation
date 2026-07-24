@@ -237,7 +237,7 @@ export function AccountSettings() {
 
       <div className="space-y-5">
         {/* Subscription */}
-        <SectionCard className="flex items-center justify-between gap-4">
+        <SectionCard className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-bold text-foreground">Subscription</h2>
           <PrimaryButton onClick={() => router.push("/payment")}>
             <Send className="size-4 -rotate-45" />
@@ -247,7 +247,7 @@ export function AccountSettings() {
 
         {/* Personal details */}
         <SectionCard>
-          <div className="mb-2 flex items-center justify-between gap-4">
+          <div className="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <h2 className="text-xl font-bold text-foreground">Personal details</h2>
             {editing ? (
               <PrimaryButton onClick={saveName} disabled={saving}>

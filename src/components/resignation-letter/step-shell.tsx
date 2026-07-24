@@ -95,7 +95,12 @@ export function StepShell({
           </Link>
         </div>
 
-        <Stepper step={step} />
+        {/* The full 7-segment stepper has a fixed intrinsic width wider than a
+            phone screen, so it is desktop-only; on mobile the percent + reaction
+            icon on the right convey progress without overflowing the header. */}
+        <div className="hidden justify-center md:flex">
+          <Stepper step={step} />
+        </div>
 
         <div className="flex items-center justify-end gap-2">
           <span className="text-sm font-semibold text-foreground">{progress.percent}%</span>
