@@ -24,6 +24,7 @@ import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
 import { cn } from "@/lib/utils";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
+import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
 import {
   isDropboxConfigured,
   chooseFromDropbox,
@@ -53,6 +54,7 @@ export function ResumeOnboarding() {
   const [googleOpen, setGoogleOpen] = useState(false);
   const [linkedInOpen, setLinkedInOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
@@ -65,6 +67,14 @@ export function ResumeOnboarding() {
   const showSave = mounted && progress && !dismissedSave;
 
   async function handleUpload(file?: File) {
+    // Size-check in the browser before uploading. On failure keep the field
+    // available and any prior valid selection untouched - just show the message.
+    const check = validateUploadFile(file);
+    if (!check.valid) {
+      setUploadError(check.message);
+      return;
+    }
+    setUploadError("");
     setPhase("uploading");
     try {
       const parsed = await parseResume(file);
@@ -189,9 +199,11 @@ export function ResumeOnboarding() {
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
                     "flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-                    dragActive
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-background/60 hover:border-primary/50"
+                    uploadError
+                      ? "border-destructive bg-destructive/5"
+                      : dragActive
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-background/60 hover:border-primary/50"
                   )}
                 >
                   <FileUp
@@ -208,6 +220,18 @@ export function ResumeOnboarding() {
                     to upload
                   </span>
                 </div>
+
+                {/* Size guidance (always visible) + validation error (on a
+                    too-large file). */}
+                {uploadError ? (
+                  <p className="px-1 text-sm font-medium text-destructive">
+                    {uploadError}
+                  </p>
+                ) : (
+                  <p className="px-1 text-xs text-muted-foreground">
+                    {MAX_UPLOAD_HINT}
+                  </p>
+                )}
 
                 {/* Cloud sources */}
                 {[

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Send, Loader2, UserRoundX, SlidersHorizontal } from "lucide-react";
+import { Send, Loader2, UserRoundX, SlidersHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 
-/** Google brand "G" — an icon (not an emoji), inline so it inherits sizing. */
+/**
+ * Remove every locally-stored piece of account data on deletion: resumes,
+ * cover letters, resignation letters, saved jobs, interview-prep, tailoring
+ * sessions, the premium/subscription flag, and design settings all live under
+ * the `resume-co:` localStorage namespace, so clearing that namespace wipes
+ * them in one pass and nothing can reappear after a fresh sign-up.
+ */
+function clearLocalAccountData() {
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("resume-co:")) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem("resume-co:dl");
+  } catch {
+    /* storage unavailable (private mode) - nothing to clear */
+  }
+}
+
+/** Google brand "G" - an icon (not an emoji), inline so it inherits sizing. */
 function GoogleGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
@@ -125,6 +145,8 @@ export function AccountSettings() {
   const [emails, setEmails] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmChecked, setConfirmChecked] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Seed the name fields from the session once it resolves.
   useEffect(() => {
@@ -161,19 +183,46 @@ export function AccountSettings() {
     }
   }
 
-  /** Permanently delete the account, sign out, and return to the login page. */
+  /** Open/close the confirm modal, resetting its checkbox + error each time so a
+   *  re-open always starts from the safe (unchecked, no error) state. Ignored
+   *  while a deletion is in flight, so the page can't be dismissed mid-request. */
+  function setConfirm(open: boolean) {
+    if (deleting) return;
+    setConfirmOpen(open);
+    setConfirmChecked(false);
+    setDeleteError("");
+  }
+
+  /**
+   * Permanently delete the account: cancel any subscription (server-side),
+   * remove the account, wipe local data, sign out, and return to Sign in. Guards
+   * against duplicate clicks, and on any failure keeps the account intact, shows
+   * a clear message, and re-enables the modal controls.
+   */
   async function deleteAccount() {
+    if (!confirmChecked || deleting) return; // require consent; block re-entry
     setDeleting(true);
+    setDeleteError("");
     try {
       const res = await fetch("/api/account", { method: "DELETE" });
+      if (res.status === 502) {
+        // Subscription cancellation failed - the account was NOT deleted.
+        setDeleting(false);
+        setDeleteError(
+          "We couldn't cancel your subscription. Your account has not been deleted. Please try again or contact support."
+        );
+        return;
+      }
       if (!res.ok) throw new Error("delete failed");
+      // Success: clear locally-stored account data so nothing can reappear, end
+      // the session, and hand off to the Sign in page with a confirmation toast.
+      clearLocalAccountData();
       await signOut({ redirect: false });
-      router.push("/login");
+      toast.success("Your account has been permanently deleted.");
+      router.replace("/login");
     } catch {
       setDeleting(false);
-      toast.error("Couldn't delete account", {
-        description: "Please try again in a moment.",
-      });
+      setDeleteError("We couldn't delete your account. Please try again.");
     }
   }
 
@@ -245,8 +294,8 @@ export function AccountSettings() {
             </div>
           ) : (
             <dl>
-              <DetailRow label="First name" value={first || "—"} />
-              <DetailRow label="Last name" value={last || "—"} />
+              <DetailRow label="First name" value={first || "-"} />
+              <DetailRow label="Last name" value={last || "-"} />
               {email && (
                 <DetailRow
                   label="Details"
@@ -283,43 +332,111 @@ export function AccountSettings() {
           </div>
         </SectionCard>
 
-        {/* Delete account */}
-        <button
-          type="button"
-          onClick={() => setConfirmOpen(true)}
-          className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive"
-        >
-          <UserRoundX className="size-4" />
-          Permanently delete account
-        </button>
+        {/* Delete account - visually separated from the settings cards above and
+            deliberately quiet, so it never reads as the page's main action. */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setConfirm(true)}
+            className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive"
+          >
+            <UserRoundX className="size-4" />
+            Permanently delete account
+          </button>
+        </div>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Permanently delete account?</DialogTitle>
-            <DialogDescription>
-              This removes your account and signs you out. Saved documents stored
-              in this browser are not affected, but your sign-in will be deleted.
-              This can&apos;t be undone.
+      {/* Confirmation modal. onOpenChange is guarded so Escape / outside-click /
+          the close icon can't dismiss it mid-deletion; the close icon is hidden
+          entirely while processing. */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirm}>
+        <DialogContent
+          className="sm:max-w-lg"
+          overlayClassName="bg-black/40"
+          showCloseButton={!deleting}
+        >
+          <DialogHeader className="pr-6">
+            <DialogTitle className="text-2xl">
+              Are you sure you want to permanently delete your account?
+            </DialogTitle>
+            <DialogDescription className="mt-1">
+              We&apos;re sorry to hear that you&apos;re considering leaving us. We
+              want to make sure that all of your data is handled with care, so
+              before we proceed with deleting your account, we just need to
+              confirm a few things.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <DialogClose
-              className="inline-flex h-10 items-center rounded-full px-5 text-sm font-semibold text-foreground ring-1 ring-border transition-colors hover:bg-muted"
+
+          <hr className="border-border/70" />
+
+          {/* Consent checkbox - unchecked on open; gates the destructive button. */}
+          <label
+            className={cn(
+              "flex items-start gap-3",
+              deleting ? "cursor-not-allowed" : "cursor-pointer"
+            )}
+          >
+            <span
+              className={cn(
+                "mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors",
+                confirmChecked
+                  ? "border-primary bg-primary"
+                  : "border-muted-foreground/40 bg-white"
+              )}
             >
-              Cancel
-            </DialogClose>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={confirmChecked}
+                disabled={deleting}
+                onChange={(e) => setConfirmChecked(e.target.checked)}
+              />
+              {confirmChecked && (
+                <Check className="size-3.5 text-white" strokeWidth={3} />
+              )}
+            </span>
+            <span className="text-sm leading-relaxed text-muted-foreground">
+              I want to permanently delete my account and all of the data
+              associated with it and immediately terminate all paid
+              subscriptions. I know that this action cannot be undone and my
+              account will be unrecoverable.
+            </span>
+          </label>
+
+          {/* Failure message - account stays active, controls stay usable. */}
+          {deleteError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {deleteError}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3">
             <button
               type="button"
               onClick={deleteAccount}
-              disabled={deleting}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-destructive px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-destructive/90 disabled:opacity-60"
+              disabled={!confirmChecked || deleting}
+              className={cn(
+                "inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-semibold transition-colors",
+                confirmChecked && !deleting
+                  ? "bg-destructive text-white hover:bg-destructive/90"
+                  : "cursor-not-allowed bg-muted text-muted-foreground"
+              )}
             >
               {deleting && <Loader2 className="size-4 animate-spin" />}
-              Delete account
+              {deleting ? "Deleting account..." : "Delete account"}
             </button>
-          </DialogFooter>
+            <button
+              type="button"
+              onClick={() => setConfirm(false)}
+              disabled={deleting}
+              className="inline-flex h-12 items-center justify-center rounded-full bg-secondary px-5 text-base font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

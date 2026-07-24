@@ -26,6 +26,7 @@ import {
   templates,
   templateTabs,
   isAtsFriendly,
+  templateImage,
   DEFAULT_TEMPLATE_ID,
   type ResumeTemplate,
   type TemplateCategory,
@@ -56,7 +57,12 @@ export function TemplateGallery() {
   );
   // Default selection: whatever the user already picked, else the house pick.
   const [selected, setSelected] = useState(chosen || DEFAULT_TEMPLATE_ID);
-  const [preview, setPreview] = useState<ResumeTemplate | null>(null);
+  const [preview, setPreview] = useState<{ template: ResumeTemplate; image: string } | null>(null);
+
+  // The active category folder ("All templates" has none, so previews use the
+  // default /templates copy).
+  const activeCategory: TemplateCategory | undefined =
+    active === "All templates" ? undefined : active;
 
   // Templates shown for the active tab ("All" shows everything; otherwise
   // filter by category). Memoized so the list only recomputes when the tab
@@ -110,16 +116,19 @@ export function TemplateGallery() {
           <TemplateCard
             key={t.id}
             template={t}
+            image={templateImage(t, activeCategory)}
             selected={t.id === selected}
             eager={i < EAGER_COUNT}
             onUse={() => use(t)}
-            onPreview={() => setPreview(t)}
+            onPreview={() =>
+              setPreview({ template: t, image: templateImage(t, activeCategory) })
+            }
           />
         ))}
       </div>
 
       <PreviewModal
-        template={preview}
+        preview={preview}
         onClose={() => setPreview(null)}
         onUse={(t) => use(t)}
       />
@@ -130,12 +139,15 @@ export function TemplateGallery() {
 /** One template in the grid: preview, badges, hover CTA, name and usage count. */
 function TemplateCard({
   template: t,
+  image,
   selected,
   eager,
   onUse,
   onPreview,
 }: {
   template: ResumeTemplate;
+  /** Preview image for the active category folder. */
+  image: string;
   selected: boolean;
   eager: boolean;
   onUse: () => void;
@@ -159,7 +171,7 @@ function TemplateCard({
         >
           <div className="relative aspect-[210/297] w-full bg-white">
             <Image
-              src={t.image}
+              src={image}
               alt={`${t.name} template preview`}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -238,18 +250,19 @@ function TemplateCard({
 
 /** Full-screen preview of a single template, with the CTA repeated. */
 function PreviewModal({
-  template: t,
+  preview,
   onClose,
   onUse,
 }: {
-  template: ResumeTemplate | null;
+  preview: { template: ResumeTemplate; image: string } | null;
   onClose: () => void;
   onUse: (t: ResumeTemplate) => void;
 }) {
+  const t = preview?.template ?? null;
   return (
     <Dialog open={!!t} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-2xl p-5 sm:max-w-lg">
-        {t && (
+        {t && preview && (
           <>
             <DialogTitle className="font-heading text-xl font-extrabold tracking-tight text-foreground">
               {t.name}
@@ -263,7 +276,7 @@ function PreviewModal({
 
             <div className="relative mt-2 aspect-[210/297] w-full overflow-hidden rounded-xl bg-white ring-1 ring-border">
               <Image
-                src={t.image}
+                src={preview.image}
                 alt={`${t.name} template, full preview`}
                 fill
                 sizes="(max-width: 640px) 100vw, 512px"

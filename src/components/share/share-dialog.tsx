@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 
 /**
- * A plausible public share link for a document (no backend — client only).
+ * A plausible public share link for a document (no backend, client only).
  * Uses the current origin (e.g. http://localhost:3001) so the link is valid in
  * whatever environment the app is running in, falling back to the prod domain
  * during SSR where `window` is unavailable.
@@ -60,7 +60,7 @@ export function ShareDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shareUrl: string;
-  /** e.g. "resume", "cover letter" — used in the title/subtitle. */
+  /** e.g. "resume", "cover letter" - used in the title/subtitle. */
   label?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -71,7 +71,7 @@ export function ShareDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* clipboard unavailable — ignore */
+      /* clipboard unavailable - ignore */
     }
   }
 
@@ -83,16 +83,17 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-lg">
+      <DialogContent className="gap-0 rounded-2xl p-6 sm:max-w-xl">
         <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
-          Share your {label}
+          {`Share your ${label}`}
         </DialogTitle>
         <DialogDescription className="mt-1.5 text-base text-muted-foreground">
-          Share your {label} with potential employers &amp; friends.
+          {`Share your ${label} with potential employers & friends.`}
         </DialogDescription>
 
-        {/* Copyable link */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* Copyable link. min-w-0 on the row lets the input shrink inside the
+            grid dialog so the Copy button never gets pushed off the edge. */}
+        <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-4">
             <span className="min-w-0 flex-1 truncate text-sm text-foreground">{shareUrl}</span>
             <a

@@ -1,6 +1,6 @@
 "use client";
 
-import { Children } from "react";
+import { Children, type CSSProperties } from "react";
 import {
   useResumeStore,
   type SectionKey,
@@ -9,6 +9,9 @@ import {
 } from "@/lib/store/resume-store";
 import { spaceBlocks } from "@/lib/html-spacing";
 import { displayUrl, normalizeUrl } from "@/lib/url";
+import { resolveResumeTheme } from "@/lib/resume-themes";
+import { FONT_STACK } from "@/lib/font-pairs";
+import { getTemplate, type HeadingVariant } from "@/lib/templates";
 
 /** Format a start/end pair as "start - end", omitting empty sides; "" if both blank. */
 function dateRange(start: string, end: string) {
@@ -16,14 +19,89 @@ function dateRange(start: string, end: string) {
   return [start, end].filter(Boolean).join(" - ");
 }
 
+/** Turn a #rrggbb accent into an rgba() with the given alpha (for tinted bands);
+ *  returns the input untouched if it isn't a 6-digit hex. */
+function withAlpha(hex: string, alpha: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
 
-// Maps each selectable font id to the concrete CSS font-family stack applied to
-// the rendered resume (with web-safe fallbacks).
-const FONT_STACK: Record<DesignOptions["font"], string> = {
-  roboto: "var(--font-roboto-flex), Verdana, Geneva, Tahoma, sans-serif",
-  georgia: "Georgia, 'Times New Roman', serif",
-  garamond: "'EB Garamond', Garamond, Georgia, serif",
+/**
+ * Section-heading skins - one per template `variant`. Each returns the h2 class +
+ * inline style (color/border/background), given the resume accent and whether the
+ * layout is a single centered column. This is the visual signature that makes
+ * each template style read distinctly in the live preview (the section headings
+ * repeat throughout the resume). The chosen template's accent, font, columns,
+ * spacing and color theme still apply on top - this only reskins the heading rule.
+ */
+type HeadingSkin = (
+  accent: string,
+  centered: boolean
+) => { className: string; style: CSSProperties };
+
+const HEADING_SKINS: Record<HeadingVariant, HeadingSkin> = {
+  // Boxed rule top + bottom (the original default look).
+  classic: (accent, centered) => ({
+    className: centered
+      ? "border-y py-1 text-center text-[11px] font-bold uppercase tracking-wide"
+      : "border-b pb-1 text-[11px] font-bold uppercase tracking-wide",
+    style: { color: accent, borderColor: accent },
+  }),
+  // Short underline that spans only the title text.
+  underline: (accent, centered) => ({
+    className:
+      (centered ? "mx-auto " : "") +
+      "block w-fit border-b-2 pb-0.5 text-[11px] font-bold uppercase tracking-wide",
+    style: { color: accent, borderColor: accent },
+  }),
+  // Accent bar to the left of the title (falls back to the boxed look when the
+  // layout is a single centered column, where a left bar would read as off-axis).
+  bar: (accent, centered) =>
+    centered
+      ? {
+          className:
+            "border-y py-1 text-center text-[11px] font-bold uppercase tracking-wide",
+          style: { color: accent, borderColor: accent },
+        }
+      : {
+          className: "border-l-4 pl-2 text-[11px] font-bold uppercase tracking-wide",
+          style: { color: accent, borderColor: accent },
+        },
+  // Wide letter-spaced caps over a thin hairline rule.
+  caps: (accent, centered) => ({
+    className:
+      (centered ? "text-center " : "") +
+      "border-b py-0.5 text-[11px] font-bold uppercase tracking-[0.18em]",
+    style: { color: accent, borderColor: accent },
+  }),
+  // No rule at all - separation carried by spacing alone.
+  minimal: (accent, centered) => ({
+    className:
+      (centered ? "text-center " : "") +
+      "text-[11px] font-bold uppercase tracking-wide",
+    style: { color: accent },
+  }),
+  // Full-width accent-tinted band behind the title.
+  band: (accent, centered) => ({
+    className:
+      (centered ? "text-center " : "") +
+      "rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wide",
+    style: { color: accent, backgroundColor: withAlpha(accent, 0.1) },
+  }),
+  // Editorial double rule with the widest tracking (pairs with the serif styles).
+  serifRule: (accent, centered) => ({
+    className:
+      (centered ? "text-center " : "") +
+      "border-y-2 py-1 text-[11px] font-bold uppercase tracking-[0.2em]",
+    style: { color: accent, borderColor: accent },
+  }),
 };
+
+
+// The font-id -> CSS font-family map is shared with the Design panel (see
+// font-pairs.ts) so a card can never advertise a font the preview won't render.
 
 const SPACING: Record<
   DesignOptions["spacing"],
@@ -53,7 +131,23 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
   const s = useResumeStore();
   const { design } = s;
   const accent = design.color;
+  // The selected color theme is a COMPLETE palette: it colors the sidebar panel
+  // and, for the dark theme, flips the body text to light. accent/bg still come
+  // from design (a swatch mirrors them there); sidebar + dark are theme-only.
+  const theme = resolveResumeTheme(design.themeId, design.color, design.bg);
+  const sidebarBg = theme?.sidebarBg ?? "#1f2937";
+  const darkText = theme?.darkText ?? false;
   const sp = SPACING[design.spacing];
+  // Font pair: primary drives the name + section headings, secondary the body.
+  // Older drafts have no secondary - fall back to the single family.
+  const primaryFamily = FONT_STACK[design.font];
+  const secondaryFamily = FONT_STACK[design.fontSecondary ?? design.font];
+  // The selected template's heading skin gives each style its own visual
+  // signature (see HEADING_SKINS). Read straight from the chosen templateId so it
+  // always matches the carousel selection; unknown/older ids fall back to classic.
+  const headingSkin =
+    HEADING_SKINS[getTemplate(s.templateId)?.preset.variant ?? "classic"] ??
+    HEADING_SKINS.classic;
 
   const fullName =
     `${s.personal.firstName} ${s.personal.lastName}`.trim() || "Your Name";
@@ -133,12 +227,13 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     // Space entries with an inline top margin (not Tailwind `space-y`, which the
     // PDF rasterizer drops) so the gaps appear in the downloaded PDF too.
     const items = Children.toArray(children);
+    const skin = headingSkin(accent, centered);
     return (
       <section className={`relative ${sp.section}`}>
         <div className="relative">
           <h2
-            className="border-b pb-1 text-[11px] font-bold uppercase tracking-wide"
-            style={{ color: accent, borderColor: accent }}
+            className={skin.className}
+            style={{ ...skin.style, fontFamily: primaryFamily }}
           >
             {title}
           </h2>
@@ -492,6 +587,9 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
   };
 
   const twoCol = design.columns !== "centered";
+  // "centered" single-column templates (e.g. Classic ATS) center the header and
+  // the section titles, matching that family of resume designs.
+  const centered = !twoCol;
   const mainKeysRaw = twoCol
     ? s.sectionOrder.filter((k) => !isSidebar(k, s.additional))
     : s.sectionOrder;
@@ -507,7 +605,40 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
   const headerActive =
     !previewOnly &&
     (s.activeSection === "personal" || s.activeSection === "contact");
-  const header = (
+  const header = centered ? (
+    // Centered single-column header: photo on top, then contact, name, title -
+    // all centered (matches the Classic ATS family of templates).
+    <header className="relative flex flex-col items-center text-center">
+      {s.personal.photo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={s.personal.photo}
+          alt=""
+          className="mb-2 size-17 rounded-full object-cover"
+        />
+      )}
+      {contactLine && (
+        <p
+          className="text-[11px] text-neutral-600"
+          {...editActive(headerActive ? EDIT_BLUE : undefined)}
+        >
+          {contactLine}
+        </p>
+      )}
+      <h1
+        className="mt-1 text-2xl font-bold tracking-tight text-neutral-900"
+        style={{ fontFamily: primaryFamily, color: headerActive ? EDIT_BLUE : undefined }}
+        {...(headerActive ? { "data-edit-active": "" } : {})}
+      >
+        {fullName}
+      </h1>
+      {s.personal.jobTitle && (
+        <p className="text-sm italic" style={{ color: accent }}>
+          {s.personal.jobTitle}
+        </p>
+      )}
+    </header>
+  ) : (
     <header className="relative">
       <div className="relative flex items-start gap-4">
         {s.personal.photo && (
@@ -521,7 +652,8 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
         <div className="min-w-0">
           <h1
             className="text-2xl font-bold tracking-tight text-neutral-900"
-            {...editActive(headerActive ? EDIT_BLUE : undefined)}
+            style={{ fontFamily: primaryFamily, color: headerActive ? EDIT_BLUE : undefined }}
+            {...(headerActive ? { "data-edit-active": "" } : {})}
           >
             {fullName}
           </h1>
@@ -543,7 +675,7 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     </header>
   );
 
-  const fontStyle = { fontFamily: FONT_STACK[design.font] };
+  const fontStyle = { fontFamily: secondaryFamily };
   const onRight = design.columns === "right";
 
   // Dark-sidebar templates (Professional, Corporate, Balanced): name + contact +
@@ -558,24 +690,27 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     return (
       <div
         data-resume-preview
+        data-resume-theme={darkText ? "dark" : undefined}
         className="flex min-h-[calc(100vh-7rem)] w-full overflow-hidden rounded-2xl text-neutral-900"
         style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
       >
         <div className={`flex w-full ${onRight ? "flex-row-reverse" : ""}`}>
           <aside
-            className="w-[36%] shrink-0 self-stretch bg-[#1f2937] px-6 py-9 text-white [&_h2]:text-white! [&_h2]:border-white/25! [&_p]:text-white/80! [&_span]:text-white/80! [&_div]:text-white/80! [&_a]:text-white/90!"
+            style={{ backgroundColor: sidebarBg }}
+            className="w-[36%] shrink-0 self-stretch px-6 py-9 text-white [&_h2]:text-white! [&_h2]:border-white/25! [&_p]:text-white/80! [&_span]:text-white/80! [&_div]:text-white/80! [&_a]:text-white/90!"
           >
-            {s.personal.photo ? (
+            {s.personal.photo && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={s.personal.photo}
                 alt=""
                 className="mb-4 size-16 rounded-full object-cover ring-2 ring-white/20"
               />
-            ) : (
-              <div className="mb-4 size-16 rounded-full bg-white/15" />
             )}
-            <h1 className="text-lg font-bold leading-tight text-white">
+            <h1
+              className="text-lg font-bold leading-tight text-white"
+              style={{ fontFamily: primaryFamily }}
+            >
               {fullName}
             </h1>
             {s.personal.jobTitle && (
@@ -599,6 +734,7 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
   return (
     <div
       data-resume-preview
+      data-resume-theme={darkText ? "dark" : undefined}
       className="min-h-[calc(100vh-7rem)] w-full rounded-2xl px-12 py-11 text-neutral-900"
       style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
     >

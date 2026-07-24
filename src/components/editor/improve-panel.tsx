@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
   Briefcase,
@@ -15,14 +15,19 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  PartyPopper,
   type LucideIcon,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   useResumeStore,
   getImproveSuggestions,
   type SectionKey,
 } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { Confetti } from "@/components/brand/confetti";
+import { usePaywall } from "@/lib/cover-letter/paywall";
 import { downloadResume } from "@/lib/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { cn } from "@/lib/utils";
@@ -57,11 +62,18 @@ const NEXT_STEPS = [
 export function ImprovePanel({
   onNavigate,
   onBack,
+  onNext,
 }: {
   onNavigate: (section: SectionKey) => void;
   onBack: () => void;
+  /** Advance the editor to the Design tab (the Improve tab's forward action). */
+  onNext: () => void;
 }) {
   const s = useResumeStore();
+  const router = useRouter();
+  // Downloading is a premium action - free users are sent to the subscription
+  // page first (mirrors builder.resume.co). `premium` starts false.
+  const premium = usePaywall((st) => st.premium);
   // Remaining improvement suggestions; an empty list means the resume is complete.
   const todo = getImproveSuggestions(s);
   const complete = todo.length === 0;
@@ -70,8 +82,29 @@ export function ImprovePanel({
   const [shareOpen, setShareOpen] = useState(false);
   const [done, setDone] = useState<Set<number>>(new Set());
 
-  // Trigger the PDF export, showing a spinner on the button until it resolves.
+  // Every next-step ticked -> celebrate. `burst` plays the confetti once on the
+  // transition into "all done" (guarded by prevAllDone so it fires on the tick
+  // that completes the list, not on every render or on un-tick/re-tick churn).
+  const allStepsDone = done.size === NEXT_STEPS.length;
+  const [burst, setBurst] = useState(false);
+  const prevAllDone = useRef(false);
+  useEffect(() => {
+    if (allStepsDone && !prevAllDone.current) {
+      prevAllDone.current = true;
+      setBurst(true);
+      const t = setTimeout(() => setBurst(false), 1800);
+      return () => clearTimeout(t);
+    }
+    if (!allStepsDone) prevAllDone.current = false;
+  }, [allStepsDone]);
+
+  // Download is gated: free users go to the subscription page (/payment) first;
+  // premium users get the PDF directly (spinner on the button until it resolves).
   async function handleDownload() {
+    if (!premium) {
+      router.push("/payment");
+      return;
+    }
     setDownloading(true);
     try {
       await downloadResume();
@@ -176,13 +209,39 @@ export function ImprovePanel({
           })}
         </ul>
 
+        {/* All next steps checked: a celebratory banner + a one-shot confetti
+            burst (rendered at the viewport level via Confetti's fixed overlay). */}
+        <AnimatePresence>
+          {allStepsDone && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="mt-5 flex items-start gap-3 rounded-2xl bg-accent px-5 py-4 ring-1 ring-primary/20"
+              role="status"
+            >
+              <PartyPopper className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-semibold text-accent-foreground">
+                  Congratulations! You have completed every next step.
+                </p>
+                <p className="mt-0.5 text-sm text-accent-foreground/80">
+                  You are all set to land your dream job. Good luck out there.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {burst && <Confetti />}
+
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-6">
           <GhostButton onClick={onBack}>
             <ChevronLeft className="size-4" />
             Back
           </GhostButton>
-          <PrimaryButton onClick={handleDownload} disabled={downloading}>
-            {downloading ? "Preparing…" : "Next"}
+          <PrimaryButton onClick={onNext}>
+            Next
             <ChevronRight className="size-4" />
           </PrimaryButton>
         </div>
@@ -235,7 +294,7 @@ export function ImprovePanel({
           <ChevronLeft className="size-4" />
           Back
         </GhostButton>
-        <PrimaryButton onClick={() => onNavigate(todo[0].target)}>
+        <PrimaryButton onClick={onNext}>
           Next
           <ChevronRight className="size-4" />
         </PrimaryButton>

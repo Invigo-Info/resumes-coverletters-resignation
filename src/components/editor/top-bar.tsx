@@ -9,9 +9,16 @@ import {
   Loader2,
   Download,
   Share2,
+  Meh,
+  Smile,
+  SmilePlus,
+  Laugh,
+  PartyPopper,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
+import { usePaywall } from "@/lib/cover-letter/paywall";
 import { downloadResume } from "@/lib/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
@@ -26,12 +33,24 @@ const TABS: { key: EditorTab; label: string; icon: React.ReactNode }[] = [
   { key: "improve", label: "Improve", icon: <BadgeCheck className="size-4" /> },
 ];
 
-// Picks the face shown beside the completion bar, escalating with progress:
-// thinking (<34%), slight smile (<67%), grinning (>=67%).
-function emojiFor(p: number) {
-  if (p < 34) return "🤔";
-  if (p < 67) return "🙂";
-  return "😄";
+/**
+ * Motivational stages for the completion bar. The face icon and the bar fill
+ * both escalate with the total score (orange/neutral at the start climbing to
+ * green/celebrating at 100%): a lucide icon, never an emoji. `max` is the
+ * inclusive top of each range, so the first stage whose max is at least the
+ * score wins.
+ */
+const PROGRESS_STAGES = [
+  { max: 24, Icon: Meh, bar: "bg-progress-low", text: "text-progress-low" },
+  { max: 49, Icon: Smile, bar: "bg-progress-early", text: "text-progress-early" },
+  { max: 74, Icon: SmilePlus, bar: "bg-progress-mid", text: "text-progress-mid" },
+  { max: 99, Icon: Laugh, bar: "bg-progress-high", text: "text-progress-high" },
+  { max: 100, Icon: PartyPopper, bar: "bg-progress-done", text: "text-progress-done" },
+] as const;
+
+// The stage whose range contains the current score (falls back to the first).
+function stageFor(p: number) {
+  return PROGRESS_STAGES.find((s) => p <= s.max) ?? PROGRESS_STAGES[0];
 }
 
 /**
@@ -46,12 +65,23 @@ export function TopBar({
   onTabChange: (t: EditorTab) => void;
 }) {
   const progress = useResumeStore(getProgress);
+  const stage = stageFor(progress);
+  const StageIcon = stage.Icon;
   const resumeId = useResumeStore((s) => s.id);
+  const router = useRouter();
+  // Downloading is a premium action - free users are sent to the subscription
+  // page first (mirrors builder.resume.co). `premium` starts false.
+  const premium = usePaywall((s) => s.premium);
   const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
-  // Trigger the PDF export, showing a spinner on the button until it resolves.
+  // Download is gated: free users go to the subscription page (/payment); premium
+  // users get the PDF directly (spinner on the button until it resolves).
   async function handleDownload() {
+    if (!premium) {
+      router.push("/payment");
+      return;
+    }
     setDownloading(true);
     try {
       await downloadResume();
@@ -65,7 +95,7 @@ export function TopBar({
       {/* Home */}
       <HomeButton className="size-13" />
 
-      {/* Tabs — full-width text row on mobile (wraps below), compact on desktop */}
+      {/* Tabs: full-width text row on mobile (wraps below), compact on desktop */}
       <div className="order-last flex w-full items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border sm:order-none sm:w-auto sm:shrink-0">
         {TABS.map((t) => {
           const active = t.key === tab;
@@ -87,14 +117,20 @@ export function TopBar({
         })}
       </div>
 
-      {/* Progress */}
-      <div className="hidden w-full max-w-sm items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
-        <span className="text-lg leading-none" aria-hidden>
-          {emojiFor(progress)}
-        </span>
+      {/* Progress - field-completion based: the score, bar width and face icon
+          all move the instant real resume information is added. */}
+      <div
+        className="hidden w-full max-w-sm items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex"
+        role="progressbar"
+        aria-label="Resume completion"
+        aria-valuenow={progress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <StageIcon className={cn("size-6 shrink-0 transition-colors", stage.text)} aria-hidden />
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-gradient-progress transition-all duration-500"
+            className={cn("h-full rounded-full transition-all duration-500", stage.bar)}
             style={{ width: `${progress}%` }}
           />
         </div>

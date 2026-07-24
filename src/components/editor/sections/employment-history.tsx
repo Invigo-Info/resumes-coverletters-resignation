@@ -94,6 +94,10 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
+  // Which control started the running AI edit, so only that button spins - the
+  // toolbar "Edit with AI" and the panel "Rewrite" share one flag but must not
+  // show their loading label at the same time.
+  const [editingSource, setEditingSource] = useState<"toolbar" | "panel" | null>(null);
   // AI "Edit with AI" preview: null = closed, [] = generating, [...] = result.
   const [preview, setPreview] = useState<string[] | null>(null);
   const [previewInstruction, setPreviewInstruction] = useState("");
@@ -188,6 +192,8 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
     setPreviewInstruction(instruction);
     if (!keepPanel) setPreview([]); // open the panel in its loading state
     setEditing(true);
+    // Panel "Rewrite" keeps the panel; the toolbar "Edit with AI" opens it fresh.
+    setEditingSource(keepPanel ? "panel" : "toolbar");
     const result = await rewriteBullets({
       bullets,
       instruction: reroll
@@ -196,6 +202,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       jobTitle: entry.jobTitle,
     });
     setEditing(false);
+    setEditingSource(null);
     if (result && result.length) {
       setPreview(result);
     } else {
@@ -245,7 +252,13 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
           hasContent ? (
             <div className="flex items-center gap-3">
               <BulletStatusBadge count={bullets.length} />
-              <EditWithAiMenu busy={editing} onRun={runAiEdit} />
+              <EditWithAiMenu
+                // The toolbar button never spins: the panel's "Generating..." is
+                // the loading state; the button just disables so it can't refire.
+                busy={false}
+                disabled={editing}
+                onRun={runAiEdit}
+              />
             </div>
           ) : undefined
         }
@@ -283,7 +296,8 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
               </ul>
               <div className="mt-4 flex items-center justify-end gap-2">
                 <EditWithAiMenu
-                  busy={editing}
+                  busy={editing && editingSource === "panel"}
+                  disabled={editing}
                   onRun={(instruction) => generate(instruction, true)}
                   label="Rewrite"
                   busyLabel="Rewriting…"

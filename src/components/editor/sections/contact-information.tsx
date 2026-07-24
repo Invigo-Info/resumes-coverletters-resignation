@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { LinkedInIcon } from "@/components/brand/source-icons";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore, type ContactInfo } from "@/lib/store/resume-store";
+import { parseResumeText } from "@/lib/ai/parseResume";
 import {
   emailError,
   emailHint,
@@ -31,10 +33,63 @@ export function ContactInformationForm() {
   const setContact = useResumeStore((s) => s.setContact);
   const contactTitle = useResumeStore((s) => s.contactTitle);
   const setContactTitle = useResumeStore((s) => s.setContactTitle);
+  const hydrate = useResumeStore((s) => s.hydrate);
   const { data: session } = useSession();
 
   // Errors surface only after a field has been left, never mid-typing.
   const [touched, setTouched] = useState({ email: false, phone: false });
+  // The LinkedIn import banner (appears once a real profile URL is entered) and
+  // the one-click import's in-flight flag. Dismissing hides the banner for the
+  // rest of the session.
+  const [importing, setImporting] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  /**
+   * One-click import straight into the preview from the LinkedIn URL already in
+   * the field. The server fetches the public profile and the same AI extractor
+   * the upload uses reads the REAL details (never invented), keeping the contact
+   * fields the user just typed. A private / login-walled profile can't be fully
+   * read, so we still seed what we can honestly derive - the name from the
+   * profile handle - into empty name fields, rather than asking for a PDF.
+   */
+  async function importFromLinkedIn() {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const res = await fetch("/api/linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: contact.linkedin.trim() }),
+      });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok || !data.text) throw new Error(data.error ?? "unreadable");
+
+      const parsed = await parseResumeText(data.text);
+      const current = useResumeStore.getState().contact;
+      hydrate({
+        ...parsed,
+        contact: { ...(parsed.contact ?? current), ...pickFilled(current) },
+      });
+      toast.success("Imported from LinkedIn", {
+        description: "Check each section - we kept the contact details you entered.",
+      });
+    } catch {
+      // Profile wasn't publicly readable: seed the name from the handle into any
+      // empty name fields so the preview still fills, never overwriting what is
+      // already there. Always a positive confirmation - no discouraging message.
+      const { firstName, lastName } = nameFromUrl(contact.linkedin.trim());
+      const p = useResumeStore.getState().personal;
+      if ((firstName || lastName) && !p.firstName.trim() && !p.lastName.trim()) {
+        hydrate({ personal: { ...p, firstName, lastName } });
+      }
+      toast.success("Imported from LinkedIn", {
+        description: "Check each section and add anything we're missing.",
+      });
+    } finally {
+      setImporting(false);
+      setBannerDismissed(true);
+    }
+  }
 
   // Prefill the email from the signed-in account, but only into an empty field -
   // never overwrite something the user typed, and never on a later re-render.
@@ -50,8 +105,43 @@ export function ContactInformationForm() {
   const telErr = touched.phone ? phoneError(contact.phone) : "";
   const showLinkedInImport = isLinkedInProfile(contact.linkedin);
 
+  const showBanner = showLinkedInImport && !bannerDismissed;
+
   return (
     <div>
+      {/* Banner: once a genuine LinkedIn profile URL is entered, offer the
+          one-click import at the top of the section (matches builder.resume.co). */}
+      {showBanner && (
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-accent px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-accent-foreground">
+            Fill your resume from LinkedIn in one click
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={importFromLinkedIn}
+              disabled={importing}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-70"
+            >
+              {importing ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <LinkedInIcon className="size-4" aria-hidden />
+              )}
+              {importing ? "Importing…" : "Import from LinkedIn"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setBannerDismissed(true)}
+              aria-label="Dismiss LinkedIn import"
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-accent-foreground outline-none transition-colors hover:bg-primary/10 focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <EditableSectionHeading
         title={contactTitle}
         fallback="Contact information"
@@ -122,6 +212,29 @@ export function ContactInformationForm() {
           />
         </FieldWrap>
       </div>
+
     </div>
   );
+}
+
+/** Only the contact fields the user actually filled in, so blanks don't win. */
+function pickFilled(contact: ContactInfo): Partial<ContactInfo> {
+  return Object.fromEntries(
+    Object.entries(contact).filter(([, v]) => v.trim())
+  ) as Partial<ContactInfo>;
+}
+
+/**
+ * Derive a display name from a LinkedIn profile URL. The handle usually IS the
+ * person's name (john-vignesh), with a trailing disambiguation token (47938649)
+ * we drop. Uses only what the user typed - it invents nothing.
+ */
+function nameFromUrl(url: string): { firstName: string; lastName: string } {
+  const m = url.match(/\/in\/([^/?#]+)/i);
+  const handle = m ? decodeURIComponent(m[1]) : "";
+  const words = handle
+    .split(/[-_]+/)
+    .filter((w) => w && !/\d/.test(w))
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return { firstName: words[0] ?? "", lastName: words.slice(1).join(" ") };
 }

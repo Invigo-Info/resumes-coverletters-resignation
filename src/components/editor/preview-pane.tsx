@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LivePreview } from "./live-preview";
 import { SaveStatusPill } from "./save-status-pill";
@@ -19,24 +19,41 @@ const A4_RATIO = 297 / 210;
 export function PreviewPane({
   paneClassName,
   savePillClassName,
+  zoom = 1,
+  previewOnly = false,
 }: {
   paneClassName?: string;
   savePillClassName?: string;
+  /** On-screen magnification of the resume (1 = actual size). Enlarges the
+   *  preview text without affecting the exported PDF, which is captured from the
+   *  element's natural (unzoomed) layout size. */
+  zoom?: number;
+  /** Render the resume WITHOUT editor-only highlights (the blue active-section /
+   *  header outline). Used on tabs where the preview is view-only - e.g. Design,
+   *  where nothing is being edited - so theme colors show truthfully instead of
+   *  the personal/contact header staying blue. */
+  previewOnly?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
   const [page, setPage] = useState(1);
 
-  // How many A4 pages the rendered resume spans, from real measured heights.
+  // How many A4 pages the rendered resume spans. Measured from the resume paper
+  // itself in RENDERED pixels (getBoundingClientRect), so the page height is the
+  // paper's own rendered width x the A4 ratio: the on-screen zoom scales width
+  // and height together and cancels out, making the count correct at any
+  // magnification (the old width-vs-zoomed-height mix under-counted).
   const measure = useCallback(() => {
-    const scroll = scrollRef.current;
     const content = contentRef.current;
-    if (!scroll || !content) return;
-    const pageH = scroll.clientWidth * A4_RATIO;
-    if (pageH <= 0) return;
+    if (!content) return;
+    const paper = content.querySelector<HTMLElement>("[data-resume-preview]");
+    if (!paper) return;
+    const rect = paper.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const pageH = rect.width * A4_RATIO;
     // -2px tolerance so a hairline overflow isn't counted as a whole extra page.
-    const pages = Math.max(1, Math.ceil((content.scrollHeight - 2) / pageH));
+    const pages = Math.max(1, Math.ceil((rect.height - 2) / pageH));
     setPageCount(pages);
   }, []);
 
@@ -49,10 +66,20 @@ export function PreviewPane({
     const ro = new ResizeObserver(measure);
     ro.observe(content);
     ro.observe(scroll);
+    const paper = content.querySelector("[data-resume-preview]");
+    if (paper) ro.observe(paper);
     window.addEventListener("resize", measure);
+    // Web fonts load asynchronously and change the resume height; re-measure on
+    // the next frame and once fonts settle so the pager appears without needing
+    // a manual scroll or resize.
+    const raf = requestAnimationFrame(measure);
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", measure);
+      cancelAnimationFrame(raf);
     };
   }, [measure]);
 
@@ -99,34 +126,59 @@ export function PreviewPane({
         className="h-full overflow-y-auto rounded-2xl"
       >
         <div ref={contentRef}>
-          <LivePreview />
+          {/* Zoom wraps the resume (not the measured container) so contentRef's
+              scrollHeight reflects the magnified size and paging stays accurate. */}
+          <div style={zoom !== 1 ? { zoom } : undefined}>
+            <LivePreview previewOnly={previewOnly} />
+          </div>
         </div>
       </div>
 
       <SaveStatusPill className={savePillClassName} />
 
+      {/* Vertical page pager, pinned to the right edge of the pane (like
+          resume.co): an up chevron, every page number stacked with the current
+          one highlighted, then a down chevron. Only shown when the resume spans
+          more than one printed page. It sits outside the scroll region, so it
+          stays put while the preview scrolls. */}
       {pageCount > 1 && (
-        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-neutral-800/95 px-1.5 py-1 text-white shadow-lg">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-full bg-neutral-800/95 px-1 py-1.5 text-white shadow-lg">
           <button
             type="button"
             onClick={() => goTo(page - 1)}
             disabled={page <= 1}
             aria-label="Previous page"
-            className="grid size-7 place-items-center rounded-full outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-40"
+            className="grid size-6 place-items-center rounded-full outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-40"
           >
-            <ChevronLeft className="size-4" />
+            <ChevronUp className="size-4" />
           </button>
-          <span className="min-w-10 text-center text-xs font-semibold tabular-nums">
-            {page} / {pageCount}
-          </span>
+          {Array.from({ length: pageCount }).map((_, i) => {
+            const n = i + 1;
+            const active = n === page;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => goTo(n)}
+                aria-label={`Page ${n}`}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "grid size-6 place-items-center rounded-full text-xs font-semibold tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/60",
+                  active ? "text-white" : "text-white/45 hover:text-white/80"
+                )}
+              >
+                {n}
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => goTo(page + 1)}
             disabled={page >= pageCount}
             aria-label="Next page"
-            className="grid size-7 place-items-center rounded-full outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-40"
+            className="grid size-6 place-items-center rounded-full outline-none transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-40"
           >
-            <ChevronRight className="size-4" />
+            <ChevronDown className="size-4" />
           </button>
         </div>
       )}

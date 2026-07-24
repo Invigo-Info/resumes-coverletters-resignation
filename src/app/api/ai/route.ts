@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  base64ExceedsLimit,
+  FILE_TOO_LARGE_MESSAGE,
+} from "@/lib/upload-validation";
 
 /**
  * Server-side Gemini bridge for all AI features.
@@ -532,21 +536,62 @@ description: """${(job.description || "").slice(0, 4000)}"""`,
       const type = (p.interviewType as string) || "screening";
       const custom = (p.customDetail as string) || "";
       const exclude = (p.exclude as string[]) || [];
+      const more = exclude.length > 0;
+
+      // Universal, occupation-independent question structure per interview type.
+      // Each keeps a FIXED purpose per position; wording adapts to the occupation,
+      // seniority and evidence. Colours/layout are set by the app, never by the AI.
+      const STRUCTURE: Record<string, string> = {
+        screening: `SCREENING CALL - universal recruiter-level 7-question structure (keep this order and purpose):
+1) "Tell me about yourself."
+2) "Why are you looking for a new role?" (positive, future-focused)
+3) "Why <ACTUAL EMPLOYER>?" - use the real hiring company; if it is confidential/unknown use "What interests you about this opportunity?"
+4) "What interests you about this role?"
+5) The single most important job-specific requirement, chosen in priority order: mandatory licence/certification/registration/clearance, else required years/type of experience, else a critical language, else the core skill/tool. NEVER state a licence is active unless the resume confirms it.
+6) The most important remaining work condition: work authorisation, location/relocation, remote/hybrid/on-site, shift/weekend/on-call, travel, driving licence, or start date/notice.
+7) "What are your salary expectations?" - if a range is published reference it; never invent a market figure.
+Keep every question recruiter-level; do NOT turn this into a technical exam.`,
+        manager: `MEETING WITH A MANAGER - 7-question manager-stage structure (depth, ownership, judgement):
+1) "Tell me about yourself." (entry-level: lead with projects/placements)
+2) Current or most relevant experience: "Walk me through your current role at <employer>." (or most recent / a key project)
+3) Motivation and development (age- and level-neutral)
+4) Deep-dive on the STRONGEST VERIFIED achievement/project from the resume - convert a real metric into a follow-up ("You did X - what changed?"); if no metric, ask about a project they are proud of. Never invent a number.
+5) A behavioural ownership/collaboration/leadership competency drawn from the JD (specific enough to produce a real example).
+6) A role-specific SITUATIONAL scenario built from a central JD responsibility (planning/judgement/prioritisation - not technical trivia).
+7) Company motivation ("Why <employer>?") or the most important uncovered competency.
+Avoid salary, work-authorisation and simple logistics (those belong to screening).`,
+        technical: `TECHNICAL / PRACTICAL - 7 open-ended, non-duplicate questions covering the role's real competencies:
+1) Professional knowledge / staying current in the field.
+2) The core end-to-end process the role performs.
+3) A key tool, equipment, software or method from the JD/resume.
+4) A troubleshooting / practical scenario (diagnose then correct).
+5) Safety, compliance, code or quality/accuracy - for regulated or high-risk work (nursing, trades, electrical, construction, aviation, lab) this MUST be a safety/compliance question; otherwise a quality/verification question.
+6) Collaboration, handoff or stakeholder coordination.
+7) Measurement, results or verification.
+This is occupation-aware: for a nurse use clinical process/safety, a plumber uses diagnosis/codes/pressure-testing, an engineer uses design/calculations/standards - NEVER default to software/coding unless the role is software. Prefer "guidance" points over long scripted "sample" answers (a memorised technical answer encourages unsupported claims). Never invent a licence, tool, procedure or metric.`,
+        other: `OTHER (custom) - the user's custom instruction below is the PRIMARY blueprint. Custom instruction: "${custom || "(none given - use a general practical set)"}".
+Generate 7 non-duplicate questions that cover the requested topic/subtopics and format across facets (setup, process, tools, a real scenario, troubleshooting, measurement, communication). Use the JD only for realistic role context and terminology, and the resume only for verified evidence. Do NOT claim the candidate has used a tool just because the instruction names it. Include short "sample" answers only if the instruction asks for them. Return "candidateQuestions": [] for this type.`,
+      };
+
       return {
         json: true,
         prompt: `Generate a job-specific interview-prep sheet as JSON with EXACTLY these keys:
 {
-  "company": { "name": string, "description": string, "bullets": [3-4 short things to know / research before the call] },
-  "role": { "title": string, "keySkills": [4-6 key skills for this role], "summary": string },
-  "values": [3-4 things the employer likely values in people],
-  "mentions": [3-4 things the candidate should be sure to mention, grounded in their resume],
-  "questions": [ { "question": string, "guidance": [2-3 short coaching lines], "sample": "optional short sample answer grounded in the resume" } ],
-  "candidateQuestions": [3-5 questions the candidate can ask the interviewer]
+  "company": { "name": string, "description": string, "bullets": [3-4 short things to know / research before the call], "founded": "optional - only if reliably known", "headquarters": "optional", "employees": "optional" },
+  "role": { "title": string, "keySkills": [6-12 key skills/requirements for this role], "summary": string },
+  "values": [4-5 workplace qualities the employer values - separate from skills],
+  "mentions": [3-5 strongest resume-grounded points to mention, incl. honest gap-positioning when a key requirement is missing],
+  "questions": [ { "question": string, "guidance": [2-3 short coaching lines], "sample": "optional short first-person sample answer grounded ONLY in the resume" } ],
+  "candidateQuestions": [3 questions the candidate can ask the interviewer]
 }
-Interview type: "${type}"${custom ? ` (custom details: "${custom}")` : ""}.
-Tailor questions + guidance to that type: screening = basics/expectations/availability/salary framing; manager = leadership/impact/fit; technical = hard-skill proof/process/tools; other = use the custom details.
-Generate 5-6 questions.${exclude.length ? ` Do NOT repeat any of these already-shown questions: ${JSON.stringify(exclude)}.` : ""}
-Rules: Do NOT invent company facts (founded year, HQ, employees, clients, revenue) - if unknown, use research prompts like "Ask about this in the interview". Base "mentions" and any "sample" answers ONLY on the candidate resume - never fabricate experience, metrics, employers, or tools. Return JSON only, no markdown.
+
+First silently classify the occupation, industry, specialisation, seniority, work environment and whether the role is regulated/high-risk, so wording never borrows marketing/software/office language for an unrelated job.
+
+${STRUCTURE[type] ?? STRUCTURE.screening}
+
+Generate ${more ? "3-5 ADDITIONAL" : "EXACTLY 7"} question(s).${more ? ` Do NOT repeat or paraphrase any of these already-shown questions: ${JSON.stringify(exclude)}.` : ""} No two questions may test the same thing with different wording.
+Keep it SHORT and simple: each "question" is one plain line of about 5-9 words (no compound "and ... and" questions), and each "guidance" line is 3-6 words in everyday language. Short beats thorough here.
+Rules: Do NOT invent company facts (founded year, HQ, employees, clients, revenue) - omit them if unknown. Base "mentions" and any "sample" answers ONLY on the candidate resume - never fabricate experience, metrics, employers, tools, licences or years. Treat a JD requirement as something to VERIFY, not as candidate experience. For regulated/high-risk roles never assert an active licence and never give unsafe procedural instructions. Return JSON only, no markdown.
 
 JOB:
 title: ${job.title || ""}
@@ -594,8 +639,19 @@ export async function POST(req: Request) {
 
   try {
     const { task, payload } = (await req.json()) as Body;
-    const { prompt, json } = buildPrompt(task, payload);
     const file = payload.file as InlineFile | undefined;
+
+    // Defence in depth: the client blocks oversized files, but re-check the
+    // decoded size here so a bypassed frontend can't push a huge upload to the
+    // model. 413 with a plain-language message (never a raw byte count).
+    if (file?.data && base64ExceedsLimit(file.data)) {
+      return NextResponse.json(
+        { error: "FILE_TOO_LARGE", message: FILE_TOO_LARGE_MESSAGE },
+        { status: 413 }
+      );
+    }
+
+    const { prompt, json } = buildPrompt(task, payload);
     const inline = file?.data ? file : undefined;
 
     // Retry with backoff on transient failures (rate limit / overload / timeout)

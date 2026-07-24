@@ -127,6 +127,7 @@ export function SummaryStatusBadge({ html }: { html: string }) {
  */
 export function EditWithAiMenu({
   busy,
+  disabled = false,
   onRun,
   label = "Edit with AI",
   busyLabel = "Editing…",
@@ -136,7 +137,11 @@ export function EditWithAiMenu({
   triggerClassName = "inline-flex items-center gap-1.5 rounded-full border border-[var(--ai-from)]/30 bg-[var(--ai-from)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--ai-text)] transition-colors hover:bg-[var(--ai-from)]/10 disabled:opacity-50",
   openUp = false,
 }: {
+  /** This button's own action is running - shows the spinner + busyLabel. */
   busy: boolean;
+  /** Another AI action is running - disable the trigger without spinning it, so
+   *  only the active button shows a loading state (never two at once). */
+  disabled?: boolean;
   onRun: (instruction: string) => void;
   label?: string;
   busyLabel?: string;
@@ -174,7 +179,7 @@ export function EditWithAiMenu({
     <div ref={ref} className="relative">
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || disabled}
         onClick={() => setOpen((o) => !o)}
         className={triggerClassName}
       >

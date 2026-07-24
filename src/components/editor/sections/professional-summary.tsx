@@ -91,6 +91,10 @@ export function ProfessionalSummaryForm() {
   const jobTitle = useResumeStore((s) => s.personal.jobTitle);
 
   const [busy, setBusy] = useState(false);
+  // Which control kicked off the running AI call, so only that button spins -
+  // the toolbar "Improve with AI" and the panel "Rewrite" share one busy flag
+  // but must never show their loading label at the same time.
+  const [busySource, setBusySource] = useState<"toolbar" | "panel" | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [index, setIndex] = useState(0);
@@ -125,6 +129,9 @@ export function ProfessionalSummaryForm() {
     setInstruction(nextInstruction);
     setPanelOpen(true);
     setBusy(true);
+    // A panel "Rewrite" appends; the toolbar "Improve/Write" replaces. That
+    // tells us which button to spin.
+    setBusySource(append ? "panel" : "toolbar");
     if (!append) {
       setVariants([]); // opens the panel in its loading state
       setIndex(0);
@@ -154,6 +161,7 @@ export function ProfessionalSummaryForm() {
       : await generateSummary({ tone, jobTitle, ...ctx });
 
     setBusy(false);
+    setBusySource(null);
 
     if (!result?.trim()) {
       if (!append) setPanelOpen(false);
@@ -230,7 +238,11 @@ export function ProfessionalSummaryForm() {
               /* Content exists -> refine it. Neutral styling: this is a tweak,
                  not a fresh start. */
               <EditWithAiMenu
-                busy={busy}
+                // The toolbar button never spins: while a toolbar-initiated draft
+                // runs, the panel below shows "Generating..." - that is the only
+                // loading indicator. The button just disables so it can't refire.
+                busy={false}
+                disabled={busy}
                 onRun={runAi}
                 label="Improve with AI"
                 busyLabel="Improving…"
@@ -243,12 +255,10 @@ export function ProfessionalSummaryForm() {
                 onClick={() => runAi("")}
                 className="inline-flex items-center gap-1.5 rounded-full bg-linear-to-r from-[var(--ai-solid)] to-[var(--ai-to)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {busy ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <WandSparkles className="size-3.5" />
-                )}
-                {busy ? "Writing…" : "Write with AI"}
+                {/* No spinner here either: the panel's "Generating..." carries the
+                    loading state. The button just disables while it runs. */}
+                <WandSparkles className="size-3.5" />
+                Write with AI
               </button>
             )}
           </div>
@@ -324,7 +334,8 @@ export function ProfessionalSummaryForm() {
                   {/* Rewrite is a menu of options (Improve / More human /
                       Shorter / Ask AI to…); each appends a new paged draft. */}
                   <EditWithAiMenu
-                    busy={busy}
+                    busy={busy && busySource === "panel"}
+                    disabled={busy}
                     onRun={rewriteWith}
                     label="Rewrite"
                     busyLabel="Rewriting…"

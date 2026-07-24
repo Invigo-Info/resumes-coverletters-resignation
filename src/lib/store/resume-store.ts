@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./safe-storage";
 import { getTemplate, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
+import { fontPairsForTemplate, styleStem } from "@/lib/font-pairs";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -84,17 +85,67 @@ export interface AdditionalSection {
   entries: AdditionalEntry[];
 }
 
-export type FontId = "roboto" | "georgia" | "garamond";
+// Every font family a resume style can offer (Design > Fonts). Each style exposes
+// exactly three Primary+Secondary PAIRS drawn from these families - see the
+// per-style table in `font-pairs.ts`. Web families load via next/font (see
+// layout.tsx); a few licensed families (Google Sans, Sentient, Erode, Satoshi,
+// Tabular) render through a documented same-category fallback, never a silent
+// unrelated substitute.
+export type FontId =
+  | "verdana"
+  | "georgia"
+  | "arial"
+  | "tahoma"
+  | "garamond"
+  | "roboto"
+  | "robotoFlex"
+  | "robotoSerif"
+  | "inter"
+  | "nunitoSans"
+  | "literata"
+  | "cactusSerif"
+  | "lora"
+  | "sourceSansPro"
+  | "source"
+  | "work"
+  | "inria"
+  | "dmSans"
+  | "crimson"
+  | "ibmPlex"
+  | "poppins"
+  | "playfair"
+  | "manrope"
+  | "ubuntuMono"
+  | "tabular"
+  | "googleSans"
+  | "sentient"
+  | "erode"
+  | "satoshi";
 export type SpacingId = "dense" | "normal" | "loose";
 export type ColumnsId = "left" | "centered" | "right";
 
 export interface DesignOptions {
-  font: FontId;
+  font: FontId; // primary family: name + section headings
+  fontSecondary?: FontId; // secondary family: body / bullets / dates (falls back to `font`)
   spacing: SpacingId;
   columns: ColumnsId;
   color: string; // hex accent (headings / title / rules)
   bg: string; // page background ("" = white); set by "combination" color themes
   dark: boolean; // dark sidebar layout
+  /**
+   * Selected color-theme id (see `resume-themes.ts`). A theme is a COMPLETE
+   * palette - it drives the sidebar panel color and, for the dark theme, the
+   * body-text color, on top of the accent (`color`) and page bg (`bg`) it also
+   * writes. Optional so resumes saved before themes still load.
+   */
+  themeId?: string;
+  /**
+   * Per-style remembered font-pair selection: `{ [styleStem]: fontPairId }`.
+   * Font pairs are style-specific, so a choice made for one style is restored
+   * only when that same style is re-selected - a Bentz pick never leaks into
+   * Napoleon. Absent styles fall back to the style's Option-1 default.
+   */
+  fontByStyle?: Record<string, string>;
 }
 
 export interface ResumeState {
@@ -360,11 +411,13 @@ const emptyResume = (): ResumeData => ({
   additional: [],
   design: {
     font: "georgia",
+    fontSecondary: "georgia",
     spacing: "normal",
     columns: "centered",
     color: "#111827",
     bg: "",
     dark: false,
+    themeId: "black",
   },
   sectionOrder: [...DEFAULT_SECTION_ORDER],
   activeSection: "personal",
@@ -391,8 +444,30 @@ export const useResumeStore = create<ResumeState>()(
     set((s) => {
       const t = getTemplate(id);
       if (!t) return { templateId: id };
+      // Font pairs are style-specific (see font-pairs.ts). Apply the style's
+      // saved pair if one was chosen earlier for THIS style, else its Option-1
+      // default - so switching styles replaces the whole pair rather than
+      // keeping the previous style's fonts, and returning to a style restores
+      // the user's earlier pick.
+      const stem = styleStem(t);
+      const pairs = fontPairsForTemplate(t);
+      const savedId = s.design.fontByStyle?.[stem];
+      const pair = pairs.find((p) => p.id === savedId) ?? pairs[0];
       // Reset the combination background unless the template's preset sets one.
-      return { templateId: id, design: { ...s.design, bg: "", ...t.preset } };
+      // Clear the color-theme id: the preset writes its own color/bg, so let the
+      // theme re-resolve from those (a matching swatch lights up; otherwise the
+      // sidebar keeps its neutral default) instead of a stale id fighting it.
+      return {
+        templateId: id,
+        design: {
+          ...s.design,
+          bg: "",
+          ...t.preset,
+          font: pair.primary,
+          fontSecondary: pair.secondary,
+          themeId: undefined,
+        },
+      };
     }),
   setDesign: (patch) => set((s) => ({ design: { ...s.design, ...patch } })),
   setPersonal: (patch) =>
@@ -698,26 +773,48 @@ export interface ProgressItem {
 // True when stripping HTML tags leaves non-empty text (a rich field has content).
 const hasText = (html: string) => html.replace(/<[^>]*>/g, "").trim().length > 0;
 
-/** The weighted checklist of resume fields and whether each is filled in. */
+/**
+ * Fixed starting score awarded the moment the builder opens - the resume can
+ * still be empty and placeholder text never counts. The earnable field items
+ * below sum to 88, so a fully completed resume lands on exactly 100.
+ */
+export const BASE_PROGRESS = 12;
+
+/**
+ * The weighted checklist of resume fields and whether each is genuinely filled
+ * in. Field-completion based (never page based): only real information the user
+ * added moves the score, and it is derived purely from the current resume data
+ * - so removing a value drops the points back, and editing an already complete
+ * value never awards them twice. Weights mirror the observed builder logic:
+ * name/title/email/summary carry the most, the first skill outweighs the next
+ * two, and phone/LinkedIn/location stay optional (shown but not scored).
+ */
 export function getProgressItems(s: ResumeState): ProgressItem[] {
+  const skillCount = s.skills.filter((sk) => sk.name.trim()).length;
   return [
     { key: "firstName", label: "Add your first name", weight: 8, done: !!s.personal.firstName.trim() },
     { key: "lastName", label: "Add your last name", weight: 8, done: !!s.personal.lastName.trim() },
     { key: "jobTitle", label: "Add the job title", weight: 10, done: !!s.personal.jobTitle.trim() },
     { key: "email", label: "Add contact email", weight: 12, done: !!s.contact.email.trim() },
-    { key: "phone", label: "Add a phone number", weight: 6, done: !!s.contact.phone.trim() },
-    { key: "location", label: "Add your location", weight: 6, done: !!s.contact.location.trim() },
-    { key: "linkedin", label: "Add a LinkedIn URL", weight: 4, done: !!s.contact.linkedin.trim() },
+    { key: "company", label: "Add your company", weight: 12, done: s.employment.some((e) => e.company.trim()) },
+    { key: "achievement", label: "Add a work achievement", weight: 8, done: s.employment.some((e) => hasText(e.description)) },
+    { key: "skill1", label: "Add a skill", weight: 6, done: skillCount >= 1 },
+    { key: "skill2", label: "Add a second skill", weight: 4, done: skillCount >= 2 },
+    { key: "skill3", label: "Add a third skill", weight: 2, done: skillCount >= 3 },
+    { key: "institution", label: "Add your education", weight: 4, done: s.education.some((e) => e.institution.trim()) },
+    { key: "degree", label: "Add your degree", weight: 2, done: s.education.some((e) => e.degree.trim()) },
     { key: "summary", label: "Write a summary", weight: 12, done: hasText(s.summary) },
-    { key: "employment", label: "Add work experience", weight: 14, done: s.employment.some((e) => e.jobTitle.trim()) },
-    { key: "skills", label: "Add one more skill", weight: 8, done: s.skills.some((sk) => sk.name.trim()) },
-    { key: "education", label: "Add your education", weight: 12, done: s.education.some((e) => e.institution.trim()) },
   ];
 }
 
-/** Overall completion percentage (sum of weights for the done items). */
+/**
+ * Overall completion percentage: the fixed 12% base plus the weights of every
+ * completed field, clamped to 0-100. Recomputed from state on every read, so
+ * the top bar and Improve tab always match the actual resume.
+ */
 export function getProgress(s: ResumeState): number {
-  return getProgressItems(s).reduce((acc, i) => acc + (i.done ? i.weight : 0), 0);
+  const earned = getProgressItems(s).reduce((acc, i) => acc + (i.done ? i.weight : 0), 0);
+  return Math.min(100, Math.max(0, BASE_PROGRESS + earned));
 }
 
 /** One actionable suggestion on the Improve page (weight = points it adds). */

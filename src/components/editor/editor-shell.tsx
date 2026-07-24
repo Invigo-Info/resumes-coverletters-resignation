@@ -11,6 +11,7 @@ import {
   resumeKeyFromSlug,
   resumeSlugFromKey,
 } from "@/lib/section-routes";
+import { downloadResume } from "@/lib/download-pdf";
 import { HelpPill } from "@/components/layout/help-pill";
 import { TopBar, type EditorTab } from "./top-bar";
 import { SectionNav } from "./section-nav";
@@ -109,6 +110,37 @@ export function EditorShell({
     if (templateId) applyTemplate(templateId);
   }, [templateId, applyTemplate]);
 
+  // Auto-download when arriving from the dashboard card's Download (a premium
+  // user - the paywall was already cleared there). The intent is passed via a
+  // sessionStorage flag rather than a URL query, because the URL<->store sync
+  // effect below rewrites the path on mount and would strip a query before we
+  // could read it. We consume the flag once, wait for the preview to mount and
+  // web fonts to settle, then export the PDF.
+  // Consume the flag and guard synchronously (a ref + the sessionStorage removal
+  // both survive React StrictMode's dev double-invoke), then let this one-shot
+  // export run to completion - deliberately no cleanup-cancel, which would abort
+  // the download under StrictMode.
+  const didAutoDownload = useRef(false);
+  useEffect(() => {
+    if (didAutoDownload.current || typeof window === "undefined") return;
+    if (sessionStorage.getItem("resume-co:dl") !== "1") return;
+    sessionStorage.removeItem("resume-co:dl");
+    didAutoDownload.current = true;
+    void (async () => {
+      for (let i = 0; i < 50; i++) {
+        if (document.querySelector("[data-resume-preview]")) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      try {
+        await document.fonts?.ready;
+      } catch {
+        /* fonts API absent - proceed anyway */
+      }
+      await new Promise((r) => setTimeout(r, 350));
+      await downloadResume();
+    })();
+  }, []);
+
   // URL -> store: the section slug in the path selects the active write step.
   useEffect(() => {
     if (!routedSection) return;
@@ -152,14 +184,16 @@ export function EditorShell({
 
             {/* Center form */}
             <main className="min-w-0 flex-1">
-              <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border sm:p-9">
+              {/* Match the preview's height so switching steps (which have
+                  different content heights) doesn't resize the page and jump. */}
+              <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border sm:p-9 lg:min-h-[calc(100vh-7rem)]">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={active}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.18 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                   >
                     {/* Additional section is the last Write step, so its Next
                         hands off to Design - the destination the old
@@ -182,14 +216,17 @@ export function EditorShell({
 
         {tab === "design" && (
           <div className="flex gap-6 px-4 pb-16">
-            <aside className="w-full shrink-0 lg:w-110 xl:w-130">
+            <aside className="w-full shrink-0 lg:w-130 xl:w-150">
               <DesignPanel
                 onBack={() => setTab("write")}
                 onNext={() => setTab("improve")}
               />
             </aside>
             <section className="hidden min-w-0 flex-1 lg:block">
-              <PreviewPane paneClassName="bg-white" />
+              {/* Design tab is view-only: render without editor highlights so the
+                  theme's real header colors show (not the blue active-section
+                  outline that would otherwise paint the name + contact line). */}
+              <PreviewPane paneClassName="bg-white" zoom={1.2} previewOnly />
             </section>
           </div>
         )}
@@ -203,6 +240,7 @@ export function EditorShell({
                     setTab("write");
                   }}
                   onBack={() => setTab("design")}
+                  onNext={() => setTab("design")}
                 />
               </div>
             </main>

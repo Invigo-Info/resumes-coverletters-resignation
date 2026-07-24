@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CircleCheck } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
+import { UnlockPremium } from "@/components/payment/unlock-premium";
 import { getStripe } from "@/lib/stripe/server";
 
 /**
@@ -38,6 +39,8 @@ export default async function PaymentSuccessPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Checkout completed -> flip the persisted premium flag so downloads work. */}
+      {ok && <UnlockPremium />}
       <div className="px-5 py-6 sm:px-8">
         <Link href="/" aria-label="resume.co home" className="inline-block">
           <LogoMark />

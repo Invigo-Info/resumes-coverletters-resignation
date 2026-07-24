@@ -23,6 +23,12 @@
   --color-progress-from: var(--progress-from);
   --color-progress-via: var(--progress-via);
   --color-progress-to: var(--progress-to);
+  /* Resume-builder completion stages (bar fill + motivational icon). */
+  --color-progress-low: var(--progress-low);
+  --color-progress-early: var(--progress-early);
+  --color-progress-mid: var(--progress-mid);
+  --color-progress-high: var(--progress-high);
+  --color-progress-done: var(--progress-done);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -148,6 +154,14 @@
   --progress-from: #fb923c;
   --progress-via: #fbbf24;
   --progress-to: #84cc16;
+  /* Resume-builder completion stages: a motivational climb from orange (just
+     started) to green (finished). The bar fill and the face icon both switch to
+     the current stage colour as the total score crosses each range. */
+  --progress-low: #f97316;
+  --progress-early: #f59e0b;
+  --progress-mid: #84cc16;
+  --progress-high: #22c55e;
+  --progress-done: #16a34a;
 
   --sidebar: #ffffff;
   --sidebar-foreground: #18181b;
@@ -165,6 +179,10 @@
   }
   html {
     @apply font-sans;
+
+    /* Always reserve the scrollbar track so pages of different heights don't
+       shift sideways when the vertical scrollbar appears/disappears. */
+    scrollbar-gutter: stable;
   }
   body {
     @apply bg-background;
@@ -310,4 +328,23 @@
   border: 2px solid #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
   cursor: pointer;
+}
+
+/*
+  Dark resume theme text remap. The colored sidebar already carries white text
+  via its own overrides, but the main content is written with neutral text
+  utilities (text-neutral-900/700/...). Under the dark theme those would be
+  near-black on a dark page, so remap them to light. Kept UNLAYERED (outside
+  @layer) so it reliably beats Tailwind's layered utilities, and scoped to the
+  dark theme only, so every other theme renders exactly as before. The PDF
+  rasterizer reads computed colors, so the export matches the on-screen theme.
+*/
+[data-resume-preview][data-resume-theme="dark"] .text-neutral-900,
+[data-resume-preview][data-resume-theme="dark"] .text-neutral-800,
+[data-resume-preview][data-resume-theme="dark"] .text-neutral-700 {
+  color: #f3f4f6 !important;
+}
+[data-resume-preview][data-resume-theme="dark"] .text-neutral-600,
+[data-resume-preview][data-resume-theme="dark"] .text-neutral-500 {
+  color: #9ca3af !important;
 }

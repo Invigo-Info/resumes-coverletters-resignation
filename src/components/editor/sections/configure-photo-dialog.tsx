@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FileUp,
   RotateCw,
-  RotateCcw,
   ZoomIn,
   ZoomOut,
   Loader2,
@@ -75,10 +74,26 @@ export function ConfigurePhotoDialog({
   const fileRef = useRef<HTMLInputElement>(null);
 
   // The crop frame is responsive (w-full), so its pixel size - which the crop
-  // math needs - is measured rather than fixed.
-  const frameRef = useRef<HTMLDivElement>(null);
+  // math needs - is measured rather than fixed. A callback ref wires the measure
+  // up the instant the frame node mounts (and tears it down on unmount), so it
+  // works even when the dialog opens with a photo already staged - the case a
+  // plain [open, src] effect missed, because the node wasn't in the DOM yet when
+  // it ran and it never retried.
+  const roRef = useRef<ResizeObserver | null>(null);
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
   const circle = frame ? Math.round(frame.h * CIRCLE_RATIO) : 0;
+
+  const setFrameNode = useCallback((el: HTMLDivElement | null) => {
+    roRef.current?.disconnect();
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setFrame({ w: r.width, h: r.height });
+    };
+    measure();
+    roRef.current = new ResizeObserver(measure);
+    roRef.current.observe(el);
+  }, []);
 
   // Reset the transform whenever a new image is loaded (or the dialog reopens).
   useEffect(() => {
@@ -89,31 +104,28 @@ export function ConfigurePhotoDialog({
     setSaving(false);
   }, [src, open]);
 
-  /** Reset zoom, rotation and position back to the default framing. */
-  function resetTransform() {
-    setZoom(1);
-    setRotation(0);
-    setOffset({ x: 0, y: 0 });
-  }
+  // Measure the source dimensions off a detached Image so we don't depend on the
+  // on-screen <img>'s onLoad - a data URL (e.g. re-opening Configure on an
+  // already-set photo) can be `complete` before React attaches the handler, so
+  // that event may never fire and the crop stage would sit blank forever.
+  useEffect(() => {
+    if (!src) return;
+    const img = new window.Image();
+    const done = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onload = done;
+    img.src = src;
+    // A data URL may already be decoded, in which case onload won't fire again.
+    if (img.complete && img.naturalWidth) done();
+    return () => {
+      img.onload = null;
+    };
+  }, [src]);
 
   /** Step the zoom by `delta`, clamped to the allowed range (for the +/- icons). */
   function stepZoom(delta: number) {
     setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(z + delta).toFixed(2))));
   }
 
-  // Measure the crop frame (and track resizes) while the crop stage is shown.
-  useEffect(() => {
-    const el = frameRef.current;
-    if (!open || !src || !el) return;
-    const measure = () => {
-      const r = el.getBoundingClientRect();
-      setFrame({ w: r.width, h: r.height });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [open, src]);
 
   /**
    * Scale that makes the (possibly rotated) image exactly cover the crop CIRCLE
@@ -315,7 +327,7 @@ export function ConfigurePhotoDialog({
           /* Loaded: crop stage - photo fills a frame with a circular spotlight. */
           <>
             <div
-              ref={frameRef}
+              ref={setFrameNode}
               className="relative mt-2 aspect-3/2 w-full select-none overflow-hidden rounded-2xl bg-neutral-800"
             >
               {/* Draggable photo layer (fills the frame; clipped by it). */}
@@ -376,8 +388,8 @@ export function ConfigurePhotoDialog({
                 />
               )}
 
-              {/* Tools, pinned to the top-left of the frame: rotate + reset. */}
-              <div className="absolute left-3 top-3 flex flex-col gap-2">
+              {/* Rotate tool, pinned to the top-left of the frame. */}
+              <div className="absolute left-3 top-3">
                 <button
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
@@ -386,15 +398,6 @@ export function ConfigurePhotoDialog({
                   className="grid size-9 place-items-center rounded-lg bg-card text-primary shadow-card outline-none transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40"
                 >
                   <RotateCw className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={resetTransform}
-                  aria-label="Reset photo position, zoom and rotation"
-                  title="Reset position"
-                  className="grid size-9 place-items-center rounded-lg bg-card text-foreground shadow-card outline-none transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40"
-                >
-                  <RotateCcw className="size-4" />
                 </button>
               </div>
             </div>

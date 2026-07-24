@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Minus, Camera, X, Info } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Plus, Minus, Camera, Info, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { downscaleImage } from "@/lib/downscale-image";
@@ -38,6 +39,26 @@ function imageSize(file: File): Promise<{ w: number; h: number }> {
 }
 
 /**
+ * Derive first / last name from the signed-in account: prefer the display name,
+ * fall back to the email's local part ("john.mayer@x.com" -> John Mayer). Splits
+ * on spaces (name) or . _ + - (email), title-cases each word, and drops any
+ * trailing digits.
+ */
+function nameFromAccount(
+  name?: string | null,
+  email?: string | null
+): { firstName: string; lastName: string } {
+  const source = name?.trim()
+    ? name.trim().split(/\s+/)
+    : (email?.split("@")[0] ?? "").split(/[._+-]+/);
+  const words = source
+    .map((w) => w.replace(/\d+$/, "").trim())
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return { firstName: words[0] ?? "", lastName: words.slice(1).join(" ") };
+}
+
+/**
  * Editor section for name, job title, photo and optional extra details
  * (nationality, license, birth date behind a "show more" toggle).
  *
@@ -47,7 +68,10 @@ function imageSize(file: File): Promise<{ w: number; h: number }> {
 export function PersonalDetailsForm() {
   const personal = useResumeStore((s) => s.personal);
   const setPersonal = useResumeStore((s) => s.setPersonal);
+  const setContact = useResumeStore((s) => s.setContact);
   const location = useResumeStore((s) => s.contact.location);
+  const { data: session } = useSession();
+  const seededName = useRef(false);
   // Toggle for the collapsible "additional details" block.
   const [showMore, setShowMore] = useState(false);
   // Errors surface only after a field has been left, never mid-typing.
@@ -77,12 +101,48 @@ export function PersonalDetailsForm() {
     }
   }, []);
 
+  // Prefill name + email from the signed-in account so the preview shows them
+  // straight after a template is picked. Name comes from the account's display
+  // name (or the email's local part). Both seed only an EMPTY field - never
+  // overwriting what the user typed or a resume import - and only once, once the
+  // session has loaded.
+  useEffect(() => {
+    if (seededName.current) return;
+    const name = session?.user?.name;
+    const email = session?.user?.email;
+    if (!name && !email) return; // session not ready yet
+    seededName.current = true;
+    const state = useResumeStore.getState();
+    // Email -> empty contact field (mirrors the Contact section's prefill).
+    if (email && !state.contact.email.trim()) setContact({ email });
+    // First/last name -> empty name only.
+    if (!state.personal.firstName.trim() && !state.personal.lastName.trim()) {
+      const { firstName, lastName } = nameFromAccount(name, email);
+      if (firstName || lastName) {
+        setPersonal({
+          firstName: sanitizeName(firstName),
+          lastName: sanitizeName(lastName),
+        });
+      }
+    }
+  }, [session, setPersonal, setContact]);
+
   // Release the object URL when the dialog closes or the component unmounts.
   useEffect(() => {
     return () => {
       if (cropSrc) URL.revokeObjectURL(cropSrc);
     };
   }, [cropSrc]);
+
+  /**
+   * Open the Configure dialog. With a photo already set, seed the crop stage
+   * with it (so Configure lands straight on the round-crop view, not the empty
+   * drop zone); otherwise open on the drop zone to pick a new one.
+   */
+  function openPhoto() {
+    setCropSrc(personal.photo ?? null);
+    setPhotoOpen(true);
+  }
 
   /** Close the dialog and drop whatever image was staged in it. */
   function closePhoto() {
@@ -204,19 +264,11 @@ export function PersonalDetailsForm() {
         <div className="mt-5 space-y-5">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Field
-              label="Nationality"
-              value={personal.nationality}
-              onChange={(v) => setPersonal({ nationality: v })}
-              placeholder="American"
-            />
-            <Field
               label="Driver license"
               value={personal.driverLicense}
               onChange={(v) => setPersonal({ driverLicense: v })}
               placeholder="Class C"
             />
-          </div>
-          <div className="sm:w-1/2 sm:pr-2.5">
             <FieldWrap label="Birth date">
               <BirthDatePicker
                 value={personal.birthDate}
@@ -236,7 +288,7 @@ export function PersonalDetailsForm() {
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => setPhotoOpen(true)}
+                onClick={openPhoto}
                 tabIndex={-1}
                 aria-hidden
                 className="grid size-13 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-muted-foreground outline-none transition-colors hover:bg-muted/70"
@@ -251,19 +303,20 @@ export function PersonalDetailsForm() {
               <div className="leading-tight">
                 <button
                   type="button"
-                  onClick={() => setPhotoOpen(true)}
-                  className="rounded font-semibold text-foreground outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+                  onClick={openPhoto}
+                  className="flex items-center gap-1.5 rounded font-semibold text-foreground outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
                 >
-                  {personal.photo ? "Change photo" : "Add photo"}
+                  {personal.photo && <SlidersHorizontal className="size-4" />}
+                  {personal.photo ? "Configure" : "Add photo"}
                 </button>
                 {personal.photo ? (
                   <button
                     type="button"
                     onClick={() => setPersonal({ photo: undefined })}
-                    className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-destructive"
+                    className="mt-3 flex items-center gap-1.5 rounded text-sm font-medium text-destructive outline-none transition-colors hover:underline focus-visible:ring-3 focus-visible:ring-destructive/40"
                   >
-                    <X className="size-3.5" />
-                    Remove
+                    <Trash2 className="size-4" />
+                    Delete
                   </button>
                 ) : (
                   <p className="mt-0.5 text-sm text-muted-foreground">

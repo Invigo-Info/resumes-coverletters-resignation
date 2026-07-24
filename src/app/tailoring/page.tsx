@@ -671,7 +671,7 @@ export default function TailoringPage() {
         ) : (
           <div className="flex flex-col gap-6 px-4 pb-16 lg:flex-row">
             {/* Left: tailoring sidebar */}
-            <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-[380px] lg:self-start">
+            <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-150 lg:self-start">
               <div className="flex max-h-[calc(100vh-6rem)] flex-col rounded-3xl bg-card p-5 shadow-card ring-1 ring-border">
                 {/* Score card: company logo + "Your resume tailored to [title] at
                     [company]" + the live tailored-resume score ring. */}
@@ -742,7 +742,7 @@ export default function TailoringPage() {
                     <button
                       type="button"
                       onClick={handleDownloadResume}
-                      className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                     >
                       <Download className="size-4" />
                       Download resume
@@ -751,7 +751,7 @@ export default function TailoringPage() {
                     <button
                       type="button"
                       onClick={applyAll}
-                      className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                     >
                       Apply all suggestions
                     </button>
@@ -763,7 +763,13 @@ export default function TailoringPage() {
             {/* Right: the resume itself */}
             <section className="min-w-0 flex-1">
               <div className="relative min-h-[calc(100vh-7rem)] overflow-hidden rounded-2xl bg-white shadow-card-lg ring-1 ring-border">
-                <LivePreview />
+                {/* Enlarge the preview text on the tailoring page only. LivePreview
+                    is shared with the editor + PDF export and uses fixed px sizes,
+                    so we zoom the wrapper and shrink its layout width by the same
+                    factor - keeping it inside the card with no horizontal overflow. */}
+                <div style={{ zoom: 1.5 }}>
+                  <LivePreview />
+                </div>
               </div>
             </section>
           </div>

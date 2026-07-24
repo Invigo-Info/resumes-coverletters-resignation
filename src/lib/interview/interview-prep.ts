@@ -118,9 +118,9 @@ const TYPE_QUESTIONS: Record<InterviewType, PrepQuestion[]> = {
 
 const TYPE_CANDIDATE_QS: Record<InterviewType, string[]> = {
   screening: [
-    "What does the interview process look like from here?",
-    "What's the expected timeline for this hire?",
-    "How would you describe the team I'd be joining?",
+    "Is this a new role or a backfill?",
+    "What does the interview process look like?",
+    "When should I expect to hear back?",
   ],
   manager: [
     "What would success in this role look like in the first 90 days?",
@@ -177,6 +177,196 @@ function extractAccomplishments(resume: ScoreResume): Accomplishments {
   return { years: yearsM ? `${yearsM[1]}+ years` : null, team, metrics, role: resume.role };
 }
 
+/** All job-description prose, lower-cased, for occupation/condition detection. */
+function jdText(job: JobPosting): string {
+  return stripHtml(
+    `${job.description ?? ""} ${job.summary ?? ""} ${job.responsibilities.join(
+      " "
+    )} ${job.qualifications.join(" ")}`
+  ).toLowerCase();
+}
+
+/** True for a confidential / placeholder / practice company (no "Why [X]?"). */
+function isPlaceholderCompany(c: string): boolean {
+  return !c.trim() || /^(the company|your target company|confidential)/i.test(c.trim());
+}
+
+/**
+ * Screening Question 5 - the single most important recruiter-level requirement,
+ * chosen by scanning the JD in priority order: licence/certification, then years
+ * of experience, then language, then the core skill. Never asserts a credential
+ * the resume doesn't show (spec: licence/certification rule).
+ */
+function primaryRequirementQ(job: JobPosting, resume: ScoreResume): PrepQuestion {
+  const jd = jdText(job);
+  if (
+    /\b(licen[cs]e|licensure|registration|registered|certified|certification|accredit|clearance|chartered)\b/.test(
+      jd
+    )
+  ) {
+    return {
+      question: "Do you hold the licence or certification this role requires?",
+      guidance: [
+        "Name the exact credential and its current status - honestly.",
+        "If yours needs renewal or local recognition, say so plainly.",
+        "Never claim an active credential your resume doesn't show.",
+      ],
+    };
+  }
+  const yearsM = jd.match(/(\d{1,2})\s*\+?\s*years?/);
+  if (yearsM) {
+    const field = fieldFromRole(resume.role) || "this kind of work";
+    return {
+      question: `How many years of ${field} experience do you have?`,
+      guidance: [
+        `The posting looks for around ${yearsM[1]}+ years.`,
+        "Give a straight number, then your most relevant recent example.",
+      ],
+    };
+  }
+  if (/\b(bilingual|fluent|multilingual|spanish|french|german|mandarin|arabic)\b/.test(jd)) {
+    return {
+      question: "Are you fluent in the language(s) this role needs?",
+      guidance: [
+        "State your real proficiency level for each language.",
+        "Mention where you have used it professionally.",
+      ],
+    };
+  }
+  const skill = resume.skills[0] || topSkills(job, resume)[0];
+  return skill
+    ? {
+        question: `Do you have hands-on experience with ${skill}?`,
+        guidance: [
+          `${skill} is central here - name the specific work you did with it.`,
+          "Keep it recruiter-level: confirm suitability, save the deep dive for later.",
+        ],
+      }
+    : {
+        question: "Do you have the core experience this role calls for?",
+        guidance: [
+          "Point to the closest relevant experience you have.",
+          "Be honest about where it is a direct vs. a transferable match.",
+        ],
+      };
+}
+
+/**
+ * Screening Question 6 - the most important remaining work condition, chosen from
+ * the JD: shift/on-call, travel, remote/time zone, driving, else start date. All
+ * phrased at recruiter level and only when genuinely job-related (spec §25).
+ */
+function workConditionQ(job: JobPosting): PrepQuestion {
+  const jd = jdText(job);
+  const mode = `${job.mode ?? ""} ${job.locationLabel ?? ""}`.toLowerCase();
+  if (/\b(night|overnight|shift|weekend|on-call|on call|rotating|rota|roster)\b/.test(jd)) {
+    return {
+      question: "Are you comfortable with the required shift or on-call schedule?",
+      guidance: [
+        "Confirm the specific pattern - nights, weekends, or rotation.",
+        "Be honest about any hard constraints up front.",
+      ],
+    };
+  }
+  if (/\b(travel|site visits?|field work|fieldwork|on-site visits?)\b/.test(jd)) {
+    return {
+      question: "Are you able to travel to sites as the role requires?",
+      guidance: [
+        "Confirm your travel radius and any limits.",
+        "Mention reliable transport or a driving licence if relevant.",
+      ],
+    };
+  }
+  if (/\b(driv(e|ing)|driver'?s? licen[cs]e|valid driver)\b/.test(jd)) {
+    return {
+      question: "Do you hold a valid driving licence and reliable transport?",
+      guidance: [
+        "Confirm your licence class and current status.",
+        "Only relevant when the job genuinely needs it.",
+      ],
+    };
+  }
+  if (/remote|hybrid|time ?zone/.test(`${mode} ${jd}`)) {
+    return {
+      question: "What time zone are you in, and can you cover the required hours?",
+      guidance: [
+        "State your location or time zone plainly.",
+        "Confirm overlap with the team's core hours.",
+      ],
+    };
+  }
+  return {
+    question: "When could you start, and what is your notice period?",
+    guidance: [
+      "Share your notice period honestly.",
+      "Signal flexibility where you genuinely have it.",
+    ],
+  };
+}
+
+/**
+ * Screening-call questions: the universal seven-question recruiter structure -
+ * introduction, motivation for change, employer interest, role interest, the
+ * primary job-specific requirement, a work condition, and compensation last.
+ * Q3 and Q5/Q6 adapt to the employer and job description; nothing is fabricated.
+ */
+function buildScreeningQuestions(job: JobPosting, resume: ScoreResume): PrepQuestion[] {
+  const confidential = isPlaceholderCompany(job.company);
+  const published =
+    job.salaryLabel && job.salaryLabel !== "Salary not disclosed" ? job.salaryLabel : "";
+
+  return [
+    {
+      question: "Tell me about yourself.",
+      guidance: [
+        "Keep it to 60-120 seconds - this is a screening call.",
+        "Lead with your current role or most relevant training, plus one real result.",
+        "Close by connecting your background to why this role fits.",
+      ],
+    },
+    {
+      question: "Why are you looking for a new role?",
+      guidance: [
+        "Stay positive and future-focused - never criticise a current employer.",
+        "Frame it around growth, scope, or alignment with your goals.",
+      ],
+    },
+    confidential
+      ? {
+          question: "What interests you about this opportunity?",
+          guidance: [
+            "Tie the role's purpose to what you genuinely want next.",
+            "Ask the recruiter about the employer if it is not yet named.",
+          ],
+        }
+      : {
+          question: `Why ${job.company}?`,
+          guidance: [
+            `Give one specific, genuine reason ${job.company} appeals to you.`,
+            "Look up their product, mission, or recent news before the call.",
+          ],
+        },
+    {
+      question: "What interests you about this role?",
+      guidance: [
+        "Connect your supported background to the role's main duties.",
+        "Show you understand what the job is actually for.",
+      ],
+    },
+    primaryRequirementQ(job, resume),
+    workConditionQ(job),
+    {
+      question: "What are your salary expectations?",
+      guidance: [
+        published
+          ? `The posting lists ${published} - aim to stay reasonably aligned while weighing the whole package.`
+          : "Ask the recruiter for the approved range first, then give a range - not a single number.",
+        "Never quote a market figure you cannot back up.",
+      ],
+    },
+  ];
+}
+
 /**
  * Manager-interview questions: manager-style prompts whose guidance and sample
  * answers weave in the candidate's REAL accomplishments (metrics, team size,
@@ -189,6 +379,7 @@ function buildManagerQuestions(job: JobPosting, acc: Accomplishments): PrepQuest
   const roleLc = (acc.role || "your field").toLowerCase();
   const m0 = acc.metrics[0];
   const teamPhrase = acc.team ? `a team of ${acc.team}` : null;
+  const confidential = isPlaceholderCompany(job.company);
 
   const opener = acc.years
     ? `${acc.years} in ${roleLc}, most recently as ${roleTitle}`
@@ -227,36 +418,61 @@ function buildManagerQuestions(job: JobPosting, acc: Accomplishments): PrepQuest
         : undefined,
     },
     {
-      question: "How do you align stakeholders and drive decisions?",
-      guidance: [
-        "Give one concrete cross-functional example.",
-        "Show how you built agreement, then owned the outcome.",
-      ],
-    },
-    {
-      question: "Tell me about a decision you led under pressure.",
-      guidance: [
-        "Use situation, then action, then result.",
-        "Show judgement and that you owned the call.",
-      ],
-    },
-    {
-      question: "How do you develop and lead your team?",
-      guidance: [
-        teamPhrase
-          ? `Reference leading ${teamPhrase} - coaching, feedback, growth.`
-          : "Reference coaching, feedback, or growth you drove.",
-        "Keep it to real people and real outcomes.",
-      ],
-    },
-    {
       question: "How do you see your professional development going forward?",
       guidance: [
         `Name a specific direction that fits ${job.title}.`,
-        `Connect it to ${job.company}'s scale or focus.`,
+        confidential
+          ? "Connect it to the scope this role would give you."
+          : `Connect it to ${job.company}'s scale or focus.`,
         "Frame this role as the logical next step, not a lateral move.",
       ],
     },
+    m0
+      ? {
+          question: `You delivered ${lower1(m0)} - what did you actually change?`,
+          guidance: [
+            "Walk through the situation, your action, and the result.",
+            "Own your personal contribution, not just the team's.",
+          ],
+        }
+      : {
+          question: "Tell me about a project or responsibility you are most proud of.",
+          guidance: [
+            "Pick one with real scope and a clear outcome.",
+            "Explain what you owned and how you knew it worked.",
+          ],
+        },
+    {
+      question: "How do you align stakeholders and drive a decision through?",
+      guidance: [
+        "Give one concrete cross-functional example.",
+        teamPhrase
+          ? `Show how you led ${teamPhrase} to a shared outcome.`
+          : "Show how you built agreement, then owned the result.",
+      ],
+    },
+    {
+      question: "How would you handle competing priorities when a deadline is at risk?",
+      guidance: [
+        "Walk through how you'd triage, decide, and keep people informed.",
+        `Ground it in a real example from your ${roleTitle} work.`,
+      ],
+    },
+    confidential
+      ? {
+          question: "What attracts you to this team and environment?",
+          guidance: [
+            "Tie the mission or the work to what you want to own.",
+            "Show you have thought about the fit, not just the title.",
+          ],
+        }
+      : {
+          question: `Why ${job.company}?`,
+          guidance: [
+            `Give a specific, genuine reason ${job.company} fits your goals.`,
+            "Connect their mission or scale to the work you want to own.",
+          ],
+        },
   ];
 }
 
@@ -281,7 +497,11 @@ function fieldFromRole(role: string): string {
  * and never defaults to coding. All guidance is grounded in the user profile and
  * never invents a project or a metric.
  */
-function buildTechnicalQuestions(resume: ScoreResume, acc: Accomplishments): PrepQuestion[] {
+function buildTechnicalQuestions(
+  job: JobPosting,
+  resume: ScoreResume,
+  acc: Accomplishments
+): PrepQuestion[] {
   const field = fieldFromRole(resume.role);
   // Only weave the domain into phrasing when it's one clean word ("marketing"),
   // else fall back to generic wording so multi-word titles don't read awkwardly.
@@ -289,86 +509,123 @@ function buildTechnicalQuestions(resume: ScoreResume, acc: Accomplishments): Pre
   const skills = resume.skills.filter(Boolean);
   const s3 = skills[2];
   const toolLike = skills.find((s) =>
-    /crm|software|analytics|platform|tool|suite|excel|sql|tableau|salesforce|hubspot|automation|reporting|figma|cloud/i.test(
+    /crm|software|analytics|platform|tool|suite|excel|sql|tableau|salesforce|hubspot|automation|reporting|figma|cloud|autocad|epic|sap/i.test(
       s
     )
   );
   const skillForSetup = toolLike || skills[0];
-  const hasReporting = skills.some((s) =>
-    /report|analytic|measurement|performance|metric|data|kpi/i.test(s)
-  );
   const m0 = acc.metrics[0];
-  const qs: PrepQuestion[] = [];
+  // Regulated / high-risk work gets a mandatory safety-and-compliance question
+  // (spec §8); everything else gets a quality/accuracy question at that position.
+  const regulated =
+    /\b(safety|hazard|patient|clinical|electr|voltage|gas|pressure|scaffold|licen|complian|regulat|\bcode\b|osha|aviation|laborator|hygiene|sterile|infection)\b/.test(
+      `${jdText(job)} ${resume.role.toLowerCase()}`
+    );
 
-  qs.push({
-    question: singleField
-      ? `How do you keep your ${singleField} knowledge current?`
-      : "How do you keep your skills current for this role?",
-    guidance: [
-      "Name a real source - tool updates, industry blogs, or a certification.",
-      "Tie it to something you actually applied, not theory.",
-    ],
-  });
-
-  if (skillForSetup) {
-    qs.push(
-      toolLike
+  // Seven short, plain questions in the technical spec order: knowledge, process,
+  // tools, troubleshooting, safety/quality, collaboration, measurement. Kept
+  // deliberately short; non-engineering roles never default to coding.
+  return [
+    {
+      question: singleField ? `How do you stay current in ${singleField}?` : "How do you stay current in your field?",
+      guidance: ["Name one real source.", "An example you applied.", "Show you keep improving."],
+    },
+    {
+      question: "Walk me through a recent project.",
+      guidance: ["State the goal.", s3 ? `Mention ${s3}.` : "Name your main tools.", "Share the outcome."],
+    },
+    toolLike
+      ? {
+          question: `How do you use ${toolLike}?`,
+          guidance: [`${toolLike} is on your resume.`, "Name the exact features.", "Give a quick example."],
+        }
+      : skillForSetup
         ? {
-            question: `Walk me through your ${toolLike} setup and how you use it.`,
-            guidance: [
-              `${toolLike} is in your skills - name the specific platform and tools.`,
-              "Connect it to the workflows and results you built, not the definition.",
-            ],
+            question: `How do you apply ${skillForSetup}?`,
+            guidance: [`${skillForSetup} is on your resume.`, "Name the techniques.", "Give a quick example."],
           }
         : {
-            question: `Walk me through how you apply ${skillForSetup} in your day-to-day work.`,
-            guidance: [
-              `${skillForSetup} is in your skills - name the specific techniques or protocols.`,
-              "Connect it to the outcomes you drove, not the definition.",
-            ],
-          }
-    );
-  }
-
-  qs.push(
-    hasReporting
+            question: "Which tools are you strongest in?",
+            guidance: ["Match the job's tools.", "Back each with an example.", "Keep it honest."],
+          },
+    {
+      question: "How do you troubleshoot a problem?",
+      guidance: ["Your checks, in order.", "One real example.", "How you confirmed the fix."],
+    },
+    regulated
       ? {
-          question: "How do you build a performance reporting framework?",
-          guidance: [
-            "The posting values measurement and data-informed decisions.",
-            m0
-              ? `Anchor in your ${lower1(m0)} - what did you track to get there?`
-              : "Name the exact metrics you track, and why those.",
-          ],
+          question: "How do you keep work safe and compliant?",
+          guidance: ["Follow procedures and codes.", "Escalate, don't cut corners.", "Only cite standards you use."],
         }
       : {
-          question: "How do you measure the impact of your work?",
-          guidance: [
-            "Give the specific metrics you own, not vanity numbers.",
-            m0 ? `Anchor in your ${lower1(m0)}.` : "Show a before/after improvement.",
-          ],
-        }
-  );
+          question: "How do you keep your work accurate?",
+          guidance: ["Name your checks.", "Give a real example.", "How you catch mistakes."],
+        },
+    {
+      question: "How do you work with your team?",
+      guidance: ["Who you coordinate with.", "How you avoid dropped handoffs.", "Keep everyone informed."],
+    },
+    {
+      question: "How do you measure success?",
+      guidance: ["The metrics you track.", m0 ? `Anchor in your ${lower1(m0)}.` : "Show a before/after.", "Why those metrics matter."],
+    },
+  ];
+}
 
-  qs.push({
-    question: singleField
-      ? `Walk me through your process on a recent ${singleField} project.`
-      : "Walk me through your process on a recent project.",
-    guidance: [
-      "Explain the goal, your approach, and the outcome - proof over theory.",
-      s3 ? `Show where ${s3} fit into the work.` : "Name the tools you reached for.",
-    ],
-  });
-
-  qs.push({
-    question: "Describe a tradeoff or tough problem you worked through.",
-    guidance: [
-      "Lay out the options and why you chose one.",
-      "Show practical judgement, grounded in a real example.",
-    ],
-  });
-
-  return qs;
+/**
+ * Other-mode questions: the custom instruction is the whole blueprint, so the
+ * seven questions all orbit the requested topic across different facets (setup,
+ * process, tools, a real example, troubleshooting, measurement, communication).
+ * The JD/resume supply context and evidence; nothing about the candidate is
+ * assumed just because the topic names a tool.
+ */
+function buildOtherQuestions(customDetail?: string): PrepQuestion[] {
+  const t = (customDetail || "").trim().replace(/\s+/g, " ").slice(0, 80);
+  if (!t) {
+    return [
+      {
+        question: "Walk me through how you'd approach this interview format.",
+        guidance: ["Structure your answer clearly.", "Tie it back to the role and company."],
+      },
+      ...TYPE_QUESTIONS.other,
+    ];
+  }
+  return [
+    {
+      question: `How would you get set up for ${t} from scratch?`,
+      guidance: [
+        "Name the first steps and what you'd put in place.",
+        "Keep it grounded in what you have actually done.",
+      ],
+    },
+    {
+      question: `Walk me through your end-to-end process for ${t}.`,
+      guidance: ["Explain your approach stage by stage.", "Show the outcome you aim for."],
+    },
+    {
+      question: `Which tools or methods do you rely on for ${t}?`,
+      guidance: ["Name the specific ones you know.", "Only claim what your resume supports."],
+    },
+    {
+      question: `Tell me about a real example of ${t} you worked on.`,
+      guidance: ["Pick one with a clear situation and result.", "Own your personal contribution."],
+    },
+    {
+      question: `Something goes wrong midway through ${t} - how do you handle it?`,
+      guidance: [
+        "Describe how you diagnose and correct it.",
+        "Show judgement, not a memorised script.",
+      ],
+    },
+    {
+      question: `How do you measure success for ${t}?`,
+      guidance: ["Give the metrics or checks you'd use.", "Tie them to the outcome that matters."],
+    },
+    {
+      question: `How do you keep others informed while working on ${t}?`,
+      guidance: ["Name who you'd coordinate with.", "Show how you avoid dropped handoffs."],
+    },
+  ];
 }
 
 /** Type-specific "what they value in people" (generic but on-tone; the AI path
@@ -424,22 +681,13 @@ export function buildHeuristicPrep(
     `${job.title} at ${job.company}. Prepare to connect your experience to this role's needs.`;
 
   const questions =
-    type === "manager"
-      ? buildManagerQuestions(job, acc)
-      : type === "technical"
-        ? buildTechnicalQuestions(resume, acc)
-        : type === "other" && customDetail
-          ? [
-            {
-              question: `Prepare for: ${customDetail.slice(0, 120)}`,
-              guidance: [
-                "Structure a clear, specific answer.",
-                "Tie your points to this job and company.",
-              ],
-            },
-            ...TYPE_QUESTIONS.other,
-          ]
-        : TYPE_QUESTIONS[type];
+    type === "screening"
+      ? buildScreeningQuestions(job, resume)
+      : type === "manager"
+        ? buildManagerQuestions(job, acc)
+        : type === "technical"
+          ? buildTechnicalQuestions(job, resume, acc)
+          : buildOtherQuestions(customDetail);
 
   const domain = guessDomain(job.company);
   return {
@@ -468,7 +716,8 @@ export function buildHeuristicPrep(
     values: VALUES_BY_TYPE[type],
     mentions: buildMentions(resume, acc),
     questions,
-    candidateQuestions: TYPE_CANDIDATE_QS[type],
+    // Other mode omits the "questions to ask" section by default (spec §11).
+    candidateQuestions: type === "other" ? [] : TYPE_CANDIDATE_QS[type],
   };
 }
 
@@ -559,13 +808,18 @@ async function callPrepAi(
   }
 }
 
-/** Hybrid entry point: AI prep when available, heuristic otherwise. */
+/** Hybrid entry point: AI prep when available, heuristic otherwise.
+ *  `fast` skips the (multi-second) AI call and returns the instant heuristic -
+ *  used for generic "Just practicing" prep, where the AI adds little over the
+ *  built-in structure but would make the page wait 5-10s on the model. */
 export async function getInterviewPrep(
   job: JobPosting,
   resume: ScoreResume,
   type: InterviewType,
-  customDetail?: string
+  customDetail?: string,
+  fast = false
 ): Promise<InterviewPrep> {
+  if (fast) return buildHeuristicPrep(job, resume, type, customDetail);
   const ai = await callPrepAi(job, resume, type, customDetail);
   return ai ?? buildHeuristicPrep(job, resume, type, customDetail);
 }

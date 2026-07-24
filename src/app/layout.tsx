@@ -3,7 +3,9 @@ import {
   Inter,
   Gabarito,
   Geist_Mono,
+  Roboto,
   Roboto_Flex,
+  Roboto_Serif,
   EB_Garamond,
   IBM_Plex_Sans,
   IBM_Plex_Serif,
@@ -13,6 +15,14 @@ import {
   Source_Sans_3,
   Ubuntu_Mono,
   Work_Sans,
+  Nunito_Sans,
+  Literata,
+  Lora,
+  DM_Sans,
+  Crimson_Text,
+  Playfair_Display,
+  Manrope,
+  Cactus_Classical_Serif,
 } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,10 +66,27 @@ const sourceSans = Source_Sans_3({ variable: "--font-source-sans", subsets: ["la
 const ubuntuMono = Ubuntu_Mono({ variable: "--font-ubuntu-mono", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
 const workSans = Work_Sans({ variable: "--font-work-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
 
+// Resume-style font families (Design > Fonts). Each resume style curates three
+// of these into Primary+Secondary pairs (see font-pairs.ts). preload:false keeps
+// them off the critical path - they load only once a style that uses them is
+// selected, so unrelated pages aren't slowed.
+const roboto = Roboto({ variable: "--font-roboto", subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", preload: false });
+const robotoSerif = Roboto_Serif({ variable: "--font-roboto-serif", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
+const nunitoSans = Nunito_Sans({ variable: "--font-nunito-sans", subsets: ["latin"], weight: ["400", "600", "700"], display: "swap", preload: false });
+const literata = Literata({ variable: "--font-literata", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
+const lora = Lora({ variable: "--font-lora", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
+const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", preload: false });
+const crimson = Crimson_Text({ variable: "--font-crimson", subsets: ["latin"], weight: ["400", "600", "700"], display: "swap", preload: false });
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
+const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", preload: false });
+const cactusSerif = Cactus_Classical_Serif({ variable: "--font-cactus-serif", subsets: ["latin"], weight: ["400"], display: "swap", preload: false });
+
 // Combined CSS-variable class list for the extra design fonts.
 const designFontVars = [
   ebGaramond, ibmPlexSans, ibmPlexSerif, inriaSans, inriaSerif,
   poppins, sourceSans, ubuntuMono, workSans,
+  roboto, robotoSerif, nunitoSans, literata, lora, dmSans,
+  crimson, playfair, manrope, cactusSerif,
 ]
   .map((f) => f.variable)
   .join(" ");

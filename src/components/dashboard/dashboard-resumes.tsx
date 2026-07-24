@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
+import { usePaywall } from "@/lib/cover-letter/paywall";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
 import {
   useDocumentsStore,
@@ -49,6 +50,7 @@ function formatUpdated(ts: number): string {
  */
 export function DashboardResumes() {
   const router = useRouter();
+  const premium = usePaywall((s) => s.premium);
   const resumes = useDocumentsStore((s) => s.resumes);
   const removeResume = useDocumentsStore((s) => s.removeResume);
   const upsertResume = useDocumentsStore((s) => s.upsertResume);
@@ -118,13 +120,28 @@ export function DashboardResumes() {
           loadDocument(rec.id, rec.data);
           router.push("/resumes/write/personal");
         };
+        // Download is a premium action: free users go to the subscription page;
+        // premium users open THIS resume, and a sessionStorage flag tells the
+        // editor to auto-export the PDF once its preview mounts - so a click on
+        // the card downloads the right resume.
+        const download = () => {
+          if (!premium) {
+            router.push("/payment");
+            return;
+          }
+          loadDocument(rec.id, rec.data);
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("resume-co:dl", "1");
+          }
+          router.push("/resumes/write/personal");
+        };
         return (
           <ResumeCard
             key={rec.id}
             resume={doc}
             resumeBullets={experienceBullets(rec.data)}
             onEdit={open}
-            onDownload={open}
+            onDownload={download}
             onCopy={() => {
               // Duplicate as a brand-new document (fresh id + timestamp).
               const id = newResumeId();
