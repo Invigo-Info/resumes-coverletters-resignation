@@ -8,7 +8,6 @@ import {
   Smile,
   Laugh,
   PartyPopper,
-  type LucideIcon,
 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
@@ -22,12 +21,16 @@ import {
 } from "@/lib/store/resignation-letter-store";
 import { cn } from "@/lib/utils";
 
-/** Pick a reaction icon for the header progress display based on percent complete. */
-function reactionIcon(p: number): LucideIcon {
-  if (p < 25) return Meh;
-  if (p < 60) return Smile;
-  if (p < 100) return Laugh;
-  return PartyPopper;
+/**
+ * The header progress reaction icon for a given percent. A stable module-level
+ * component that renders one of the fixed lucide icons directly, so it is never
+ * "created during render" (which would trip react-hooks/static-components).
+ */
+function ReactionIcon({ percent, className }: { percent: number; className?: string }) {
+  if (percent < 25) return <Meh className={className} />;
+  if (percent < 60) return <Smile className={className} />;
+  if (percent < 100) return <Laugh className={className} />;
+  return <PartyPopper className={className} />;
 }
 
 /** Top 7-segment stepper; the active segment is green with its label beneath. */
@@ -48,7 +51,7 @@ function Stepper({ step }: { step: RLStep }) {
               )}
             />
             {isActive && (
-              <span className="whitespace-nowrap text-xs font-semibold text-emerald-600">
+              <span className="whitespace-nowrap text-xs font-semibold text-emerald-700">
                 {RL_STEP_LABEL[st]}
               </span>
             )}
@@ -83,7 +86,6 @@ export function StepShell({
   hideBack?: boolean;
   children: React.ReactNode;
 }) {
-  const Reaction = reactionIcon(progress.percent);
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header: logo, stepper, percent + reaction icon */}
@@ -108,7 +110,7 @@ export function StepShell({
             className="grid size-8 place-items-center rounded-xl bg-card text-primary shadow-card ring-1 ring-border"
             aria-hidden
           >
-            <Reaction className="size-4" />
+            <ReactionIcon percent={progress.percent} className="size-4" />
           </span>
         </div>
       </header>

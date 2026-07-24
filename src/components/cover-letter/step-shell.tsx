@@ -127,7 +127,7 @@ export function StepShell({
                 <p className="mb-1 truncate text-xs font-medium text-muted-foreground">
                   {progress.message}{" "}
                   {progress.gain && (
-                    <span className="font-semibold text-emerald-600">{progress.gain}</span>
+                    <span className="font-semibold text-emerald-700">{progress.gain}</span>
                   )}
                 </p>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">

@@ -118,7 +118,9 @@
   --accent: #eef2ff;
   --accent-foreground: #1d4ed8;
 
-  --destructive: #ef4444;
+  /* red-600, not red-500: #ef4444 is only 3.76:1 on white (fails AA for text and
+     for white-on-destructive buttons). #dc2626 is 4.83:1 both ways. */
+  --destructive: #dc2626;
 
   --border: #e7e8eb;
   --input: #e2e3e7;

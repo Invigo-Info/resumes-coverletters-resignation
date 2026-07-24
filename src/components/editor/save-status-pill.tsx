@@ -17,7 +17,9 @@ export function SaveStatusPill({ className }: { className?: string }) {
     <span
       aria-live="polite"
       className={cn(
-        "absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm",
+        // bg-card (not bg-muted): muted-foreground is 4.5:1+ on the card but fails
+        // AA on the muted grey; the ring keeps the pill distinct from the preview.
+        "absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-card ring-1 ring-border",
         className
       )}
     >
