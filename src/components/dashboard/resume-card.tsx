@@ -106,21 +106,28 @@ export function ResumeCard({
   return (
     <div className="rounded-3xl bg-card p-3 shadow-card-lg">
       <div className="flex flex-col gap-5 p-4 sm:flex-row sm:gap-7">
-        {/* Thumbnail */}
-        <div className="shrink-0 overflow-hidden rounded-lg ring-1 ring-border">
+        {/* Thumbnail. Explicit width so the ring hugs the image; in the mobile
+            flex-col it would otherwise stretch full-width (image stuck top-left).
+            Centered on mobile, left-aligned once the card goes side-by-side. */}
+        <div className="mx-auto w-[150px] shrink-0 overflow-hidden rounded-lg ring-1 ring-border sm:mx-0 md:w-[170px]">
           <Image
             src={resume.thumb}
             alt={`${resume.title} preview`}
-            width={150}
-            height={200}
-            className="h-[200px] w-[150px] object-cover"
+            width={170}
+            height={227}
+            className="h-auto w-full object-cover"
           />
         </div>
 
         {/* Details + actions */}
         <div className="flex flex-1 flex-col">
-          <h2 className="text-lg font-bold text-foreground">{resume.title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{resume.updatedAt}</p>
+          {/* Title scales down on narrow phones, up on wider screens. */}
+          <h2 className="text-base font-bold text-foreground sm:text-lg md:text-xl">
+            {resume.title}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            {resume.updatedAt}
+          </p>
 
           {/* Download and Edit lead; Copy and Share sit back; Delete is quietest. */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
