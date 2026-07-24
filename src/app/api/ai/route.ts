@@ -142,7 +142,7 @@ function buildPrompt(task: Task, p: Record<string, unknown>): { prompt: string; 
       const { block, hasData } = summaryContextBlock(p);
       return {
         json: false,
-        prompt: `Write a resume Professional Summary for the candidate below. Target role: ${role}. Tone: ${p.tone || "confident"}.
+        prompt: `You are a certified professional resume writer and ATS optimization expert. Write a resume Professional Summary for the candidate below. Target role: ${role}. Tone: ${p.tone || "confident"}.
 
 Build the summary from the STRONGEST available inputs, in this priority order:
 1. The target role above.
@@ -151,12 +151,16 @@ Build the summary from the STRONGEST available inputs, in this priority order:
 4. Education and background.
 Lead with the higher-priority inputs; do not fall back to generic phrasing when real data exists.
 
+Silent analysis first (do not print any of it):
+- Infer career level from titles and tenure (0-1y entry, 2-4y early, 5-10y mid, 10-15y senior, 15y+ executive; a target role different from past titles means career change - emphasise transferable strengths).
+- Choose ONE power adjective that fits the role (e.g. Strategic, Results-driven, Analytical, Innovative, Dynamic, Motivated) and open with it.
+
 Rules:
-- 2 to 4 sentences. First-person implied (no "I"), plain prose - no markdown, headings, or lists.
-- Start with the role and years of experience WHEN the employment dates make that inferable; otherwise start with the role.
-- Weave in the 2-3 strongest skill themes the data supports.
-- Include a measurable achievement ONLY if it appears in the bullets below. Do NOT invent companies, metrics, years of experience, certifications, or tools.
-- Avoid buzzword-heavy generic filler.${hasData ? "" : "\n- Little structured data was provided: write a solid but GENERIC summary for the target role, keep claims modest, and do not fabricate specifics."}
+- 2 to 4 sentences (about 70-100 words). Third person, active voice, no pronouns ("I", "my", "me"). Plain prose - no markdown, headings, or lists.
+- Open with the power adjective plus the professional title; state years of experience WHEN the employment dates make it inferable, otherwise lead with the role.
+- Weave in the 2-3 strongest skill themes the data supports and end with a value statement tied to the target role.
+- Include a measurable achievement ONLY if it appears in the bullets below. Do NOT invent companies, metrics, years of experience, certifications, or tools. Quantify only when the data supports it; otherwise use qualitative impact.
+- Avoid generic filler words (hardworking, dedicated) and buzzword-heavy phrasing.${hasData ? "" : "\n- Little structured data was provided: write a solid but GENERIC summary for the target role, keep claims modest, and do not fabricate specifics."}
 
 ${block}
 
@@ -167,9 +171,9 @@ Return only the summary text.`,
       const { block } = summaryContextBlock(p);
       return {
         json: false,
-        prompt: `Improve this resume Professional Summary. Keep it truthful to the candidate's resume data below - never invent employers, metrics, achievements, years of experience, certifications, or tools the data does not support.
-Tone: ${p.tone || "confident"}. 2-4 sentences, first-person implied (no "I", "my", or "me"), plain prose, no markdown.
-Start with role and years of experience when inferable; highlight the 2-3 strongest skill themes.
+        prompt: `You are a certified professional resume writer and ATS optimization expert. Improve this resume Professional Summary. Keep it truthful to the candidate's resume data below - never invent employers, metrics, achievements, years of experience, certifications, or tools the data does not support.
+Tone: ${p.tone || "confident"}. 2-4 sentences (about 70-100 words), third person, active voice, no pronouns ("I", "my", or "me"), plain prose, no markdown.
+Open with a power adjective plus the professional title; state years of experience when inferable; highlight the 2-3 strongest skill themes and end on value tied to the target role. Quantify only when the data supports it, otherwise use qualitative impact. Avoid generic words (hardworking, dedicated).
 
 Build from the STRONGEST available inputs, in priority order: (1) target role, (2) most recent job title and its achievements, (3) skills and tools, (4) education and background, (5) the user instruction. If the current summary text names a DIFFERENT role or conflicts with the resume data, prefer the target role and employment history over the existing text.
 ${p.instruction ? `Also follow this free-form instruction from the user: "${p.instruction}". Interpret casual/imperfect wording charitably and apply exactly what the user asks - this is the user's OWN resume, so honour explicit edits such as a specific number of years of experience, a point to emphasise, the length, or the tone, even when it differs from the dates below. Do NOT, on your own initiative, invent additional employers, companies, metrics, achievements, tools, or certifications the user did not ask for and the data does not support.` : ""}
@@ -195,7 +199,7 @@ Return only the improved summary text.`,
       const hasExisting = existing.length > 0;
       return {
         json: true,
-        prompt: `Suggest 7 strong, achievement-oriented resume bullet points ${
+        prompt: `You are a professional resume writer and hiring manager who reviews thousands of resumes daily. Suggest 7 strong, achievement-oriented resume bullet points ${
           titled
             ? `for a ${role}${p.company ? ` at ${p.company}` : ""}`
             : "that would suit any professional role, describing transferable impact (ownership, collaboration, process improvement, measurable results)"
@@ -207,7 +211,12 @@ ${existing.map((b) => `- ${b}`).join("\n")}
 Generate 7 ADDITIONAL bullets that clearly build on the experience above: reuse the same tools, platforms, metrics, domain and seniority shown, cover responsibilities or achievements NOT already mentioned, and never duplicate or lightly reword an existing bullet.`
     : ""
 }
-Each bullet starts with a strong action verb and includes a concrete/quantified outcome where natural.
+Silent analysis first: infer the career level and industry from the job title and company, and match verbs and keywords to them.
+Construction rules for every bullet:
+- Begin with a strong action verb; one concise line of 10-20 words.
+- Structure: [Action Verb] + [What You Did] + [How You Did It] + [Purpose or Outcome].
+- Focus on responsibilities and real contributions; include a concrete or quantified outcome only where it is natural and supported - never invent numbers, employers, or tools.
+- Present tense for a current role, past tense for previous roles. No pronouns (I, my, me). No filler ("responsible for", "helped with"). Vary the action verbs and include role/industry keywords for ATS.
 ${page > 0 ? `These must be different from the first ${page * 7} you would normally give - go for less obvious angles.` : ""}
 Return a JSON array of 7 strings only. No markdown.`,
       };
@@ -215,8 +224,12 @@ Return a JSON array of 7 strings only. No markdown.`,
     case "improveBullets":
       return {
         json: true,
-        prompt: `Rewrite these resume bullet points to be stronger, more action-driven, quantified, and ATS-friendly.
-Keep the original meaning. Return a JSON array of strings (one per bullet). No markdown.
+        prompt: `You are a professional resume writer and ATS optimization specialist. Rewrite these resume bullet points to be stronger, more action-driven, and ATS-friendly, keeping the original meaning.
+Rules:
+- Each bullet starts with a strong action verb; format [Action Verb] + [What You Did] + [Outcome/Impact]; one line, 10-15 words.
+- Condense duplicate or near-identical bullets into one sharper statement; remove filler ("successfully", "responsible for", "worked to").
+- Present tense for current roles, past tense for previous ones. Preserve any numbers the candidate already included; never invent new numbers, tools, or employers.
+Return a JSON array of strings (roughly one per original bullet; merge only true duplicates). No markdown.
 
 Bullets:
 """${p.text || ""}"""`,
@@ -227,10 +240,11 @@ Bullets:
       const round = Number(p.seed ?? 0);
       return {
         json: true,
-        prompt: `Suggest resume skills for a ${role}.
-Return JSON: { "hard": [7 technical/role-specific skills], "soft": [7 interpersonal skills] }.
-Short skill names only (1-3 words). No duplicates with: ${JSON.stringify(p.exclude || [])}.
-${round > 0 ? `This is refresh number ${round}: avoid the most obvious picks you would normally list first and suggest less common but still relevant skills.` : ""}`,
+        prompt: `You are a professional resume writer and ATS optimization expert. Suggest resume skills for a ${role}.
+Silent analysis first: infer the role type and industry from the title and choose the skills a hiring manager for this role actually screens for.
+Return JSON: { "hard": [7 technical/role-specific skills], "soft": [7 interpersonal/strategic skills] }.
+Rules: Title Case, 1-3 words each, no commas inside a skill, no duplicates, and no generic filler buzzwords ("Team Player", "MS Office", "Multitasking"). Do not repeat any skill in this exclude list: ${JSON.stringify(p.exclude || [])}.
+${round > 0 ? `This is refresh number ${round}: avoid the most obvious picks you would normally list first, rotate between interchangeable synonyms, and suggest less common but still relevant skills.` : ""}`,
       };
     }
     case "suggest": {
@@ -459,7 +473,7 @@ ${(p.text as string) || ""}`,
       const bullets = (p.bullets as string[]) || [];
       return {
         json: true,
-        prompt: `Tailor a resume to this job posting.
+        prompt: `You are a professional resume writer and ATS optimization expert. Tailor a resume to this job posting.
 Return JSON: {
   "summary": "a rewritten 2-4 sentence professional summary aligned to the job (no markdown)",
   "keywords": [8 important ATS keywords/skills pulled from the job description to include],
@@ -469,7 +483,7 @@ Return JSON: {
       : "leave this an empty array"
   }]
 }.
-Rules: every fact must stay truthful. Do NOT invent companies, metrics, tools, or responsibilities that are not already present in the candidate's material. Reframe and re-emphasise only. Preserve existing numbers exactly.
+Rules: every fact must stay truthful. Mirror the job posting's own terminology and keywords, and frame each rewritten achievement with the STAR logic (situation/task, action, result) using ONLY what the candidate already provided. For a career change (target role far from past titles), emphasise transferable strengths. Do NOT invent companies, metrics, tools, or responsibilities that are not already present in the candidate's material. Reframe and re-emphasise only. Preserve existing numbers exactly.
 Job description:
 """${p.jobDescription || ""}"""
 Candidate's current summary:
