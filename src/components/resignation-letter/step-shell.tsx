@@ -92,7 +92,7 @@ export function StepShell({
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 sm:px-8">
         <div className="flex w-fit items-center gap-3">
           <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
-          <Link href="/resignation-letters" aria-label="resume.co home" className="w-fit">
+          <Link href="/resignation-letters" aria-label="resumewriter.ai home" className="w-fit">
             <LogoMark withWordmark={false} className="size-7" />
           </Link>
         </div>

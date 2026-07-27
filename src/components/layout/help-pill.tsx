@@ -19,8 +19,8 @@ const FAQS: Faq[] = [
     a: "To get you started, we offer all users the ability to create up to 3 documents of each type (resumes and cover letters) for free. This way, you can test out our platform and see if it's the right fit before deciding to upgrade.",
   },
   {
-    q: "Are Resume.co template configurations ATS-friendly?",
-    a: "Every resume, CV, and cover letter template created on Resume.co is ATS-friendly. If you've used our resume builder to create an application document, rest assured that ATS will be able to scan and read your information correctly.",
+    q: "Are Resumewriter.ai template configurations ATS-friendly?",
+    a: "Every resume, CV, and cover letter template created on Resumewriter.ai is ATS-friendly. If you've used our resume builder to create an application document, rest assured that ATS will be able to scan and read your information correctly.",
   },
   {
     q: "How do I download my resume?",

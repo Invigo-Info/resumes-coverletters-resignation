@@ -138,7 +138,7 @@ function CheckoutInner() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <Link href="/" aria-label="resume.co home" className="inline-block">
+        <Link href="/" aria-label="resumewriter.ai home" className="inline-block">
           <LogoMark />
         </Link>
 
@@ -181,12 +181,12 @@ function CheckoutInner() {
             <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
               Billing terms: Your {plan.summaryAmount} package
               {plan.id === "trial" ? " lasts 7 days." : " is billed annually."} By clicking
-              &quot;Subscribe&quot; you are providing your electronic signature authorizing Resume.co
+              &quot;Subscribe&quot; you are providing your electronic signature authorizing Resumewriter.ai
               to charge your card as described. You agree that, unless you cancel your account
               {plan.id === "trial" ? " during your 7 days try-out period" : ""}, you will be billed
               {plan.id === "trial" ? " $29.95 monthly" : " $119.40 annually"} until you cancel your
               account, which can be done quickly and easily by contacting our support team at
-              855-568-0962 / support@resume.co
+              855-568-0962 / support@resumewriter.ai
             </p>
           </div>
 

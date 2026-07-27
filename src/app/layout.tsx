@@ -28,6 +28,7 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
+import { siteUrl } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -91,10 +92,33 @@ const designFontVars = [
   .map((f) => f.variable)
   .join(" ");
 
-// Default document <head> metadata applied to every route unless a page overrides it.
+// Default document <head> metadata applied to every route unless a page
+// overrides it. `metadataBase` resolves relative OG/canonical URLs against the
+// site origin; the title template appends the brand to per-page titles.
+const SITE_DESCRIPTION =
+  "Create, edit and tailor resumes, cover letters, and resignation letters with AI assistance.";
+
 export const metadata: Metadata = {
-  title: "Resume.co - Build your resume",
-  description: "Create, edit and tailor resumes with AI assistance.",
+  metadataBase: new URL(siteUrl()),
+  title: {
+    default: "Resumewriter.ai - Build your resume",
+    template: "%s - Resumewriter.ai",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: "Resumewriter.ai",
+  openGraph: {
+    type: "website",
+    siteName: "Resumewriter.ai",
+    title: "Resumewriter.ai - Build your resume",
+    description: SITE_DESCRIPTION,
+    url: siteUrl(),
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resumewriter.ai - Build your resume",
+    description: SITE_DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
 };
 
 /**

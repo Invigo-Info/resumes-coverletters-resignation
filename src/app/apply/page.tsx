@@ -142,7 +142,7 @@ export default function ApplyGatewayPage() {
       <PageShell>
         <div className="absolute left-6 top-6 flex items-center gap-3">
           <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
-          <Link href="/" aria-label="resume.co home">
+          <Link href="/" aria-label="resumewriter.ai home">
             <LogoMark />
           </Link>
         </div>
@@ -168,7 +168,7 @@ export default function ApplyGatewayPage() {
     <PageShell>
       <div className="absolute left-6 top-6 flex items-center gap-3">
         <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
-        <Link href="/jobs" aria-label="resume.co home">
+        <Link href="/jobs" aria-label="resumewriter.ai home">
           <LogoMark />
         </Link>
       </div>

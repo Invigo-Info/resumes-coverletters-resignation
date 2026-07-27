@@ -53,3 +53,23 @@ export const usePaywall = create<PaywallState>()(
     }
   )
 );
+
+/**
+ * Server-authoritative entitlement. The persisted `premium` above is only a
+ * cache / dev convenience; a tampered localStorage value must not unlock premium
+ * in production. On load, ask the server: when it reports `source === "server"`
+ * (DB + Stripe configured), its value wins - granting OR revoking access. When
+ * the server is unconfigured (local dev), the local flag is left as-is.
+ */
+if (typeof window !== "undefined") {
+  void fetch("/api/entitlement")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d: { premium?: boolean; source?: string } | null) => {
+      if (d && d.source === "server") {
+        usePaywall.setState({ premium: Boolean(d.premium) });
+      }
+    })
+    .catch(() => {
+      /* offline / not signed in - keep the local flag */
+    });
+}

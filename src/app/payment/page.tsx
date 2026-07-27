@@ -79,7 +79,7 @@ function PaymentPageInner() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-        <Link href="/" aria-label="resume.co home" className="inline-block">
+        <Link href="/" aria-label="resumewriter.ai home" className="inline-block">
           <LogoMark />
         </Link>
 
@@ -91,7 +91,7 @@ function PaymentPageInner() {
               Subscribe now and get unlimited resume downloads &amp; more
             </h1>
             <p className="mt-6 max-w-md text-muted-foreground">
-              Ace your career with Resume.co premium subscription. Build and tailor unlimited resumes
+              Ace your career with Resumewriter.ai premium subscription. Build and tailor unlimited resumes
               for every job, generate custom cover letters, and explore extra design options.
             </p>
             <ul className="mt-8 space-y-3">

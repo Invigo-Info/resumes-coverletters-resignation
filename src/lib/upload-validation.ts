@@ -24,6 +24,32 @@ export const FILE_TOO_LARGE_MESSAGE =
 /** Shown when no file was provided at all. */
 export const NO_FILE_MESSAGE = "Please select a file.";
 
+/**
+ * MIME types accepted for inline uploads sent to the model. Matches the file
+ * pickers across the app (`.pdf,.doc,.docx,.txt,.md`). Anything else - an
+ * executable, an archive, an image with a spoofed extension - is rejected at the
+ * server boundary so a bypassed frontend can't push arbitrary bytes to the API.
+ */
+export const ALLOWED_UPLOAD_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "text/markdown",
+] as const;
+
+/** True when `mime` is one of the accepted upload types. */
+export function isAllowedUploadType(mime: string | undefined | null): boolean {
+  return (
+    typeof mime === "string" &&
+    (ALLOWED_UPLOAD_MIME_TYPES as readonly string[]).includes(mime)
+  );
+}
+
+/** Shown when an upload's type is not in the allowlist. */
+export const UNSUPPORTED_FILE_MESSAGE =
+  "Unsupported file type. Please upload a PDF, Word document, or text file.";
+
 export interface UploadValidation {
   valid: boolean;
   /** Empty string when valid; a user-facing message otherwise. */

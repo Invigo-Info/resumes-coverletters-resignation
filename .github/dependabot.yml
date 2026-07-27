@@ -1,0 +1,25 @@
+# Dependabot: automated dependency + GitHub Actions update PRs, plus security
+# alerts. Works on private repos at no cost. Grouped and throttled so it does not
+# flood the repo; security updates still come through immediately.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for routine minor/patch bumps to keep review light.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - ci

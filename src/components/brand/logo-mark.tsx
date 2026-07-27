@@ -2,7 +2,7 @@ import { MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LogoMarkProps {
-  /** Show the "resume.co" wordmark next to the icon. */
+  /** Show the "resumewriter.ai" wordmark next to the icon. */
   withWordmark?: boolean;
   /** Tailwind size class for the gradient icon tile, e.g. "size-8". */
   className?: string;
@@ -10,8 +10,8 @@ interface LogoMarkProps {
 }
 
 /**
- * resume.co brand mark: a blue gradient rounded tile with a speech-bubble
- * icon, optionally followed by the "resume.co" wordmark.
+ * resumewriter.ai brand mark: a blue gradient rounded tile with a speech-bubble
+ * icon, optionally followed by the "resumewriter.ai" wordmark.
  */
 export function LogoMark({
   withWordmark = true,
@@ -31,7 +31,7 @@ export function LogoMark({
       </span>
       {withWordmark && (
         <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
-          resume.co
+          resumewriter.ai
         </span>
       )}
     </span>

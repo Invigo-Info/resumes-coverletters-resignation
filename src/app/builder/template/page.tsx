@@ -11,7 +11,7 @@ export default function TemplateGalleryPage() {
   return (
     <PageShell>
       <div className="absolute left-6 top-6">
-        <Link href="/" aria-label="resume.co home">
+        <Link href="/" aria-label="resumewriter.ai home">
           <LogoMark />
         </Link>
       </div>

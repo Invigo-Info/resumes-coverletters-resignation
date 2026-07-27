@@ -2,6 +2,7 @@ import { TopNav } from "@/components/dashboard/top-nav";
 import { SiteFooter } from "@/components/dashboard/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 import { InterviewPrepView } from "@/components/interview-prep/interview-prep";
+import { SavedPrepLink } from "@/components/interview-prep/saved-prep-link";
 
 // Interview prep: pick an interview type for the active apply job, then show a
 // generated, job-specific preparation sheet.
@@ -12,6 +13,7 @@ export default function InterviewPrepPage() {
 
       <main className="flex-1">
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+          <SavedPrepLink />
           <InterviewPrepView />
         </div>
       </main>

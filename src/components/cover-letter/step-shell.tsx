@@ -98,7 +98,7 @@ export function StepShell({
       <header className="flex items-center justify-between px-5 py-4 sm:px-8">
         <div className="flex items-center gap-3">
           <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
-          <Link href="/cover-letters" aria-label="resume.co home">
+          <Link href="/cover-letters" aria-label="resumewriter.ai home">
             <LogoMark withWordmark={false} className="size-7" />
           </Link>
         </div>

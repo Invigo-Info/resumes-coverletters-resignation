@@ -1,67 +1,59 @@
 "use client";
 
 /**
- * Server sync for the tailoring session workflow - THIN STUB for now.
+ * Server sync for the tailoring session workflow, mirroring documents-sync.ts.
  *
- * "Tailor your resume" is modelled as a durable SESSION (see
- * tailoring-session-store.ts) so a user's progress survives payment redirects,
- * share popups and page reloads - not just transient React state, as the backend
- * architecture spec requires. That store is the source of truth for instant UI;
- * this module isolates the future move to account-level persistence, mirroring
- * the documents-sync.ts pattern (fire-and-forget, best-effort).
- *
- * When a real backend exists, fill these in against the documented endpoints:
- *   POST /api/tailoring/sessions                    -> createTailoringSession
- *   GET  /api/tailoring/sessions/{id}/analysis-status
- *   GET  /api/tailoring/sessions/{id}/keywords
- *   POST /api/tailoring/sessions/{id}/keywords       -> saveTailoringKeywords
- *   GET  /api/tailoring/sessions/{id}/suggestions
- *   POST /api/tailoring/suggestions/{id}/apply       -> pushSuggestionStatus(id,"applied")
- *   POST /api/tailoring/suggestions/{id}/skip        -> pushSuggestionStatus(id,"skipped")
- *   POST /api/tailoring/sessions/{id}/apply-all      -> pushApplyAll
- *   POST /api/tailoring/sessions/{id}/finalize       -> finalizeTailoringSession
- *   POST /api/resumes/{versionId}/download
- *   POST /api/resumes/{versionId}/share-link
- * Keeping the call sites here means the store never changes when the backend
- * arrives.
+ * "Tailor your resume" is a durable SESSION (see tailoring-session-store.ts) so a
+ * user's progress survives payment redirects, share popups and page reloads - and
+ * follows the account across devices. The store is the source of truth for instant
+ * UI; these helpers mirror the whole session to `/api/tailoring/sessions`
+ * (best-effort, fire-and-forget) on each discrete change, and hydrate it back on
+ * load. When logged out the requests 401 and are ignored, so local-only behavior
+ * is unchanged.
  */
 
-import type {
-  SuggestionStatus,
-  TailoringSession,
-} from "@/lib/store/tailoring-session-store";
+import type { TailoringSession } from "@/lib/store/tailoring-session-store";
 
-/** Persist a newly created tailoring session (no-op until a backend exists). */
-export function createTailoringSession(_session: TailoringSession): void {
-  // TODO(db): void fetch("/api/tailoring/sessions", { method: "POST", body: ... }).catch(() => {});
+/** Persist the full session snapshot to the account (best-effort). */
+export function pushTailoringSession(session: TailoringSession): void {
+  try {
+    void fetch("/api/tailoring/sessions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session }),
+    }).catch(() => {});
+  } catch {
+    /* ignore - the local store already has it */
+  }
 }
 
-/** Save the user's selected keywords + optional note (no-op for now). */
-export function saveTailoringKeywords(
-  _sessionId: string,
-  _keywords: string[],
-  _note: string
-): void {
-  // TODO(db): POST /api/tailoring/sessions/{id}/keywords
+/** Remove a session from the account (best-effort). */
+export function deleteTailoringSession(id: string): void {
+  try {
+    void fetch(`/api/tailoring/sessions?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
 }
 
-/** Record one suggestion's apply/skip transition (no-op for now). */
-export function pushSuggestionStatus(
-  _suggestionId: string,
-  _status: SuggestionStatus
-): void {
-  // TODO(db): POST /api/tailoring/suggestions/{id}/apply | /skip
-}
-
-/** Record an "apply all remaining" transition (no-op for now). */
-export function pushApplyAll(_sessionId: string): void {
-  // TODO(db): POST /api/tailoring/sessions/{id}/apply-all
-}
-
-/** Finalize the session into a final tailored resume version (no-op for now). */
-export function finalizeTailoringSession(
-  _sessionId: string,
-  _finalScore: number
-): void {
-  // TODO(db): POST /api/tailoring/sessions/{id}/finalize
+/**
+ * Fetch one saved session by id. Returns null when logged out / offline / absent,
+ * so callers keep using local state.
+ */
+export async function fetchTailoringSession(
+  id: string
+): Promise<TailoringSession | null> {
+  try {
+    const res = await fetch(
+      `/api/tailoring/sessions?id=${encodeURIComponent(id)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return null; // 401 when not signed in
+    const body = (await res.json()) as { session?: TailoringSession | null };
+    return body.session ?? null;
+  } catch {
+    return null;
+  }
 }

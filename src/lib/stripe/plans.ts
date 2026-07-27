@@ -41,7 +41,7 @@ export const PLANS: Record<PlanId, Plan> = {
     ],
     summaryAmount: "$1.95",
     summaryNote: "Tax may apply",
-    stripe: { unitAmount: 2995, interval: "month", trialDays: 7, productName: "Resume.co Premium (monthly)" },
+    stripe: { unitAmount: 2995, interval: "month", trialDays: 7, productName: "Resumewriter.ai Premium (monthly)" },
   },
   annual: {
     id: "annual",
@@ -57,7 +57,7 @@ export const PLANS: Record<PlanId, Plan> = {
     ],
     summaryAmount: "$119.40",
     summaryNote: "Billed annually · tax may apply",
-    stripe: { unitAmount: 11940, interval: "year", trialDays: 0, productName: "Resume.co Premium (annual)" },
+    stripe: { unitAmount: 11940, interval: "year", trialDays: 0, productName: "Resumewriter.ai Premium (annual)" },
   },
 };
 

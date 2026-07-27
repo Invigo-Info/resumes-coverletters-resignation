@@ -15,6 +15,12 @@ import { useDocumentsStore } from "@/lib/store/documents-store";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useJobsStore } from "@/lib/store/jobs-store";
 import {
+  fetchSavedJobs,
+  pushSavedJob,
+  fetchDismissedJobs,
+  pushDismissedJob,
+} from "@/lib/store/jobs-sync";
+import {
   generateJobs,
   jobCountFor,
   postedWithinDays,
@@ -200,6 +206,52 @@ export function JobSearch() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Cross-device sync: pull the account's saved jobs, back up any local-only
+  // saves to the server, then merge server saves into the local store (union -
+  // a posting saved in either place stays saved). Logged out / offline returns
+  // null and this is a no-op, so local-only behavior is unchanged.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const server = await fetchSavedJobs();
+      if (!alive || !server) return;
+      const local = useJobsStore.getState().saved;
+      const serverIds = new Set(server.map((s) => s.job.id));
+      for (const [id, job] of Object.entries(local)) {
+        if (!serverIds.has(id)) pushSavedJob(job);
+      }
+      useJobsStore.setState((s) => {
+        const next = { ...s.saved };
+        for (const { job } of server) {
+          if (!next[job.id]) next[job.id] = job;
+        }
+        return { saved: next };
+      });
+
+      // Same union-merge for dismissed ("Not interested") jobs: back up any
+      // local-only dismissals, then merge the account's dismissed list in.
+      const serverDismissed = await fetchDismissedJobs();
+      if (!alive || !serverDismissed) return;
+      const st = useJobsStore.getState();
+      const dismissedIds = new Set(serverDismissed.map((d) => d.jobId));
+      for (const id of st.dismissed) {
+        if (!dismissedIds.has(id)) pushDismissedJob(id, st.dismissedReasons[id]);
+      }
+      useJobsStore.setState((s) => {
+        const merged = new Set(s.dismissed);
+        const reasons = { ...s.dismissedReasons };
+        for (const d of serverDismissed) {
+          merged.add(d.jobId);
+          if (d.reason) reasons[d.jobId] = d.reason;
+        }
+        return { dismissed: [...merged], dismissedReasons: reasons };
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [tab, setTab] = useState<Tab>("recommended");
   const [sortMode, setSortMode] = useState<SortMode>("match");

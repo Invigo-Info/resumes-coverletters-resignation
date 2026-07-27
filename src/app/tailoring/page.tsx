@@ -39,6 +39,7 @@ import {
   type SessionSuggestion,
   type SuggestionSection,
 } from "@/lib/store/tailoring-session-store";
+import { fetchTailoringSession } from "@/lib/tailoring/tailoring-sync";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -462,12 +463,36 @@ export default function TailoringPage() {
     return () => clearTimeout(t);
   }, [mounted]);
 
+  // Cross-device resume: before building anything, pull this job's saved session
+  // from the account (if we don't already hold it locally) and seed the store, so
+  // a session started on another device continues here. A no-op when logged out.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (!mounted || !jobTitle) return;
+    let alive = true;
+    (async () => {
+      const jobId = slugify(`${jobTitle}__${company}`);
+      const local = useTailoringSessionStore.getState().session;
+      if (!local || local.jobId !== jobId) {
+        const server = await fetchTailoringSession(`tailor_${jobId}`);
+        if (alive && server && server.jobId === jobId) {
+          useTailoringSessionStore.setState({ session: server });
+        }
+      }
+      if (alive) setHydrated(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mounted, jobTitle, company]);
+
   // Analyze once: load the matched resume, then open (or resume) the durable
   // session for this resume+job. An existing session is reused as-is, so applied
-  // or edited suggestions are never rebuilt over.
+  // or edited suggestions are never rebuilt over. Waits for hydration so a saved
+  // account session is preferred over building a fresh one.
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (!mounted || !jobTitle || ready) return;
+    if (!mounted || !jobTitle || ready || !hydrated) return;
 
     // Make the resume being tailored the active one. The user's real resumes live
     // as saved drafts in the dashboard ("Resume section"); the active editor store
@@ -523,6 +548,7 @@ export default function TailoringPage() {
     setReady(true);
   }, [
     mounted,
+    hydrated,
     jobTitle,
     ready,
     keywords,

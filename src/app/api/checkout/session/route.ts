@@ -41,6 +41,10 @@ export async function POST(req: Request) {
       mode: "subscription",
       ui_mode: "embedded_page",
       customer_email: email,
+      // Link the session + subscription to the account so the webhook can map
+      // lifecycle events (created/updated/canceled) back to this user's email.
+      client_reference_id: email,
+      metadata: email ? { email, plan: plan.id } : undefined,
       line_items: [
         {
           quantity: 1,
@@ -52,8 +56,14 @@ export async function POST(req: Request) {
           },
         },
       ],
-      subscription_data:
-        plan.stripe.trialDays > 0 ? { trial_period_days: plan.stripe.trialDays } : undefined,
+      subscription_data: {
+        ...(plan.stripe.trialDays > 0
+          ? { trial_period_days: plan.stripe.trialDays }
+          : {}),
+        // Carried on subscription events so the webhook can resolve the email
+        // even without a prior customer->email lookup.
+        ...(email ? { metadata: { email } } : {}),
+      },
       return_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}${nextParam}`,
     });
 

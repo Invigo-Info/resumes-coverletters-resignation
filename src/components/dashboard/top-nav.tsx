@@ -38,7 +38,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full items-center gap-6 px-4 sm:px-6 lg:px-10">
         {/* Left: logo + tabs */}
-        <Link href="/" aria-label="resume.co home">
+        <Link href="/" aria-label="resumewriter.ai home">
           <LogoMark withWordmark={false} className="size-7" />
         </Link>
 
@@ -96,7 +96,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
                 Account settings
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => window.open("mailto:support@resume.co", "_self")}
+                onClick={() => window.open("mailto:support@resumewriter.ai", "_self")}
               >
                 <CircleHelp className="size-4 text-muted-foreground" />
                 Help &amp; support

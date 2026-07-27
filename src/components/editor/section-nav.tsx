@@ -47,6 +47,7 @@ export function SectionNav({
 }) {
   const order = useResumeStore((s) => s.sectionOrder);
   const active = useResumeStore((s) => s.activeSection);
+  const unlockedSections = useResumeStore((s) => s.unlockedSections);
   const additional = useResumeStore((s) => s.additional);
   const setActive = useResumeStore((s) => s.setActiveSection);
   const moveSection = useResumeStore((s) => s.moveSection);
@@ -114,26 +115,36 @@ export function SectionNav({
   return (
     <nav className="rounded-2xl bg-card p-2 shadow-card ring-1 ring-border">
       <ul className="relative space-y-0.5">
+        {/* Vertical progress rail the completion dots sit on. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-4 top-5 bottom-5 z-0 w-px bg-border"
+        />
         {order.map((key: SectionKey) => {
           const meta = metaFor(key);
           if (!meta) return null;
           const Icon = meta.icon;
           const isActive = key === active;
+          // Guided flow: a section is reachable only once the user has advanced
+          // to it (via Next). Locked sections render disabled and non-clickable;
+          // reordering/dragging is also blocked until a section is unlocked.
+          const unlocked = unlockedSections.includes(key);
+          const canDrag = Boolean(meta.reorderable) && unlocked;
           const movableIdx = meta.reorderable ? movableKeys.indexOf(key) : -1;
           const canUp = movableIdx > 0;
           const canDown = movableIdx >= 0 && movableIdx < movableKeys.length - 1;
           return (
             <li
               key={key}
-              draggable={meta.reorderable}
-              onDragStart={() => meta.reorderable && setDragKey(key)}
+              draggable={canDrag}
+              onDragStart={() => canDrag && setDragKey(key)}
               onDragOver={(e) => {
-                if (!meta.reorderable || !dragKey) return;
+                if (!canDrag || !dragKey) return;
                 e.preventDefault(); // required, or the drop never fires
                 setOverKey(key);
               }}
               onDrop={(e) => {
-                if (!meta.reorderable) return;
+                if (!canDrag) return;
                 e.preventDefault();
                 commitDrop();
               }}
@@ -145,30 +156,51 @@ export function SectionNav({
               )}
             >
               <button
-                onClick={() => setActive(key)}
+                onClick={() => unlocked && setActive(key)}
+                disabled={!unlocked}
+                aria-disabled={!unlocked}
                 className={cn(
                   "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-muted text-foreground"
-                    : "text-foreground/80 hover:bg-muted/60"
+                  !unlocked
+                    ? "cursor-not-allowed text-foreground/40"
+                    : isActive
+                      ? "bg-muted text-foreground"
+                      : "text-foreground/80 hover:bg-muted/60"
                 )}
               >
-                <Icon className="size-4 shrink-0 text-muted-foreground" />
-                <span
+                <Icon
                   className={cn(
-                    "flex-1 truncate",
-                    // Room for the drag handle, so a long label never runs under it.
-                    meta.reorderable && "pr-6"
+                    "size-4 shrink-0",
+                    unlocked ? "text-muted-foreground" : "text-foreground/30"
                   )}
-                >
-                  {meta.label}
-                </span>
+                />
+                {/* Room on the right for the status dot / drag handle so a long
+                    label never runs under it. */}
+                <span className="flex-1 truncate pr-6">{meta.label}</span>
               </button>
 
-              {/* Always-visible drag handle, pinned to the row's right edge.
-                  Arrow keys are the pointer-free path, and they reuse
-                  moveSection's pinning rules. */}
-              {meta.reorderable && (
+              {/* Status dot on the progress rail: green once the section has been
+                  passed (unlocked and no longer current), a solid dark dot for the
+                  current section, and a hollow marker while it is still locked.
+                  Fades out while hovering/focusing an unlocked reorderable row so
+                  the drag handle can take its place. */}
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute right-3 top-1/2 z-10 size-2.5 -translate-y-1/2 rounded-full transition-all",
+                  !unlocked
+                    ? "border-2 border-muted-foreground/30 bg-card"
+                    : isActive
+                      ? "bg-foreground"
+                      : "bg-progress-done",
+                  canDrag && "group-hover:opacity-0 group-focus-within:opacity-0"
+                )}
+              />
+
+              {/* Drag handle, revealed on hover/focus of an unlocked reorderable
+                  row (it overlaps the status dot). Arrow keys are the pointer-free
+                  path and reuse moveSection's pinning rules. */}
+              {canDrag && (
                 <button
                   type="button"
                   aria-label={`Reorder ${meta.label}. Use the up and down arrow keys.`}
@@ -182,7 +214,7 @@ export function SectionNav({
                       moveSection(key, "down");
                     }
                   }}
-                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 cursor-grab place-items-center rounded-md text-muted-foreground/60 outline-none transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing focus-visible:ring-3 focus-visible:ring-ring/40"
+                  className="absolute right-2 top-1/2 z-20 grid size-6 -translate-y-1/2 cursor-grab place-items-center rounded-md text-muted-foreground/60 opacity-0 outline-none transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/40"
                 >
                   <AlignJustify className="size-3.5" />
                 </button>

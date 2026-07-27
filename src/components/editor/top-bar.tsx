@@ -9,6 +9,7 @@ import {
   Loader2,
   Download,
   Share2,
+  Eye,
   Meh,
   Smile,
   SmilePlus,
@@ -60,9 +61,13 @@ function stageFor(p: number) {
 export function TopBar({
   tab,
   onTabChange,
+  onPreview,
 }: {
   tab: EditorTab;
   onTabChange: (t: EditorTab) => void;
+  /** Opens the mobile preview sheet. Only shown on screens without the
+   *  side-by-side preview (the button hides itself at xl). */
+  onPreview?: () => void;
 }) {
   const progress = useResumeStore(getProgress);
   const stage = stageFor(progress);
@@ -154,8 +159,19 @@ export function TopBar({
         </div>
       </div>
 
-      {/* Share + Download */}
+      {/* Preview (mobile only) + Share + Download */}
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+        {onPreview && (
+          <button
+            onClick={onPreview}
+            aria-label="Preview resume"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted sm:px-5 xl:hidden"
+          >
+            <Eye className="size-4" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
+        )}
+
         <button
           onClick={() => setShareOpen(true)}
           className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"

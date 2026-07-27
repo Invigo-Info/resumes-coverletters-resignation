@@ -2,7 +2,22 @@ import { NextResponse } from "next/server";
 import {
   base64ExceedsLimit,
   FILE_TOO_LARGE_MESSAGE,
+  isAllowedUploadType,
+  UNSUPPORTED_FILE_MESSAGE,
 } from "@/lib/upload-validation";
+import { aiBodySchema, type Task } from "@/lib/schemas";
+import { limit, clientIp } from "@/lib/rate-limit";
+import { auth } from "@/auth";
+
+// Cap AI calls to prevent cost-abuse (denial-of-wallet). Two windows:
+//  - per-minute burst, generous enough that normal typing/autocomplete and
+//    regeneration are never throttled;
+//  - per-user DAILY quota, a hard cost guardrail so a single account (or IP)
+//    cannot drain the Gemini budget over a day.
+const AI_LIMIT = Number(process.env.AI_RATE_LIMIT ?? 120);
+const AI_WINDOW_MS = 60_000;
+const AI_DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT ?? 300);
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Server-side Gemini bridge for all AI features.
@@ -15,34 +30,10 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const ENDPOINT = (key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
 
-type Task =
-  | "summary"
-  | "improveSummary"
-  | "bullets"
-  | "improveBullets"
-  | "skills"
-  | "tailor"
-  | "suggest"
-  | "coverLetter"
-  | "parseResume"
-  | "extractResume"
-  | "extractJobPosting"
-  | "rewriteBullets"
-  | "rankChips"
-  | "resignationLetter"
-  | "improveText"
-  | "scoreJob"
-  | "interviewPrep";
-
 /** Optional file (e.g. an uploaded PDF) sent inline to the model. */
 interface InlineFile {
   mimeType: string;
   data: string; // base64 (no data: prefix)
-}
-
-interface Body {
-  task: Task;
-  payload: Record<string, unknown>;
 }
 
 /**
@@ -648,12 +639,62 @@ export async function GET() {
  * instead of erroring. Parses JSON-mode replies (stripping ```json fences).
  */
 export async function POST(req: Request) {
+  // Identity for rate limiting: the signed-in account when available (so limits
+  // follow the user across IPs), else the client IP. Anonymous use is still
+  // allowed - AI features work before sign-in - but is capped per IP.
+  const session = await auth();
+  const identity = session?.user?.email ?? clientIp(req);
+
+  // Per-minute burst cap.
+  const perMinute = await limit(`ai:min:${identity}`, AI_LIMIT, AI_WINDOW_MS);
+  if (!perMinute.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil(perMinute.resetMs / 1000)) },
+      }
+    );
+  }
+
+  // Per-user daily quota (the Gemini cost guardrail).
+  const perDay = await limit(`ai:day:${identity}`, AI_DAILY_LIMIT, DAY_MS);
+  if (!perDay.ok) {
+    return NextResponse.json(
+      {
+        error: "daily_limit",
+        message:
+          "You have reached today's AI usage limit. Please try again tomorrow.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil(perDay.resetMs / 1000)) },
+      }
+    );
+  }
+
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ fallback: true });
 
   try {
-    const { task, payload } = (await req.json()) as Body;
+    // Validate the body at the trust boundary: reject an unknown task or a
+    // malformed shape with a 400 instead of letting it fall through buildPrompt.
+    const parsed = aiBodySchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    }
+    const { task, payload } = parsed.data;
     const file = payload.file as InlineFile | undefined;
+
+    // Upload safety: only accept the document types the pickers offer (PDF /
+    // Word / text). Reject anything else - an executable, an archive, a spoofed
+    // image - before it is forwarded inline to the model. 415 Unsupported.
+    if (file?.data && !isAllowedUploadType(file.mimeType)) {
+      return NextResponse.json(
+        { error: "UNSUPPORTED_FILE_TYPE", message: UNSUPPORTED_FILE_MESSAGE },
+        { status: 415 }
+      );
+    }
 
     // Defence in depth: the client blocks oversized files, but re-check the
     // decoded size here so a bypassed frontend can't push a huge upload to the

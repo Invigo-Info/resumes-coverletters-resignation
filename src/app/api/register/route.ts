@@ -1,37 +1,49 @@
 import { NextResponse } from "next/server";
 import { createUser } from "@/lib/users";
+import { limit, clientIp } from "@/lib/rate-limit";
+import { registerBodySchema } from "@/lib/schemas";
+import { sendWelcomeEmail } from "@/lib/email";
 
-// Basic email shape check: non-space chars, an @, a domain, and a TLD.
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Cap signups per IP to blunt automated account-creation spam.
+const REGISTER_LIMIT = Number(process.env.REGISTER_RATE_LIMIT ?? 10);
+const REGISTER_WINDOW_MS = 60_000;
 
 /**
  * POST /api/register - creates a new account from { email, password, name }.
- * Validates input, then maps the createUser "exists" error to a 409 conflict.
+ * Validates input (email shape + password policy), then maps the createUser
+ * "exists" error to a 409 conflict.
  */
 export async function POST(req: Request) {
-  let body: { email?: string; password?: string; name?: string };
-  // Reject malformed/non-JSON request bodies before any processing.
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  }
-
-  const email = (body.email || "").trim();
-  const password = body.password || "";
-
-  if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
-  }
-  if (password.length < 8) {
+  const rl = await limit(
+    `register:${clientIp(req)}`,
+    REGISTER_LIMIT,
+    REGISTER_WINDOW_MS
+  );
+  if (!rl.ok) {
     return NextResponse.json(
-      { error: "Password must be at least 8 characters" },
-      { status: 400 }
+      { error: "Too many attempts. Please try again in a minute." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetMs / 1000)) } }
     );
   }
 
+  // Validate the body at the trust boundary; surface the first policy message so
+  // the UI still shows a specific, actionable error.
+  const parsed = registerBodySchema.safeParse(
+    await req.json().catch(() => null)
+  );
+  if (!parsed.success) {
+    const message =
+      parsed.error.issues[0]?.message ?? "Invalid request";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+  const { email, password, name } = parsed.data;
+
   try {
-    const user = await createUser(email, password, body.name);
+    const user = await createUser(email, password, name);
+    // Best-effort welcome email. Awaited so it runs reliably on serverless, but
+    // it never throws (errors are swallowed) and is instant when email is
+    // unconfigured, so it cannot fail or slow down sign-up.
+    await sendWelcomeEmail(user.email, user.name);
     return NextResponse.json({ ok: true, user }, { status: 201 });
   } catch (err) {
     // Duplicate-email signups surface as a 409 so the UI can prompt sign-in instead.

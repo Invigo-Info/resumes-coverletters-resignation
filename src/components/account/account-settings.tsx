@@ -322,7 +322,7 @@ export function AccountSettings() {
           <h2 className="mb-5 text-xl font-bold text-foreground">Emails</h2>
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Subscribe to career tips and Resume.co news, events, offers
+              Subscribe to career tips and Resumewriter.ai news, events, offers
             </p>
             <Toggle
               checked={emails}

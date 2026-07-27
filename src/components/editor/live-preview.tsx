@@ -12,6 +12,7 @@ import { displayUrl, normalizeUrl } from "@/lib/url";
 import { resolveResumeTheme } from "@/lib/resume-themes";
 import { FONT_STACK } from "@/lib/font-pairs";
 import { getTemplate, type HeadingVariant } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 
 /** Format a start/end pair as "start - end", omitting empty sides; "" if both blank. */
 function dateRange(start: string, end: string) {
@@ -149,6 +150,16 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     HEADING_SKINS[getTemplate(s.templateId)?.preset.variant ?? "classic"] ??
     HEADING_SKINS.classic;
 
+  // Click-to-edit: clicking a section in the live preview opens that section in
+  // the editor (and highlights it in the nav). Only in the interactive editor
+  // preview (not the view-only Design tab or the PDF export), and only for
+  // sections the guided flow has already unlocked - matching the nav's rules.
+  const canNav = (key: string) =>
+    !previewOnly && s.unlockedSections.includes(key);
+  const navTo = (key: string) => {
+    if (canNav(key)) s.setActiveSection(key);
+  };
+
   const fullName =
     `${s.personal.firstName} ${s.personal.lastName}`.trim() || "Your Name";
   // Initials for the "you are editing here" presence badge on the active entry.
@@ -215,10 +226,11 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
 
   function PreviewSection({
     title,
+    sectionKey,
     children,
   }: {
     title: string;
-    /** Kept for call-site clarity; active styling is applied per body below. */
+    /** The editor section key this block maps to; enables click-to-edit. */
     sectionKey?: string;
     /** Kept for call-site clarity; active styling is applied per entry below. */
     entryIds?: string[];
@@ -228,8 +240,20 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     // PDF rasterizer drops) so the gaps appear in the downloaded PDF too.
     const items = Children.toArray(children);
     const skin = headingSkin(accent, centered);
+    // Click anywhere on the section to open it in the editor (unlocked sections
+    // only; no-op in the view-only/PDF render).
+    const clickable = !!sectionKey && canNav(sectionKey);
     return (
-      <section className={`relative ${sp.section}`}>
+      <section
+        className={cn(
+          "relative",
+          sp.section,
+          clickable &&
+            "cursor-pointer rounded-md transition-colors hover:bg-neutral-500/5"
+        )}
+        onClick={clickable ? () => navTo(sectionKey) : undefined}
+        title={clickable ? "Edit this section" : undefined}
+      >
         <div className="relative">
           <h2
             className={skin.className}
@@ -602,9 +626,6 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
     ? s.sectionOrder.filter((k) => isSidebar(k, s.additional))
     : [];
 
-  const headerActive =
-    !previewOnly &&
-    (s.activeSection === "personal" || s.activeSection === "contact");
   const header = centered ? (
     // Centered single-column header: photo on top, then contact, name, title -
     // all centered (matches the Classic ATS family of templates).
@@ -619,21 +640,33 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
       )}
       {contactLine && (
         <p
-          className="text-[11px] text-neutral-600"
-          {...editActive(headerActive ? EDIT_BLUE : undefined)}
+          className={cn(
+            "text-[11px] text-neutral-600",
+            canNav("contact") && "cursor-pointer rounded hover:bg-neutral-500/5"
+          )}
+          onClick={canNav("contact") ? () => navTo("contact") : undefined}
+          title={canNav("contact") ? "Edit contact information" : undefined}
         >
           {contactLine}
         </p>
       )}
       <h1
-        className="mt-1 text-2xl font-bold tracking-tight text-neutral-900"
-        style={{ fontFamily: primaryFamily, color: headerActive ? EDIT_BLUE : undefined }}
-        {...(headerActive ? { "data-edit-active": "" } : {})}
+        className={cn(
+          "mt-1 text-2xl font-bold tracking-tight text-neutral-900 wrap-anywhere",
+          canNav("personal") && "cursor-pointer"
+        )}
+        style={{ fontFamily: primaryFamily }}
+        onClick={canNav("personal") ? () => navTo("personal") : undefined}
+        title={canNav("personal") ? "Edit personal details" : undefined}
       >
         {fullName}
       </h1>
       {s.personal.jobTitle && (
-        <p className="text-sm italic" style={{ color: accent }}>
+        <p
+          className={cn("text-sm italic", canNav("personal") && "cursor-pointer")}
+          style={{ color: accent }}
+          onClick={canNav("personal") ? () => navTo("personal") : undefined}
+        >
           {s.personal.jobTitle}
         </p>
       )}
@@ -651,21 +684,33 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
         )}
         <div className="min-w-0">
           <h1
-            className="text-2xl font-bold tracking-tight text-neutral-900"
-            style={{ fontFamily: primaryFamily, color: headerActive ? EDIT_BLUE : undefined }}
-            {...(headerActive ? { "data-edit-active": "" } : {})}
+            className={cn(
+              "text-2xl font-bold tracking-tight text-neutral-900 wrap-anywhere",
+              canNav("personal") && "cursor-pointer"
+            )}
+            style={{ fontFamily: primaryFamily }}
+            onClick={canNav("personal") ? () => navTo("personal") : undefined}
+            title={canNav("personal") ? "Edit personal details" : undefined}
           >
             {fullName}
           </h1>
           {s.personal.jobTitle && (
-            <p className="text-sm" style={{ color: accent }}>
+            <p
+              className={cn("text-sm", canNav("personal") && "cursor-pointer")}
+              style={{ color: accent }}
+              onClick={canNav("personal") ? () => navTo("personal") : undefined}
+            >
               {s.personal.jobTitle}
             </p>
           )}
           {contactLine && (
             <p
-              className="mt-1.5 text-[11px] text-neutral-600"
-              {...editActive(headerActive ? EDIT_BLUE : undefined)}
+              className={cn(
+                "mt-1.5 text-[11px] text-neutral-600",
+                canNav("contact") && "cursor-pointer rounded hover:bg-neutral-500/5"
+              )}
+              onClick={canNav("contact") ? () => navTo("contact") : undefined}
+              title={canNav("contact") ? "Edit contact information" : undefined}
             >
               {contactLine}
             </p>
@@ -708,16 +753,36 @@ export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } =
               />
             )}
             <h1
-              className="text-lg font-bold leading-tight text-white"
+              className={cn(
+                "text-lg font-bold leading-tight text-white wrap-anywhere",
+                canNav("personal") && "cursor-pointer"
+              )}
               style={{ fontFamily: primaryFamily }}
+              onClick={canNav("personal") ? () => navTo("personal") : undefined}
+              title={canNav("personal") ? "Edit personal details" : undefined}
             >
               {fullName}
             </h1>
             {s.personal.jobTitle && (
-              <p className="text-xs text-white/70">{s.personal.jobTitle}</p>
+              <p
+                className={cn(
+                  "text-xs text-white/70",
+                  canNav("personal") && "cursor-pointer"
+                )}
+                onClick={canNav("personal") ? () => navTo("personal") : undefined}
+              >
+                {s.personal.jobTitle}
+              </p>
             )}
             {contactItems.length > 0 && (
-              <div className="mt-3 space-y-0.5">
+              <div
+                className={cn(
+                  "mt-3 space-y-0.5",
+                  canNav("contact") && "cursor-pointer rounded hover:bg-white/5"
+                )}
+                onClick={canNav("contact") ? () => navTo("contact") : undefined}
+                title={canNav("contact") ? "Edit contact information" : undefined}
+              >
                 {contactItems.map((c) => (
                   <p key={c} className="text-[10px] text-white/70">{c}</p>
                 ))}

@@ -42,7 +42,7 @@ export default async function PaymentSuccessPage({
       {/* Checkout completed -> flip the persisted premium flag so downloads work. */}
       {ok && <UnlockPremium />}
       <div className="px-5 py-6 sm:px-8">
-        <Link href="/" aria-label="resume.co home" className="inline-block">
+        <Link href="/" aria-label="resumewriter.ai home" className="inline-block">
           <LogoMark />
         </Link>
       </div>
@@ -56,7 +56,7 @@ export default async function PaymentSuccessPage({
         </h1>
         <p className="mt-3 max-w-md text-muted-foreground">
           {ok
-            ? "Your Resume.co premium subscription is active. Enjoy unlimited downloads, AI-tailored resumes, and more."
+            ? "Your Resumewriter.ai premium subscription is active. Enjoy unlimited downloads, AI-tailored resumes, and more."
             : "Your payment is being processed. You'll get a confirmation email shortly."}
           {email && <> A receipt was sent to <span className="font-medium text-foreground">{email}</span>.</>}
         </p>

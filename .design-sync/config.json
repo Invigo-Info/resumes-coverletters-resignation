@@ -1,0 +1,35 @@
+{
+  "projectId": "d01ce3bf-d6d2-4747-825b-7768f1bb6557",
+  "pkg": "resume-co",
+  "globalName": "ResumeCoDS",
+  "shape": "package",
+  "srcDir": "src/components/ui",
+  "tsconfig": "tsconfig.json",
+  "runtimeFontPrefixes": ["Inter", "Geist"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "Dialog": { "cardMode": "single", "viewport": "520x380" },
+    "DropdownMenu": { "cardMode": "single", "viewport": "320x320" },
+    "Tooltip": { "cardMode": "single", "viewport": "300x180" }
+  },
+  "cssEntry": "compiled.css",
+  "componentSrcMap": {
+    "Button": "src/components/ui/button.tsx",
+    "Card": "src/components/ui/card.tsx",
+    "Input": "src/components/ui/input.tsx",
+    "Label": "src/components/ui/label.tsx",
+    "Textarea": "src/components/ui/textarea.tsx",
+    "Select": "src/components/ui/select.tsx",
+    "DropdownMenu": "src/components/ui/dropdown-menu.tsx",
+    "Dialog": "src/components/ui/dialog.tsx",
+    "Tabs": "src/components/ui/tabs.tsx",
+    "Accordion": "src/components/ui/accordion.tsx",
+    "Badge": "src/components/ui/badge.tsx",
+    "Progress": "src/components/ui/progress.tsx",
+    "Avatar": "src/components/ui/avatar.tsx",
+    "Tooltip": "src/components/ui/tooltip.tsx",
+    "Separator": "src/components/ui/separator.tsx",
+    "ScrollArea": "src/components/ui/scroll-area.tsx",
+    "Toaster": "src/components/ui/sonner.tsx"
+  }
+}

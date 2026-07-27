@@ -11,7 +11,7 @@
   --font-heading: var(--font-heading);
   --font-mono: var(--font-geist-mono);
 
-  /* resume.co brand tokens (usable as bg-brand-blue, text-ai-from, etc.) */
+  /* resumewriter.ai brand tokens (usable as bg-brand-blue, text-ai-from, etc.) */
   --color-brand-blue: var(--brand-blue);
   --color-brand-teal: var(--brand-teal);
   --color-ai-from: var(--ai-from);
@@ -91,7 +91,7 @@
 }
 
 /*
-  resume.co clone - light theme only.
+  resumewriter.ai clone - light theme only.
   Brand blue CTA, light-gray page, white cards, soft shadows, rounded pills.
 */
 :root {

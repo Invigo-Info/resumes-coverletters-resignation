@@ -33,6 +33,7 @@ export function ContactInformationForm() {
   const setContact = useResumeStore((s) => s.setContact);
   const contactTitle = useResumeStore((s) => s.contactTitle);
   const setContactTitle = useResumeStore((s) => s.setContactTitle);
+  const importedResume = useResumeStore((s) => s.importedResume);
   const hydrate = useResumeStore((s) => s.hydrate);
   const { data: session } = useSession();
 
@@ -105,7 +106,10 @@ export function ContactInformationForm() {
   const telErr = touched.phone ? phoneError(contact.phone) : "";
   const showLinkedInImport = isLinkedInProfile(contact.linkedin);
 
-  const showBanner = showLinkedInImport && !bannerDismissed;
+  // The one-click import banner is only useful for a resume typed from scratch;
+  // a resume that arrived via upload/import already has its details, so hide it
+  // there (per the upload flow) while keeping it for the from-scratch flow.
+  const showBanner = showLinkedInImport && !bannerDismissed && !importedResume;
 
   return (
     <div>

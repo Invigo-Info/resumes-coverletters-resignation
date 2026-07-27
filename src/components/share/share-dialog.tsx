@@ -20,7 +20,7 @@ import {
 export function buildShareUrl(id: string): string {
   const token = (id || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 20) || "share";
   const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://resume.co";
+    typeof window !== "undefined" ? window.location.origin : "https://resumewriter.ai";
   return `${origin}/@${token}`;
 }
 

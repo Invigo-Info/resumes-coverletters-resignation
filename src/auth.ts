@@ -2,6 +2,13 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { verifyCredentials } from "@/lib/users";
+import { peek, limit, reset } from "@/lib/rate-limit";
+
+// Brute-force throttle for email/password sign-in: after this many FAILED
+// attempts for one email within the window, further attempts are refused until
+// the window rolls over. Only failures count; a success clears the counter.
+const LOGIN_LIMIT = Number(process.env.LOGIN_RATE_LIMIT ?? 5);
+const LOGIN_WINDOW_MS = 15 * 60_000; // 15 minutes
 
 // Auth providers. Email/password is always available; Google is added below
 // only when its OAuth env vars are present.
@@ -16,8 +23,21 @@ const providers: NextAuthConfig["providers"] = [
       const email = typeof creds?.email === "string" ? creds.email : "";
       const password = typeof creds?.password === "string" ? creds.password : "";
       if (!email || !password) return null;
+
+      // Refuse before hitting the store once an email has too many recent
+      // failures - this is the brute-force / credential-stuffing brake. Uses the
+      // shared store (Upstash/KV) when configured, so the cap holds across
+      // serverless instances; otherwise per-instance in-memory.
+      const key = `login:${email.trim().toLowerCase()}`;
+      if (await peek(key, LOGIN_LIMIT)) return null;
+
       const user = await verifyCredentials(email, password);
-      return user ? { id: user.id, email: user.email, name: user.name } : null;
+      if (!user) {
+        await limit(key, LOGIN_LIMIT, LOGIN_WINDOW_MS); // record the failure
+        return null;
+      }
+      await reset(key); // success resets the counter
+      return { id: user.id, email: user.email, name: user.name };
     },
   }),
 ];
@@ -44,6 +64,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   trustHost: true,
+  // Send the session cookie only over HTTPS in production (the `__Secure-`
+  // prefix + Secure flag). NextAuth already marks it httpOnly + sameSite=lax;
+  // this makes the secure flag explicit rather than relying on host detection.
+  useSecureCookies: process.env.NODE_ENV === "production",
   callbacks: {
     // Remember which provider signed the user in (shown on the account page),
     // and let `useSession().update({ name })` refresh the display name live.

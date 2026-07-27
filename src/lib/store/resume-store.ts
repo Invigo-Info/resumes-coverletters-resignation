@@ -173,6 +173,15 @@ export interface ResumeState {
 
   /** Order of sections in the nav + preview. */
   sectionOrder: SectionKey[];
+  /** Sections the user has reached, so the nav can unlock them one at a time as
+   *  the guided flow advances (via Next). Locked sections show disabled in the
+   *  nav; starts with just "personal". */
+  unlockedSections: string[];
+  /** True when the resume was populated from a parsed source (device/cloud
+   *  upload or a LinkedIn/profile import) rather than started from scratch. Used
+   *  to hide the "Import from LinkedIn" banner for uploaded resumes, since their
+   *  details already came in - a from-scratch resume keeps the banner. */
+  importedResume: boolean;
   /** Currently edited section. */
   activeSection: SectionKey;
   /** Currently focused inner entry (employment/education/etc.), for preview
@@ -362,7 +371,7 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
 export const newResumeId = () =>
   `res-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-/** A pristine, empty resume — shared by the store's initial state and reset(). */
+/** A pristine, empty resume - shared by the store's initial state and reset(). */
 type ResumeData = Pick<
   ResumeState,
   | "id"
@@ -381,6 +390,8 @@ type ResumeData = Pick<
   | "additional"
   | "design"
   | "sectionOrder"
+  | "unlockedSections"
+  | "importedResume"
   | "activeSection"
   | "activeEntryId"
   | "activeBlockIndex"
@@ -420,6 +431,11 @@ const emptyResume = (): ResumeData => ({
     themeId: "black",
   },
   sectionOrder: [...DEFAULT_SECTION_ORDER],
+  // Guided flow starts with only the first section reachable; Next unlocks the
+  // rest one at a time (see setActiveSection).
+  unlockedSections: ["personal"],
+  // A blank resume is a from-scratch start; upload/import flips this true.
+  importedResume: false,
   activeSection: "personal",
   activeEntryId: null,
   activeBlockIndex: null,
@@ -638,9 +654,18 @@ export const useResumeStore = create<ResumeState>()(
     })),
 
   // Switching sections clears the inner-entry cursor so the new section
-  // highlights as a whole until the user focuses one of its entries.
+  // highlights as a whole until the user focuses one of its entries. Reaching a
+  // section also unlocks it in the guided flow, so Next (which activates the next
+  // section) is what enables it in the nav; the nav blocks clicks on locked ones.
   setActiveSection: (key) =>
-    set({ activeSection: key, activeEntryId: null, activeBlockIndex: null }),
+    set((s) => ({
+      activeSection: key,
+      activeEntryId: null,
+      activeBlockIndex: null,
+      unlockedSections: s.unlockedSections.includes(key)
+        ? s.unlockedSections
+        : [...s.unlockedSections, key],
+    })),
   // (Re)activating an entry resets the paragraph cursor; the rich-text editor
   // sets it again from the caret position.
   setActiveEntryId: (id) => set({ activeEntryId: id, activeBlockIndex: null }),
@@ -702,14 +727,32 @@ export const useResumeStore = create<ResumeState>()(
       return { sectionOrder: [...leading, ...next, ...trailing] };
     }),
 
-  hydrate: (data) => set((s) => ({ ...s, ...withUniqueIds(data) })),
+  // Loading a resume into the editor (upload / open / duplicate) restarts the
+  // guided flow at the first section, so the nav unlocks step by step again, and
+  // marks the resume as imported (its details came from a parsed source) so the
+  // "Import from LinkedIn" banner stays hidden. reset() below is the from-scratch
+  // path and leaves importedResume false, so the banner shows there.
+  hydrate: (data) =>
+    set((s) => ({
+      ...s,
+      ...withUniqueIds(data),
+      unlockedSections: ["personal"],
+      importedResume: true,
+    })),
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
-  loadDocument: (id, data) => set((s) => ({ ...s, ...withUniqueIds(data), id })),
+  loadDocument: (id, data) =>
+    set((s) => ({
+      ...s,
+      ...withUniqueIds(data),
+      id,
+      unlockedSections: ["personal"],
+      importedResume: true,
+    })),
     }),
     {
       name: "resume-co:resume",
       storage: createJSONStorage(() => safeLocalStorage),
-      // Don't restore the transient UI cursor — always open on the first section.
+      // Don't restore the transient UI cursor - always open on the first section.
       partialize: ({
         activeSection: _activeSection,
         activeEntryId: _activeEntryId,

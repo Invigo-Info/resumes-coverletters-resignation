@@ -4,13 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./safe-storage";
 import type { SuggestionKind } from "@/lib/jobs/tailor-plan";
-import {
-  createTailoringSession,
-  saveTailoringKeywords,
-  pushSuggestionStatus,
-  pushApplyAll,
-  finalizeTailoringSession,
-} from "@/lib/tailoring/tailoring-sync";
+import { pushTailoringSession } from "@/lib/tailoring/tailoring-sync";
 
 /**
  * Durable tailoring session store.
@@ -168,8 +162,7 @@ export const useTailoringSessionStore = create<TailoringSessionState>()(
           createdAt: now(),
           updatedAt: now(),
         };
-        createTailoringSession(session);
-        saveTailoringKeywords(session.id, session.selectedKeywords, session.userNote);
+        pushTailoringSession(session);
         set({ session });
         return session;
       },
@@ -195,7 +188,7 @@ export const useTailoringSessionStore = create<TailoringSessionState>()(
           const session: TailoringSession = { ...s.session, suggestions, updatedAt: now() };
           session.currentScore = computeCurrent(session);
           session.activeId = nextPending(suggestions);
-          pushSuggestionStatus(id, "applied");
+          pushTailoringSession(session);
           return { session };
         }),
 
@@ -211,7 +204,7 @@ export const useTailoringSessionStore = create<TailoringSessionState>()(
             activeId: nextPending(suggestions),
             updatedAt: now(),
           };
-          pushSuggestionStatus(id, "skipped");
+          pushTailoringSession(session);
           return { session };
         }),
 
@@ -230,7 +223,7 @@ export const useTailoringSessionStore = create<TailoringSessionState>()(
             updatedAt: now(),
           };
           session.currentScore = computeCurrent(session);
-          pushApplyAll(session.id);
+          pushTailoringSession(session);
           return { session };
         }),
 
@@ -243,7 +236,7 @@ export const useTailoringSessionStore = create<TailoringSessionState>()(
             finalScore: s.session.currentScore,
             updatedAt: now(),
           };
-          finalizeTailoringSession(session.id, session.currentScore);
+          pushTailoringSession(session);
           return { session };
         }),
 

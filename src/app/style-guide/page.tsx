@@ -62,7 +62,7 @@ export default function StyleGuidePage() {
             Design System
           </h1>
           <p className="text-muted-foreground">
-            Phase 1 - tokens & primitives for the resume.co clone.
+            Phase 1 - tokens & primitives for the resumewriter.ai clone.
           </p>
         </header>
 

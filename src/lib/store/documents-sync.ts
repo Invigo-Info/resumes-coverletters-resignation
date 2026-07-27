@@ -11,7 +11,11 @@
  * the dashboards pull from on load.
  */
 
-export type ServerDocType = "resumes" | "coverLetters" | "resignationLetters";
+export type ServerDocType =
+  | "resumes"
+  | "coverLetters"
+  | "resignationLetters"
+  | "interviewPrep";
 
 export interface ServerDocument {
   id: string;
@@ -25,6 +29,7 @@ interface ServerDocuments {
   resumes: ServerDocument[];
   coverLetters: ServerDocument[];
   resignationLetters: ServerDocument[];
+  interviewPrep: ServerDocument[];
 }
 
 /** Fetch the signed-in user's documents. Returns null when logged out/offline. */

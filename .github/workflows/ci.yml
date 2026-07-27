@@ -1,0 +1,74 @@
+name: CI
+
+# Quality gate for every push and pull request. A PR should not merge while any
+# required job here is red. Protect `main` and require these checks in the repo
+# settings (Settings -> Branches -> Branch protection rules).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, lint, format, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        # Informational until the one-time `npm run format` pass lands on a clean
+        # tree (the existing code predates Prettier). After that, remove
+        # continue-on-error to make formatting a required gate.
+        run: npm run format:check
+        continue-on-error: true
+
+      - name: Unit + integration tests
+        run: npm run test:run
+
+      - name: Build
+        # The app is designed to run without external keys (canned fallbacks),
+        # but Auth.js needs a secret present at build time.
+        env:
+          AUTH_SECRET: ci-placeholder-secret-not-used-at-runtime
+        run: npm run build
+
+  security:
+    name: Secret + dependency scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the secret scan can inspect past commits
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Dependency vulnerability scan
+        run: npm audit --audit-level=high
+        continue-on-error: true # informational: review findings, do not hard-block yet

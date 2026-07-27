@@ -18,9 +18,26 @@ function hasSession(request: NextRequest): boolean {
     );
 }
 
-/** Routes reachable while signed out. */
-function isPublic(pathname: string): boolean {
+/** The sign-in entry. Signed-in users are bounced away from these. */
+function isAuthEntry(pathname: string): boolean {
   return pathname === "/login" || pathname.startsWith("/login/");
+}
+
+/**
+ * Routes reachable while signed out. Beyond the sign-in entry this covers the
+ * marketing landing (`/`, which itself branches on the session), the legal
+ * pages, and the SEO files — none of which a crawler or logged-out visitor can
+ * authenticate for, so gating them would break search indexing and the funnel.
+ */
+function isPublic(pathname: string): boolean {
+  return (
+    isAuthEntry(pathname) ||
+    pathname === "/" ||
+    pathname === "/terms" ||
+    pathname === "/privacy" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
+  );
 }
 
 /**
@@ -31,8 +48,10 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authed = hasSession(request);
 
-  // Signed in but visiting /login → send to the home onboarding.
-  if (authed && isPublic(pathname)) {
+  // Signed in but visiting the sign-in entry → send to the home onboarding.
+  // Only the auth entry triggers this; other public routes (/, /terms, …) must
+  // still render for signed-in users, so they are excluded here to avoid a loop.
+  if (authed && isAuthEntry(pathname)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

@@ -145,7 +145,7 @@ export default function CoverLetterNewPage() {
     <PageShell>
       <div className="absolute left-6 top-6 flex items-center gap-3">
         <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
-        <Link href="/cover-letters" aria-label="resume.co home">
+        <Link href="/cover-letters" aria-label="resumewriter.ai home">
           <LogoMark />
         </Link>
       </div>

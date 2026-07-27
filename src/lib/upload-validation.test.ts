@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   validateUploadFile,
   base64ExceedsLimit,
+  isAllowedUploadType,
   MAX_UPLOAD_BYTES,
   FILE_TOO_LARGE_MESSAGE,
   NO_FILE_MESSAGE,
@@ -40,5 +41,33 @@ describe("base64ExceedsLimit", () => {
     const over = "A".repeat(13_333_336); // -> 10,000,002 bytes
     expect(base64ExceedsLimit(under)).toBe(false);
     expect(base64ExceedsLimit(over)).toBe(true);
+  });
+});
+
+describe("isAllowedUploadType", () => {
+  it("accepts the document types the pickers offer", () => {
+    for (const mime of [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+      "text/markdown",
+    ]) {
+      expect(isAllowedUploadType(mime)).toBe(true);
+    }
+  });
+
+  it("rejects executables, archives, and spoofed/absent types", () => {
+    for (const mime of [
+      "application/x-msdownload",
+      "application/zip",
+      "application/octet-stream",
+      "image/svg+xml",
+      "",
+      undefined,
+      null,
+    ]) {
+      expect(isAllowedUploadType(mime)).toBe(false);
+    }
   });
 });

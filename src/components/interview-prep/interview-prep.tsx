@@ -34,6 +34,12 @@ import { cn } from "@/lib/utils";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useDocumentsStore } from "@/lib/store/documents-store";
+import {
+  useInterviewPrepDocumentsStore,
+  interviewPrepId,
+  interviewPrepTitle,
+  type SavedInterviewPrepData,
+} from "@/lib/store/interview-prep-documents-store";
 import type { JobPosting } from "@/lib/jobs/job-search";
 import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import {
@@ -693,6 +699,7 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
 export function InterviewPrepView({
   lockedType,
   streamQuestions = false,
+  initialSaved,
 }: {
   /** When set, skip the type picker and auto-generate this type once a job
    *  exists (used by the dedicated /interview-prep/<type> routes). */
@@ -700,9 +707,15 @@ export function InterviewPrepView({
   /** Reveal the questions section as a streaming Q&A flow (question first,
    *  then the answer types in) instead of a static list. */
   streamQuestions?: boolean;
+  /** When set, re-open a previously saved sheet: skip the resume/type/generate
+   *  flow and render its stored prep directly (used by /interview-prep/saved/[id]). */
+  initialSaved?: SavedInterviewPrepData;
 } = {}) {
   const router = useRouter();
-  const job = useApplyStore((s) => s.job);
+  const storeJob = useApplyStore((s) => s.job);
+  const setApplyJob = useApplyStore((s) => s.setJob);
+  // A re-opened sheet carries its own job; otherwise use the active apply job.
+  const job = initialSaved ? initialSaved.job : storeJob;
   const hasResume = useDocumentsStore((s) => s.resumes.length > 0);
   const activeRole = useResumeStore((s) => s.personal.jobTitle);
   const activeSkills = useResumeStore((s) => s.skills);
@@ -712,14 +725,48 @@ export function InterviewPrepView({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const [type, setType] = useState<InterviewType | null>(null);
+  // Re-opening a saved sheet: publish its job to the apply store so downstream
+  // actions (Download, Apply) have the same context as a freshly generated sheet.
+  useEffect(() => {
+    if (initialSaved) setApplyJob(initialSaved.job);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [type, setType] = useState<InterviewType | null>(
+    initialSaved?.interviewType ?? null
+  );
   // On the main picker page the flow always begins at the "What are you preparing
   // for?" entry, regardless of any job left in the store from a previous visit;
-  // it only advances once the user makes a choice there.
-  const [entered, setEntered] = useState(false);
+  // it only advances once the user makes a choice there. A re-opened sheet skips
+  // straight to its content.
+  const [entered, setEntered] = useState(Boolean(initialSaved));
   const [otherExpanded, setOtherExpanded] = useState(false);
-  const [customText, setCustomText] = useState("");
-  const [prep, setPrep] = useState<InterviewPrep | null>(null);
+  const [customText, setCustomText] = useState(initialSaved?.customDetail ?? "");
+  const [prep, setPrep] = useState<InterviewPrep | null>(
+    initialSaved?.prep ?? null
+  );
+
+  // Auto-save every generated (or extended) prep sheet so it survives navigation
+  // and follows the account. Keyed by job + type, so regenerating updates the one
+  // sheet instead of piling up duplicates. Skips the first render of a re-opened
+  // sheet (it is already saved) so merely viewing it does not bump its timestamp.
+  const skipInitialSave = useRef(Boolean(initialSaved));
+  useEffect(() => {
+    if (!prep || !job || !type) return;
+    if (skipInitialSave.current) {
+      skipInitialSave.current = false;
+      return;
+    }
+    const detail = type === "other" ? customText : undefined;
+    useInterviewPrepDocumentsStore.getState().upsertSheet({
+      id: interviewPrepId(job.id, type, detail),
+      title: interviewPrepTitle(job, type),
+      updatedAt: Date.now(),
+      templateId: "",
+      data: { job, interviewType: type, customDetail: detail, prep },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prep, job, type]);
   const [loading, setLoading] = useState(false);
   const [moreLoading, setMoreLoading] = useState(false);
   const [copyIndex, setCopyIndex] = useState(0);
@@ -811,7 +858,7 @@ export function InterviewPrepView({
 
   /* ----- No resume yet (main picker page only): "Start with your resume" upload
           step. Saving a resume flips this gate and advances to the entry screen. */
-  if (!lockedType && !hasResume) {
+  if (!lockedType && !hasResume && !initialSaved) {
     return <PrepResumeUpload />;
   }
 

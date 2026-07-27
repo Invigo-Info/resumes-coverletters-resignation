@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, X } from "lucide-react";
+import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { useResumeAutosave } from "@/lib/store/documents-store";
@@ -170,10 +170,14 @@ export function EditorShell({
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1800px]">
-        <TopBar tab={tab} onTabChange={setTab} />
+        <TopBar
+          tab={tab}
+          onTabChange={setTab}
+          onPreview={() => setMobilePreview(true)}
+        />
 
         {tab === "write" && (
-          <div className="flex gap-6 px-4 pb-16">
+          <div className="flex gap-6 px-4 pb-28">
             {/* Left nav */}
             <aside className="hidden w-64 shrink-0 lg:block">
               <SectionNav
@@ -215,7 +219,7 @@ export function EditorShell({
         )}
 
         {tab === "design" && (
-          <div className="flex gap-6 px-4 pb-16">
+          <div className="flex gap-6 px-4 pb-28">
             <aside className="w-full shrink-0 lg:w-130 xl:w-150">
               <DesignPanel
                 onBack={() => setTab("write")}
@@ -231,7 +235,7 @@ export function EditorShell({
           </div>
         )}
         {tab === "improve" && (
-          <div className="flex gap-6 px-4 pb-16">
+          <div className="flex gap-6 px-4 pb-28">
             <main className="min-w-0 flex-1 lg:max-w-2xl">
               <div className="rounded-3xl bg-card p-7 shadow-card ring-1 ring-border sm:p-9">
                 <ImprovePanel
@@ -251,15 +255,9 @@ export function EditorShell({
         )}
       </div>
 
-      {/* Mobile preview toggle (no side-by-side preview on small screens) */}
-      <button
-        onClick={() => setMobilePreview(true)}
-        className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-card-lg xl:hidden"
-      >
-        <Eye className="size-4" />
-        Preview
-      </button>
-
+      {/* Mobile preview sheet (no side-by-side preview on small screens). Opened
+          from the top bar's Preview button so the bottom section bar keeps only
+          Back / progress-dots / Next. */}
       <AnimatePresence>
         {mobilePreview && (
           <motion.div

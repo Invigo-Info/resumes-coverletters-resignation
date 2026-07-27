@@ -8,7 +8,12 @@ import {
   type JobFilters,
   defaultFilters,
 } from "@/lib/jobs/job-search";
-import { pushSavedJob, deleteSavedJob } from "./jobs-sync";
+import {
+  pushSavedJob,
+  deleteSavedJob,
+  pushDismissedJob,
+  clearDismissedJobs,
+} from "./jobs-sync";
 
 /** A saved job pending removal, shown as a grey "Undo" card in the Saved tab. */
 export interface PendingRemoval {
@@ -85,18 +90,21 @@ export const useJobsStore = create<JobsState>()(
         }),
 
       dismiss: (id, reason) =>
-        set((s) =>
-          s.dismissed.includes(id)
-            ? {}
-            : {
-                dismissed: [...s.dismissed, id],
-                dismissedReasons: reason
-                  ? { ...s.dismissedReasons, [id]: reason }
-                  : s.dismissedReasons,
-              }
-        ),
+        set((s) => {
+          if (s.dismissed.includes(id)) return {};
+          pushDismissedJob(id, reason);
+          return {
+            dismissed: [...s.dismissed, id],
+            dismissedReasons: reason
+              ? { ...s.dismissedReasons, [id]: reason }
+              : s.dismissedReasons,
+          };
+        }),
 
-      clearDismissed: () => set({ dismissed: [], dismissedReasons: {} }),
+      clearDismissed: () => {
+        clearDismissedJobs();
+        set({ dismissed: [], dismissedReasons: {} });
+      },
       isSaved: (id) => Boolean(get().saved[id]),
 
       setFilters: (filters) => set({ filters }),

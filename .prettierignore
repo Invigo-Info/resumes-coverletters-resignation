@@ -1,0 +1,18 @@
+# Build output and dependencies
+.next/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+
+# Data and env
+.data/
+.env*
+
+# Generated / vendored
+package-lock.json
+pnpm-lock.yaml
+*.min.js
+
+# Standalone HTML reference docs (hand-formatted, do not reflow)
+*.html
