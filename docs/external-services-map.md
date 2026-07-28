@@ -184,6 +184,53 @@ Two things hold true for every service below:
   `https://YOUR-DOMAIN/api/auth/callback/google`, then set `AUTH_GOOGLE_ID` and
   `AUTH_GOOGLE_SECRET`.
 
+#### One-client setup (do this to avoid `redirect_uri_mismatch`)
+
+Use ONE OAuth client for every environment. Multiple clients (one per
+environment) is the number-one cause of `Error 400: redirect_uri_mismatch`,
+because each environment sends a different `client_id` and Google checks the
+redirect list of that specific client.
+
+1. One client. Pick a single OAuth 2.0 Web client and use it everywhere. Its
+   `client_id` is public; its secret is not.
+2. Four redirect URIs. On that one client, under Authorized redirect URIs, add
+   all of these (exact, `https` for remote, no trailing slash, path
+   `/api/auth/callback/google`):
+   - `http://localhost:3001/api/auth/callback/google`
+   - `http://localhost:3000/api/auth/callback/google`
+   - `https://<staging-branch-host>.vercel.app/api/auth/callback/google`
+   - `https://<production-domain>/api/auth/callback/google`
+3. Three places. Set the SAME `AUTH_GOOGLE_ID` + `AUTH_GOOGLE_SECRET` in:
+   `.env.local` (local), Vercel env Preview scope (staging), Vercel env
+   Production scope (production).
+4. Redeploy. Vercel does not apply env changes to an existing deployment. After
+   setting or changing these vars, redeploy the target branch, or the running
+   build keeps the old value.
+
+#### Debugging `redirect_uri_mismatch`
+
+- Read the `client_id` in the failing request (the `accounts.google.com` URL,
+  or browser history). It must equal the client you edited. If it differs, the
+  environment points at a different/old client. This is the usual cause.
+- The `redirect_uri` in the error must match a saved URI on that client exactly.
+- After adding a URI, click Save and confirm it persisted (reload the client
+  page). Google propagation can take 5 minutes to a few hours; test in Incognito.
+- Never delete an OAuth client while any environment's `AUTH_GOOGLE_ID` still
+  references it: that turns a mismatch into a worse `invalid_client` error. To
+  retire a client, first repoint every environment to the kept client and
+  redeploy, verify the new `client_id` is sent, then delete the old one.
+
+#### Not related to Google sign-in
+
+- Supabase Auth (Supabase dashboard, Authentication, URL Configuration and the
+  Google provider) is NOT used. The app authenticates with NextAuth directly;
+  Supabase is only the Postgres database (`DATABASE_URL`). Ignore Supabase Auth
+  settings for sign-in issues.
+- Vercel Deployment Protection ("You Need Access" wall on a preview) blocks the
+  OAuth callback for anyone outside the Vercel team. For real end-user sign-in
+  testing on staging, disable Vercel Authentication for Preview (Vercel,
+  Settings, Deployment Protection). It is separate from `redirect_uri_mismatch`.
+
 ### 7. Adzuna (job listings)
 
 - Purpose: live job postings with salary, location, and full descriptions.

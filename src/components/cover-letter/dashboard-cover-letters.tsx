@@ -97,8 +97,10 @@ export function DashboardCoverLetters() {
   }, []);
 
   // Only real cover letters (with an actual body) show as cards; a stray draft
-  // that only carries imported personal details is not a cover letter.
-  const realLetters = letters.filter((rec) => stripHtml(rec.data.letter.body));
+  // that only carries imported personal details - or a malformed record whose
+  // data.letter is missing - is not a cover letter. Guard every hop so one bad
+  // record cannot crash the whole list.
+  const realLetters = letters.filter((rec) => stripHtml(rec.data?.letter?.body ?? ""));
 
   if (!mounted || realLetters.length === 0) {
     return (
@@ -113,12 +115,18 @@ export function DashboardCoverLetters() {
   return (
     <div className="space-y-7">
       {realLetters.map((rec) => {
-        const open = () => {
+        const open = (writeMode: boolean) => {
           loadDocument(rec.id, rec.data);
-          // A generated letter opens straight to the preview; otherwise resume
-          // the write flow.
-          const hasBody = rec.data.letter.body.trim().length > 0;
-          router.push(hasBody ? "/cover-letter/preview" : "/cover-letters/write/intent");
+          const hasBody = (rec.data?.letter?.body ?? "").trim().length > 0;
+          // No body yet: resume the write flow. Otherwise Edit opens the writing
+          // editor (letter content); Download opens the finished Design view.
+          if (!hasBody) {
+            router.push("/cover-letters/write/intent");
+            return;
+          }
+          router.push(
+            writeMode ? "/cover-letter/preview?mode=write" : "/cover-letter/preview"
+          );
         };
         return (
           <CoverLetterCard
@@ -126,8 +134,8 @@ export function DashboardCoverLetters() {
             title={rec.title}
             updatedAt={formatUpdated(rec.updatedAt)}
             data={rec.data}
-            onEdit={open}
-            onDownload={open}
+            onEdit={() => open(true)}
+            onDownload={() => open(false)}
             onCopy={() => {
               const id = newCoverLetterId();
               upsertLetter({

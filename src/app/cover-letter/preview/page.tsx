@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Home, PenLine, Palette, Download, Loader2, PartyPopper } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { CoverLetterPreview } from "@/components/cover-letter/cover-letter-preview";
@@ -26,11 +26,26 @@ const COVER_LETTER_DASHBOARD = "/cover-letters";
  * the paywall.
  */
 export default function CoverLetterPreviewPage() {
+  // useSearchParams must sit under a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <CoverLetterPreviewContent />
+    </Suspense>
+  );
+}
+
+function CoverLetterPreviewContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Opening an existing letter for editing (?mode=write) lands on the writing
+  // editor's letter-content section; a fresh/generated letter opens on Design.
+  const openInWrite = searchParams.get("mode") === "write";
   const s = useCoverLetterStore();
-  const [mode, setMode] = useState<Mode>("design");
+  const [mode, setMode] = useState<Mode>(openInWrite ? "write" : "design");
   // Which section Write mode opens on ("Edit your letter" jumps to Letter content).
-  const [writeSection, setWriteSection] = useState<WriteSection>("personal");
+  const [writeSection, setWriteSection] = useState<WriteSection>(
+    openInWrite ? "content" : "personal"
+  );
   const [generating, setGenerating] = useState(false);
 
   // Persist the finished cover letter into the dashboard's drafts list.
