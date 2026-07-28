@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Send, Plus, Settings, CircleHelp, LogOut, LayoutDashboard } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { useResumeLimit } from "@/lib/resume-limit";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -29,7 +30,10 @@ const TABS = [
  */
 export function TopNav({ active = "Resumes" }: { active?: string }) {
   const router = useRouter();
+  const { atLimit } = useResumeLimit();
   const { data: session } = useSession();
+  // Free accounts past the resume cap go straight to the subscribe page.
+  const newResumeHref = atLimit ? "/payment" : "/resume-creation-menu";
   const email = session?.user?.email ?? "";
   // Avatar shows the first letter of the signed-in email (fallback to name).
   const initial = (email || session?.user?.name || "").trim().charAt(0).toUpperCase();
@@ -119,9 +123,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
               Create
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-52">
-              <DropdownMenuItem
-                onClick={() => router.push("/resume-creation-menu")}
-              >
+              <DropdownMenuItem onClick={() => router.push(newResumeHref)}>
                 New resume
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/cover-letter/new")}>

@@ -10,6 +10,8 @@ import {
   type ResumeState,
 } from "./resume-store";
 import { pushServerDocument, deleteServerDocument } from "./documents-sync";
+import { usePaywall } from "@/lib/cover-letter/paywall";
+import { FREE_RESUME_LIMIT } from "@/lib/limits";
 
 /** The resume fields persisted in a saved draft (no transient UI state). */
 export type ResumeDocData = Pick<
@@ -56,15 +58,21 @@ export const useDocumentsStore = create<DocumentsState>()(
     (set, get) => ({
       resumes: [],
       upsertResume: (record) => {
-        // Mirror the write to the server (best-effort) before updating local state.
-        pushServerDocument("resumes", record);
         set((s) => {
           const i = s.resumes.findIndex((r) => r.id === record.id);
           if (i >= 0) {
+            // Existing resume - an edit always saves (mirror to the server).
+            pushServerDocument("resumes", record);
             const next = [...s.resumes];
             next[i] = record;
             return { resumes: next };
           }
+          // New resume - enforce the free-tier cap. Premium accounts are
+          // unlimited; the server re-checks so a tampered flag can't bypass it.
+          if (!usePaywall.getState().premium && s.resumes.length >= FREE_RESUME_LIMIT) {
+            return s; // blocked - the UI routes these users to /payment
+          }
+          pushServerDocument("resumes", record);
           return { resumes: [record, ...s.resumes] };
         });
       },

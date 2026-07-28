@@ -7,6 +7,8 @@ import {
   isDocType,
   type StoredDocument,
 } from "@/lib/documents";
+import { getEntitlement } from "@/lib/entitlements";
+import { FREE_RESUME_LIMIT } from "@/lib/limits";
 
 /** All documents for the signed-in user (resumes, cover/resignation letters). */
 export async function GET() {
@@ -33,6 +35,23 @@ export async function PUT(request: Request) {
   const { type, record } = body;
   if (!isDocType(type) || !record || typeof record.id !== "string") {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+
+  // Enforce the free-tier resume cap server-side (the client also gates, but a
+  // tampered localStorage flag must not bypass it). Only a NEW resume counts;
+  // editing an existing one, and any non-resume document, is always allowed.
+  if (type === "resumes") {
+    const existing = await getUserDocuments(email);
+    const isNew = !existing.resumes.some((r) => r.id === record.id);
+    if (isNew && existing.resumes.length >= FREE_RESUME_LIMIT) {
+      const { premium } = await getEntitlement(email);
+      if (!premium) {
+        return NextResponse.json(
+          { error: "resume_limit", limit: FREE_RESUME_LIMIT },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   await upsertDocument(email, type, {

@@ -9,6 +9,7 @@ import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { usePaywall } from "@/lib/cover-letter/paywall";
+import { useResumeLimit } from "@/lib/resume-limit";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
 import {
   useDocumentsStore,
@@ -53,6 +54,9 @@ function formatUpdated(ts: number): string {
 export function DashboardResumes() {
   const router = useRouter();
   const premium = usePaywall((s) => s.premium);
+  const { atLimit, count, limit, remaining } = useResumeLimit();
+  // Free accounts past the cap go to /payment instead of the creation menu.
+  const newResumeHref = atLimit ? "/payment" : "/resume-creation-menu";
   const resumes = useDocumentsStore((s) => s.resumes);
   const removeResume = useDocumentsStore((s) => s.removeResume);
   const upsertResume = useDocumentsStore((s) => s.upsertResume);
@@ -145,6 +149,12 @@ export function DashboardResumes() {
             onEdit={open}
             onDownload={download}
             onCopy={() => {
+              // Duplicating creates a new resume, so it hits the free-tier cap
+              // too - send a capped free user to subscribe instead.
+              if (atLimit) {
+                router.push("/payment");
+                return;
+              }
               // Duplicate as a brand-new document (fresh id + timestamp).
               const id = newResumeId();
               upsertResume({
@@ -163,14 +173,24 @@ export function DashboardResumes() {
       })}
 
       {/* Secondary CTA to the "start from scratch / upload your resume" flow -
-          large and noticeable, but quieter than the header's Create button. */}
-      <div className="flex justify-center pt-2">
-        <Link href="/resume-creation-menu">
+          large and noticeable, but quieter than the header's Create button.
+          Free accounts past the cap are routed to subscribe instead. */}
+      <div className="flex flex-col items-center gap-2 pt-2">
+        <Link href={newResumeHref}>
           <GhostButton className="h-12 bg-card px-7 text-base shadow-card ring-1 ring-border transition-colors hover:bg-primary/10 hover:text-primary hover:ring-primary/30">
             <Plus className="size-4" />
-            Create new resume
+            {atLimit ? "Subscribe to add more" : "Create new resume"}
           </GhostButton>
         </Link>
+        {!premium && (
+          <p className="text-xs text-muted-foreground">
+            {atLimit
+              ? `You have used all ${limit} free resumes.`
+              : `${count} of ${limit} free resumes used${
+                  remaining === 1 ? " - 1 left" : ` - ${remaining} left`
+                }`}
+          </p>
+        )}
       </div>
     </div>
   );

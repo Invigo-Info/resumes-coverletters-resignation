@@ -11,7 +11,15 @@ import {
   MessageSquareText,
   ChevronRight,
   Plus,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   fetchServerDocuments,
   type ServerDocument,
@@ -92,17 +100,29 @@ function mergeDocs(
   return [...byId.values()];
 }
 
-/** One clickable row in a dashboard list (opens the item in its editor / view). */
-function ItemRow({ item, onOpen }: { item: Item; onOpen: (i: Item) => void }) {
+/**
+ * One row in a dashboard list: an open-on-click title area plus explicit Edit
+ * (opens the item in its write-mode editor / view) and Delete (opens a
+ * confirmation dialog) buttons.
+ */
+function ItemRow({
+  item,
+  onOpen,
+  onDelete,
+}: {
+  item: Item;
+  onOpen: (i: Item) => void;
+  onDelete: (i: Item) => void;
+}) {
   const meta = KIND_META[item.kind];
   const Icon = meta.icon;
   const when = formatRelative(item.updatedAt);
   return (
-    <li>
+    <li className="flex items-center gap-2 rounded-2xl bg-card p-3 pl-4 shadow-card ring-1 ring-border transition-colors hover:ring-primary/40 sm:gap-3">
       <button
         type="button"
         onClick={() => onOpen(item)}
-        className="flex w-full items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-card ring-1 ring-border transition-colors hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Icon className="size-5" aria-hidden />
@@ -117,8 +137,26 @@ function ItemRow({ item, onOpen }: { item: Item; onOpen: (i: Item) => void }) {
             {when ? ` · ${when}` : ""}
           </span>
         </span>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </button>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onOpen(item)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <Pencil className="size-4" aria-hidden />
+          <span className="hidden sm:inline">Edit</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(item)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 hover:border-destructive/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <Trash2 className="size-4" aria-hidden />
+          <span className="hidden sm:inline">Delete</span>
+        </button>
+      </div>
     </li>
   );
 }
@@ -149,6 +187,15 @@ export function UserDashboard() {
   const loadResume = useResumeStore((s) => s.loadDocument);
   const loadCover = useCoverLetterStore((s) => s.loadDocument);
   const loadResignation = useResignationLetterStore((s) => s.loadDocument);
+
+  const removeResume = useDocumentsStore((s) => s.removeResume);
+  const removeCover = useCoverLetterDocumentsStore((s) => s.removeLetter);
+  const removeResignation = useResignationLetterDocumentsStore((s) => s.removeLetter);
+  const removeSheet = useInterviewPrepDocumentsStore((s) => s.removeSheet);
+  const removeSavedJob = useJobsStore((s) => s.removeSaved);
+
+  // The item awaiting delete confirmation (null = dialog closed).
+  const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -271,6 +318,45 @@ export function UserDashboard() {
     }
   }
 
+  // Delete the confirmed item from its store AND prune it from the fetched
+  // server snapshots, so the newest-wins merge can't resurrect it before a
+  // reload. The store removers also delete the server copy (best-effort).
+  function confirmDelete() {
+    const item = deleteTarget;
+    if (!item) return;
+    switch (item.kind) {
+      case "resume":
+        removeResume(item.id);
+        setServer((s) => (s ? { ...s, resumes: s.resumes.filter((r) => r.id !== item.id) } : s));
+        break;
+      case "cover":
+        removeCover(item.id);
+        setServer((s) =>
+          s ? { ...s, coverLetters: s.coverLetters.filter((r) => r.id !== item.id) } : s
+        );
+        break;
+      case "resignation":
+        removeResignation(item.id);
+        setServer((s) =>
+          s
+            ? { ...s, resignationLetters: s.resignationLetters.filter((r) => r.id !== item.id) }
+            : s
+        );
+        break;
+      case "interview":
+        removeSheet(item.id);
+        setServer((s) =>
+          s ? { ...s, interviewPrep: s.interviewPrep.filter((r) => r.id !== item.id) } : s
+        );
+        break;
+      case "job":
+        removeSavedJob(item.id);
+        setJobs((j) => (j ? j.filter((sj) => sj?.job?.id !== item.id) : j));
+        break;
+    }
+    setDeleteTarget(null);
+  }
+
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10">
@@ -365,11 +451,66 @@ export function UserDashboard() {
         ) : (
           <ul className="mt-4 space-y-2.5">
             {listItems.map((item) => (
-              <ItemRow key={`${item.kind}:${item.id}`} item={item} onOpen={open} />
+              <ItemRow
+                key={`${item.kind}:${item.id}`}
+                item={item}
+                onOpen={open}
+                onDelete={setDeleteTarget}
+              />
             ))}
           </ul>
         )}
       </section>
+
+      {/* Delete confirmation - shared by every row; copy adapts to the kind. */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+      >
+        <DialogContent className="rounded-2xl p-6 pt-8 sm:max-w-md">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span
+              className="grid size-20 place-items-center rounded-full bg-destructive/10"
+              aria-hidden
+            >
+              <Trash2 className="size-8 text-destructive" />
+            </span>
+            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
+              {deleteTarget?.kind === "job"
+                ? "Remove this saved job?"
+                : `Delete this ${
+                    deleteTarget ? KIND_META[deleteTarget.kind].label.toLowerCase() : "item"
+                  }?`}
+            </DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground">
+              {deleteTarget?.title ? (
+                <span className="font-medium text-foreground">
+                  {deleteTarget.title}
+                </span>
+              ) : null}
+              {deleteTarget?.title ? " - " : ""}
+              You can&apos;t undo this action.
+            </DialogDescription>
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmDelete}
+              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+            >
+              Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Sparkles, ScanLine, FileUp, ChevronRight, X } from "lucide-react";
+import { Sparkles, ScanLine, FileUp, ChevronRight, X, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
@@ -22,6 +22,7 @@ import {
 import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
 import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
 import { cn } from "@/lib/utils";
+import { useResumeLimit } from "@/lib/resume-limit";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/lib/ai/parseResume";
 import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
@@ -58,13 +59,19 @@ export function ResumeOnboarding() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
+  // Free accounts cap the number of saved resumes; past the cap this menu turns
+  // into a subscribe prompt instead of offering to start another resume.
+  const { atLimit, limit } = useResumeLimit();
 
   // The draft lives in localStorage, so read it only after mount - otherwise the
   // server renders "no progress" and the client disagrees on the first paint.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const progress = useResumeStore(hasSavedProgress);
-  const showSave = mounted && progress && !dismissedSave;
+  const showSave = mounted && progress && !dismissedSave && !atLimit;
+  // Gate only after mount: the resume count lives in localStorage, so the server
+  // render always sees zero and would otherwise flash the wrong panel.
+  const limitReached = mounted && atLimit;
 
   async function handleUpload(file?: File) {
     // Size-check in the browser before uploading. On failure keep the field
@@ -148,9 +155,39 @@ export function ResumeOnboarding() {
             anchored near the bottom, well clear of the two choices. */}
         <div className="flex w-full flex-1 flex-col items-center justify-center">
         <h1 className="mb-12 text-center font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-          How should we start?
+          {limitReached ? "Upgrade to keep building" : "How should we start?"}
         </h1>
 
+        {limitReached ? (
+          <div className="w-full rounded-2xl bg-card p-8 text-center shadow-card ring-1 ring-border">
+            <span className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+              <Lock className="size-6" aria-hidden />
+            </span>
+            <h2 className="mt-5 font-heading text-xl font-bold text-foreground">
+              You have used all {limit} free resumes
+            </h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+              Subscribe to create unlimited resumes, keep editing the ones you
+              already have, and download without limits.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/payment")}
+              className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <Sparkles className="size-4" />
+              Subscribe to continue
+            </button>
+            <div className="mt-4">
+              <Link
+                href="/"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Back to my resumes
+              </Link>
+            </div>
+          </div>
+        ) : (
         <div className="w-full space-y-5">
           <StartOptionCard
             icon={<Sparkles className="size-6" />}
@@ -264,6 +301,7 @@ export function ResumeOnboarding() {
             )}
           </StartOptionCard>
         </div>
+        )}
         </div>
 
         {/* Save your progress - only for a returning user with an unfinished draft */}
