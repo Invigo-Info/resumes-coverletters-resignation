@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Send, Plus, Settings, CircleHelp, LogOut } from "lucide-react";
+import { Send, Plus, Settings, CircleHelp, LogOut, LayoutDashboard } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
@@ -91,6 +91,10 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
                   <DropdownMenuSeparator />
                 </>
               )}
+              <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                <LayoutDashboard className="size-4 text-muted-foreground" />
+                Dashboard
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/account")}>
                 <Settings className="size-4 text-muted-foreground" />
                 Account settings

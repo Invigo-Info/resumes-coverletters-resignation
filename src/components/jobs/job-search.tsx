@@ -254,6 +254,13 @@ export function JobSearch() {
   }, []);
 
   const [tab, setTab] = useState<Tab>("recommended");
+  // Honor a deep link into the Saved tab (e.g. the dashboard's Saved jobs list).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("tab") === "saved") {
+      setTab("saved");
+    }
+  }, []);
   const [sortMode, setSortMode] = useState<SortMode>("match");
   const [roleIndex, setRoleIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -449,7 +456,9 @@ export function JobSearch() {
   }, [liveJobs, dismissed, filters.workModel, filters.datePosted, sortMode, scores]);
 
   const savedJobs = useMemo(
-    () => sortJobs(Object.values(saved)),
+    // Drop malformed records with no id - they collide on their list key and
+    // break selection (which tracks the job id).
+    () => sortJobs(Object.values(saved).filter((j) => j?.id)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [saved, sortMode, scores]
   );
