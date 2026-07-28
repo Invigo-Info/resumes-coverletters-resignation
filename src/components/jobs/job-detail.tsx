@@ -14,9 +14,11 @@ import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
 import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { useTailorStore } from "@/lib/store/tailor-store";
+import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { CompanyLogo } from "./company-logo";
 import { KeywordMatchCard } from "./match-scoreboard";
 import { ImproveKeywordsFlow } from "./improve-keywords-flow";
+import { ApplyGatewayDialog } from "./apply-gateway-dialog";
 
 /** A single item in the job metadata row. */
 function Meta({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
@@ -61,7 +63,9 @@ export function JobDetail({
   const router = useRouter();
   const setApplyJob = useApplyStore((s) => s.setJob);
   const setTailor = useTailorStore((s) => s.setTailor);
+  const patchJobDetails = useCoverLetterStore((s) => s.patchJobDetails);
   const [improveOpen, setImproveOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
 
   // Deterministic keyword match - same source as the ring on the job card.
   const match = useMemo(() => buildKeywordMatch(job, resume), [job, resume]);
@@ -73,11 +77,43 @@ export function JobDetail({
     [match]
   );
 
-  // Apply now opens the application-strengthening gateway (not the employer yet),
-  // carrying this job as the active apply context.
+  // Apply now opens the "Boost your chances" gateway modal (not the employer
+  // yet), carrying this job as the active apply context.
   const onApply = () => {
     setApplyJob(job);
-    router.push("/apply");
+    setApplyOpen(true);
+  };
+
+  // Seed the cover-letter store with this job's details (shared by both the
+  // Generate and Write paths below).
+  const seedCoverLetter = () => {
+    patchJobDetails({
+      desiredJobTitle: job.title,
+      companyName: job.company,
+      jobDescription:
+        job.description ||
+        [job.summary, ...(job.responsibilities ?? []), ...(job.qualifications ?? [])].join(
+          "\n"
+        ),
+    });
+  };
+
+  // Gateway option: generate a cover letter via the guided builder start screen.
+  const goCoverLetter = () => {
+    seedCoverLetter();
+    router.push("/cover-letter/new");
+  };
+
+  // Gateway option: jump straight into the writing editor to write it yourself.
+  const goWriteCoverLetter = () => {
+    seedCoverLetter();
+    router.push("/cover-letter/preview?mode=write");
+  };
+
+  // Gateway option: skip straight to the employer's posting (new tab).
+  const skipAndApply = () => {
+    setApplyOpen(false);
+    if (job.applyUrl) window.open(job.applyUrl, "_blank", "noopener,noreferrer");
   };
 
   const hasSalary = job.salaryLabel && job.salaryLabel !== "Salary not disclosed";
@@ -195,6 +231,22 @@ export function JobDetail({
         </section>
       </div>
     </div>
+
+    {/* Apply now gateway: "Boost your chances to get noticed". Tailor reuses the
+        keyword flow below, Generate a cover letter seeds + opens the builder,
+        and Skip and apply opens the employer's posting. */}
+    <ApplyGatewayDialog
+      open={applyOpen}
+      onOpenChange={setApplyOpen}
+      job={job}
+      onTailor={() => {
+        setApplyOpen(false);
+        setImproveOpen(true);
+      }}
+      onCoverLetter={goCoverLetter}
+      onWriteCoverLetter={goWriteCoverLetter}
+      onSkip={skipAndApply}
+    />
 
     {/* Improve keywords runs the same choose-keywords + loading workflow as the
         /apply "Tailor your resume" flow, then goes to /tailoring - without the

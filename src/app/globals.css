@@ -284,6 +284,116 @@
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Motion: card transitions + page/scroll entrance animations.        */
+/*                                                                    */
+/* Applied app-wide via the shared card classes and every route's     */
+/* <main>, so cards and pages animate consistently without per-card   */
+/* wiring. Everything visual is gated behind                          */
+/* `prefers-reduced-motion: no-preference` (opt-out users get a static */
+/* UI), and the scroll-driven reveal is `@supports`-guarded so         */
+/* browsers without scroll timelines simply show content normally -    */
+/* content is never left hidden.                                       */
+/* ------------------------------------------------------------------ */
+
+/* Smooth transitions on every card so shadow/border/lift changes ease
+   rather than snap. Kept outside the reduced-motion guard because a
+   transition (not an entrance) is a safe, expected micro-interaction. */
+.shadow-card,
+.shadow-card-lg {
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    outline-color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A gentle hover lift for cards that are themselves interactive
+     (rendered as a link or button) - static info cards don't move. */
+  a.shadow-card:hover,
+  button.shadow-card:hover,
+  a.shadow-card-lg:hover,
+  button.shadow-card-lg:hover {
+    transform: translateY(-3px);
+  }
+
+  /* Every page: a soft fade-up as the route's main content mounts (and
+     re-runs on client navigations, since <main> remounts per route). */
+  main {
+    animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Every card: rise + fade in as it scrolls into view. Progressive
+     enhancement - only where scroll-linked animations are supported. */
+  @supports (animation-timeline: view()) {
+    main :is(.shadow-card, .shadow-card-lg) {
+      animation: card-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Opt-in hover-motion utilities (usable on any element). The transition is
+   unconditional (safe); only the movement is reduced-motion gated. */
+.hover-lift,
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hover-animation fallback: smooth the hover/focus state change on any
+     interactive element that doesn't already declare a transition. Tailwind's
+     transition-* utilities have higher (class) specificity, so elements that
+     set their own still win - this only fills the gaps site-wide. */
+  a,
+  button,
+  summary,
+  select,
+  label[for],
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+}
+
 /* Tiptap placeholder. The Placeholder extension only tags the empty node with
    `is-editor-empty` + `data-placeholder`; this rule is what paints it.
    --muted-foreground is 4.83:1 on the card, so the hint stays readable.

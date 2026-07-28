@@ -9,6 +9,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 const base =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap " +
   "transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 " +
+  // Subtle hover lift on every standard button (paired with each variant's
+  // active press). motion-safe so reduced-motion users get no movement.
+  "motion-safe:hover:-translate-y-px " +
   "focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
 /** Primary blue pill CTA - the strongest action (Download, Next, Create). */
