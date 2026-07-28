@@ -240,9 +240,16 @@ export function ImprovePanel({
             <ChevronLeft className="size-4" />
             Back
           </GhostButton>
-          <PrimaryButton onClick={onNext}>
-            Next
-            <ChevronRight className="size-4" />
+          {/* The resume is complete, so the forward action is Download (not Next
+              to Design). Free users are sent to /payment; premium users get the
+              PDF. */}
+          <PrimaryButton onClick={handleDownload} disabled={downloading}>
+            {downloading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            {downloading ? "Preparing…" : "Download"}
           </PrimaryButton>
         </div>
       </div>
