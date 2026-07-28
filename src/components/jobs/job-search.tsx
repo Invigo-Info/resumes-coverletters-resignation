@@ -293,13 +293,15 @@ export function JobSearch() {
       });
     };
     for (const rec of resumes) {
+      // Guard every hop: a malformed/partial resume record (missing personal or
+      // employment) must not crash the whole jobs page.
       const d = rec.data;
       const role =
-        d.personal.jobTitle?.trim() ||
-        d.employment?.find((e) => e.jobTitle.trim())?.jobTitle ||
+        d.personal?.jobTitle?.trim() ||
+        d.employment?.find((e) => e.jobTitle?.trim())?.jobTitle ||
         "";
       const experience = (d.employment ?? [])
-        .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
+        .map((e) => `${e.jobTitle ?? ""} ${e.company ?? ""} ${stripHtml(e.description || "")}`)
         .join("\n");
       add(
         rec.id,
@@ -310,7 +312,7 @@ export function JobSearch() {
         experience
       );
     }
-    const empRole = activeEmployment.find((e) => e.jobTitle.trim())?.jobTitle ?? "";
+    const empRole = activeEmployment.find((e) => e.jobTitle?.trim())?.jobTitle ?? "";
     const activeExp = activeEmployment
       .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
       .join("\n");

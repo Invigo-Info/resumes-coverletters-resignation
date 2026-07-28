@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Home, PenLine, Palette, Download, Loader2, Laugh, CircleCheck } from "lucide-react";
 import { ResignationLetterPreview } from "@/components/resignation-letter/resignation-letter-preview";
 import { DesignToolbar } from "@/components/resignation-letter/design-toolbar";
 import { WriteMode, type Section as WriteSection } from "@/components/resignation-letter/write-mode";
-import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
+import { useResignationLetterStore, letterCompletion } from "@/lib/store/resignation-letter-store";
 import {
   useResignationLetterAutosave,
   useResignationLetterSaveStatus,
@@ -46,10 +46,28 @@ function SaveStatusPill() {
  * Stripe subscription checkout (returning to the resignation dashboard).
  */
 export default function ResignationLetterPreviewPage() {
+  // useSearchParams must sit under a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <ResignationLetterPreviewContent />
+    </Suspense>
+  );
+}
+
+function ResignationLetterPreviewContent() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("design");
+  const searchParams = useSearchParams();
+  // Opening an existing letter for editing (?mode=write) lands on the writing
+  // editor's letter-content section; a fresh/generated letter opens on Design.
+  const openInWrite = searchParams.get("mode") === "write";
+  // Live progress: how much of the letter's content is filled (updates as the
+  // user edits or clears fields and the body in Write mode).
+  const percent = useResignationLetterStore(letterCompletion);
+  const [mode, setMode] = useState<Mode>(openInWrite ? "write" : "design");
   // Which section Write mode opens on ("Edit your letter" jumps to Letter content).
-  const [writeSection, setWriteSection] = useState<WriteSection>("personal");
+  const [writeSection, setWriteSection] = useState<WriteSection>(
+    openInWrite ? "content" : "personal"
+  );
   const [generating, setGenerating] = useState(false);
 
   // Persist the finished resignation letter into the dashboard's drafts list.
@@ -123,13 +141,16 @@ export default function ResignationLetterPreviewPage() {
           ))}
         </div>
 
-        {/* Progress 85% */}
+        {/* Progress - reflects how much of the letter's content is filled */}
         <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
           <Laugh className="size-4 text-primary" aria-hidden />
           <div className="h-2 w-32 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-[85%] rounded-full bg-gradient-progress" />
+            <div
+              className="h-full rounded-full bg-gradient-progress transition-[width] duration-300"
+              style={{ width: `${percent}%` }}
+            />
           </div>
-          <span className="text-sm font-semibold text-foreground">85%</span>
+          <span className="text-sm font-semibold text-foreground">{percent}%</span>
         </div>
 
         {/* Autosave status */}

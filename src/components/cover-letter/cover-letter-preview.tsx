@@ -38,7 +38,14 @@ export type CoverLetterPreviewData = Pick<
  */
 export function CoverLetterPreview({ data }: { data?: CoverLetterPreviewData } = {}) {
   const store = useCoverLetterStore();
-  const { personal, jobDetails, letter, design } = data ?? store;
+  // Treat the source as possibly-partial: a malformed/partial saved record can be
+  // missing a nested object, which would otherwise crash a dashboard card or the
+  // preview. Fall back to empty objects so rendering stays safe.
+  const src = (data ?? store) as Partial<CoverLetterPreviewData>;
+  const personal = src.personal ?? { firstName: "", lastName: "", email: "", phone: "", address: "" };
+  const jobDetails = src.jobDetails ?? { desiredJobTitle: "", companyName: "", hiringManagerName: "", jobDescription: "" };
+  const letter = src.letter ?? { companyName: "", hiringManagerName: "", body: "" };
+  const design = src.design ?? ({} as CoverLetterPreviewData["design"]);
 
   const fullName = `${personal.firstName} ${personal.lastName}`.trim() || "Your Name";
   const role = jobDetails.desiredJobTitle || "";

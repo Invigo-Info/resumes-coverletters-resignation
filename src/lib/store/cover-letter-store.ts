@@ -293,6 +293,29 @@ export function progressForStep(
   return { ...STEP_MESSAGE[step], percent };
 }
 
+/**
+ * Live completion percent for the finished-letter editor (the Write/Design
+ * preview screen). Unlike progressForStep (which tracks wizard steps and is 100
+ * on preview), this counts the letter's own editable fields that currently hold
+ * content, so adding or clearing a field or the letter body moves the bar.
+ */
+export function letterCompletion(s: CoverLetterState): number {
+  const bodyText = s.letter.body.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim();
+  const fields = [
+    s.personal.firstName,
+    s.personal.lastName,
+    s.personal.email,
+    s.personal.phone,
+    s.personal.address,
+    s.jobDetails.desiredJobTitle,
+    s.letter.companyName,
+    s.letter.hiringManagerName,
+    bodyText,
+  ];
+  const filled = fields.filter((v) => v.trim().length > 0).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
 /* ------------------------------------------------------------------ */
 /* Store                                                              */
 /* ------------------------------------------------------------------ */

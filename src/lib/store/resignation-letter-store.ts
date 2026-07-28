@@ -286,6 +286,29 @@ export function canProceed(step: RLStep, s: ResignationLetterState): boolean {
 }
 
 /**
+ * Live completion percent for the finished-letter editor (the Write/Design
+ * preview screen). Unlike progressForStep (fixed per wizard step, 100 on
+ * preview), this counts the letter's own editable fields that currently hold
+ * content, so adding or clearing a field or the letter body moves the bar.
+ * Company address is optional, so it is left out of the count.
+ */
+export function letterCompletion(s: ResignationLetterState): number {
+  const bodyText = s.letter.body.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim();
+  const fields = [
+    s.fullName,
+    s.contacts.email,
+    s.contacts.phone,
+    s.contacts.address,
+    s.employer.managerName,
+    s.employer.companyName,
+    s.position,
+    bodyText,
+  ];
+  const filled = fields.filter((v) => v.trim().length > 0).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
+/**
  * Re-derive the letter body from a structured-field change so an already
  * generated letter stays in sync with the fields. No-op while the body is empty
  * (the builder shows a live template) or once the user has manually edited the

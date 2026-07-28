@@ -75,9 +75,9 @@ export default function CoverLetterNewPage() {
       ? savedResumes.map((r) => ({ id: r.id, title: r.title }))
       : mockResumes.map((r) => ({ id: r.id, title: r.title }));
 
-  // Resume an existing draft: go straight to preview if a body exists, else the wizard.
+  // Resume an existing draft: open the writing editor if a body exists, else the wizard.
   function continueDraft() {
-    if (hasBody) router.push("/cover-letter/preview");
+    if (hasBody) router.push("/cover-letter/preview?mode=write");
     else router.push("/cover-letters/write/intent");
   }
 

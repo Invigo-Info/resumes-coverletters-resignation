@@ -55,7 +55,10 @@ export function SavedInterviewPrepList() {
     };
   }, [upsertSheet]);
 
-  const ordered = [...sheets].sort((a, b) => b.updatedAt - a.updatedAt);
+  // Skip malformed records (missing data) so one bad sheet cannot crash the list.
+  const ordered = [...sheets]
+    .filter((s) => s.data)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
   if (!mounted) {
     return <div className="h-40 animate-pulse rounded-2xl bg-secondary" />;

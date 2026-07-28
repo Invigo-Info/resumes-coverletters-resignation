@@ -26,8 +26,10 @@ import type { ResumeDoc } from "@/lib/mock-data";
 /** Collect the resume's real experience bullets, so the AI tailoring flow can
  *  reframe them instead of inventing achievements. */
 function experienceBullets(data: ResumeDocData): string[] {
-  return (data.employment ?? []).flatMap((job) =>
-    Array.from(job.description.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi))
+  // Guard against a malformed/partial record (missing employment or a job's
+  // description) so a bad resume record cannot crash the dashboard.
+  return (data?.employment ?? []).flatMap((job) =>
+    Array.from((job.description ?? "").matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi))
       .map((m) => m[1].replace(/<[^>]*>/g, "").trim())
       .filter(Boolean)
   );

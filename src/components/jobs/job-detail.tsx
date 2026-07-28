@@ -149,11 +149,11 @@ export function JobDetail({
           ) : (
             <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
               <p>{job.summary}</p>
-              {job.responsibilities.length > 0 && (
+              {(job.responsibilities?.length ?? 0) > 0 && (
                 <div>
                   <p className="mb-1.5 font-medium text-foreground">Responsibilities</p>
                   <ul className="space-y-1.5">
-                    {job.responsibilities.map((r, i) => (
+                    {(job.responsibilities ?? []).map((r, i) => (
                       <li key={i} className="flex gap-2">
                         <span className="mt-2 size-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
                         {r}
@@ -162,11 +162,11 @@ export function JobDetail({
                   </ul>
                 </div>
               )}
-              {job.qualifications.length > 0 && (
+              {(job.qualifications?.length ?? 0) > 0 && (
                 <div>
                   <p className="mb-1.5 font-medium text-foreground">Qualifications</p>
                   <ul className="space-y-1.5">
-                    {job.qualifications.map((q, i) => (
+                    {(job.qualifications ?? []).map((q, i) => (
                       <li key={i} className="flex gap-2">
                         <span className="mt-2 size-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
                         {q}

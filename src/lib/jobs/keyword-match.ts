@@ -165,7 +165,7 @@ function extractKeywords(job: JobPosting): string[] {
   const low = text.toLowerCase();
 
   const companyWords = new Set(
-    job.company.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    (job.company ?? "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
   );
 
   const seen = new Map<string, string>();

@@ -103,7 +103,7 @@ export function buildHeuristicScoreboard(
   const lines = job.description ? descriptionLines(job.description) : [];
 
   // Position: role identity, seniority, and any position-like description lines.
-  const head = job.title.split(/[,\-|]/)[0].trim();
+  const head = (job.title ?? "").split(/[,\-|]/)[0].trim();
   const positionLabels = [
     `${head} title match`,
     job.seniority ? `${job.seniority}-level role alignment` : `Role scope alignment`,
@@ -114,14 +114,14 @@ export function buildHeuristicScoreboard(
 
   // Requirements: the job's qualifications, or requirement-like description lines.
   const requirementLabels = (
-    job.qualifications.length
+    job.qualifications?.length
       ? job.qualifications
       : lines.filter((l) => REQ_HINT.test(l))
   ).slice(0, 5);
 
   // Responsibilities: the job's responsibilities, or duty-like description lines.
   const responsibilityLabels = (
-    job.responsibilities.length
+    job.responsibilities?.length
       ? job.responsibilities
       : lines.filter((l) => RESP_HINT.test(l))
   ).slice(0, 6);
@@ -142,7 +142,7 @@ export function buildHeuristicScoreboard(
     items.length ? items.filter((i) => i.matched).length / items.length : 0.6;
 
   // Skill bonus: how many resume skills show up in the posting text.
-  const jobText = `${job.title} ${job.description ?? ""} ${job.responsibilities.join(" ")} ${job.qualifications.join(" ")}`.toLowerCase();
+  const jobText = `${job.title ?? ""} ${job.description ?? ""} ${(job.responsibilities ?? []).join(" ")} ${(job.qualifications ?? []).join(" ")}`.toLowerCase();
   const skillHits = skills.filter((s) => jobText.includes(s)).length;
   const skillBonus = skills.length ? Math.min(1, skillHits / Math.min(skills.length, 5)) : 0.6;
 

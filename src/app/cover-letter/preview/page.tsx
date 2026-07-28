@@ -9,7 +9,7 @@ import { CoverLetterPreview } from "@/components/cover-letter/cover-letter-previ
 import { CoverLetterDesignPanel } from "@/components/cover-letter/design-panel";
 import { WriteMode, type Section as WriteSection } from "@/components/cover-letter/write-mode";
 import { HelpPill } from "@/components/layout/help-pill";
-import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+import { useCoverLetterStore, letterCompletion } from "@/lib/store/cover-letter-store";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
@@ -41,6 +41,9 @@ function CoverLetterPreviewContent() {
   // editor's letter-content section; a fresh/generated letter opens on Design.
   const openInWrite = searchParams.get("mode") === "write";
   const s = useCoverLetterStore();
+  // Live progress: how much of the letter's content is filled (updates as the
+  // user edits or clears fields and the body in Write mode).
+  const percent = letterCompletion(s);
   const [mode, setMode] = useState<Mode>(openInWrite ? "write" : "design");
   // Which section Write mode opens on ("Edit your letter" jumps to Letter content).
   const [writeSection, setWriteSection] = useState<WriteSection>(
@@ -124,13 +127,16 @@ function CoverLetterPreviewContent() {
           ))}
         </div>
 
-        {/* Progress 100% */}
+        {/* Progress - reflects how much of the letter's content is filled */}
         <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
           <PartyPopper className="size-4 text-primary" aria-hidden />
           <div className="h-2.5 w-40 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-full rounded-full bg-gradient-progress" />
+            <div
+              className="h-full rounded-full bg-gradient-progress transition-[width] duration-300"
+              style={{ width: `${percent}%` }}
+            />
           </div>
-          <span className="text-sm font-semibold text-foreground">100%</span>
+          <span className="text-sm font-semibold text-foreground">{percent}%</span>
         </div>
 
         <button

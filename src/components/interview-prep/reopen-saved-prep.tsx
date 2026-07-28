@@ -25,8 +25,12 @@ export function ReopenSavedPrep({ id }: { id: string }) {
 
   useEffect(() => {
     let alive = true;
+    // Treat a record whose data is missing its core field as corrupt/not-found,
+    // so a malformed record cannot crash the prep viewer.
+    const valid = (d: SavedInterviewPrepData | undefined): d is SavedInterviewPrepData =>
+      !!d && !!d.interviewType;
     const local = useInterviewPrepDocumentsStore.getState().getSheet(id);
-    if (local) {
+    if (local && valid(local.data)) {
       setState({ status: "found", data: local.data });
       return;
     }
@@ -34,10 +38,9 @@ export function ReopenSavedPrep({ id }: { id: string }) {
       const server = await fetchServerDocuments();
       if (!alive) return;
       const doc = server?.interviewPrep.find((d) => d.id === id);
+      const data = doc?.data as SavedInterviewPrepData | undefined;
       setState(
-        doc
-          ? { status: "found", data: doc.data as SavedInterviewPrepData }
-          : { status: "missing" }
+        valid(data) ? { status: "found", data } : { status: "missing" }
       );
     })();
     return () => {
