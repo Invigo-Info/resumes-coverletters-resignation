@@ -27,7 +27,7 @@ import { TailorArt } from "@/components/jobs/improve-keywords-flow";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useDocumentsStore } from "@/lib/store/documents-store";
 import { useTailorStore } from "@/lib/store/tailor-store";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
 import {
   buildTailorPlan,
   type TailorPlanItem,
@@ -118,23 +118,23 @@ const CONFETTI_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#a855f7", "#ec4899"];
 function TailoringTopBar() {
   const router = useRouter();
   const resumeId = useResumeStore((s) => s.id);
-  const premium = usePaywall((s) => s.premium);
   const finalize = useTailoringSessionStore((s) => s.finalize);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
-    // Finalize the tailored version, then download. Downloading is a premium
-    // action: free users go to the subscribe / Stripe checkout funnel first;
-    // premium users download the PDF directly.
+    // Finalize the tailored version, then download. Free accounts may download
+    // up to 3 distinct resumes; a further one needs a subscription (premium is
+    // unlimited). Over the allowance -> the subscribe / Stripe checkout funnel.
     finalize();
-    if (!premium) {
+    if (!canDownloadResume(resumeId)) {
       router.push("/payment");
       return;
     }
     setDownloading(true);
     try {
       await downloadResume();
+      recordResumeDownload(resumeId);
     } finally {
       setDownloading(false);
     }
@@ -421,7 +421,7 @@ export default function TailoringPage() {
   const addSkill = useResumeStore((s) => s.addSkill);
   const loadDocument = useResumeStore((s) => s.loadDocument);
   const setActiveSection = useResumeStore((s) => s.setActiveSection);
-  const premium = usePaywall((s) => s.premium);
+  const resumeId = useResumeStore((s) => s.id);
 
   // The durable tailoring session is the source of truth for progress (applied /
   // skipped / edited suggestions and the live score), so the flow survives the
@@ -435,16 +435,17 @@ export default function TailoringPage() {
   const setActiveStore = useTailoringSessionStore((s) => s.setActive);
   const finalize = useTailoringSessionStore((s) => s.finalize);
 
-  // Downloading finalizes the tailored version, then downloads. It is a premium
-  // action: free users hit the subscribe / Stripe checkout funnel (/payment)
-  // first; premium users export the PDF directly.
+  // Downloading finalizes the tailored version, then downloads. Free accounts
+  // may download up to 3 distinct resumes; a further one needs a subscription
+  // (premium is unlimited). Over the allowance -> the /payment funnel.
   const handleDownloadResume = () => {
     finalize();
-    if (premium) {
-      void downloadResume();
+    if (!canDownloadResume(resumeId)) {
+      router.push("/payment");
       return;
     }
-    router.push("/payment");
+    void downloadResume();
+    recordResumeDownload(resumeId);
   };
 
   const [mounted, setMounted] = useState(false);

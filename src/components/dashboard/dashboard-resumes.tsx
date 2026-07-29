@@ -10,6 +10,7 @@ import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { usePaywall } from "@/lib/cover-letter/paywall";
 import { useResumeLimit } from "@/lib/resume-limit";
+import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
 import {
   useDocumentsStore,
@@ -22,6 +23,8 @@ import {
   pushServerDocument,
 } from "@/lib/store/documents-sync";
 import { getTemplate } from "@/lib/templates";
+import { downloadResume } from "@/lib/download-pdf";
+import { LivePreview } from "@/components/editor/live-preview";
 import type { ResumeDoc } from "@/lib/mock-data";
 
 /** Collect the resume's real experience bullets, so the AI tailoring flow can
@@ -61,6 +64,8 @@ export function DashboardResumes() {
   const removeResume = useDocumentsStore((s) => s.removeResume);
   const upsertResume = useDocumentsStore((s) => s.upsertResume);
   const loadDocument = useResumeStore((s) => s.loadDocument);
+  // The card whose PDF is currently being exported (shows a spinner on it).
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   // Avoid SSR/client mismatch - drafts live in localStorage (client only).
   const [mounted, setMounted] = useState(false);
@@ -115,6 +120,13 @@ export function DashboardResumes() {
 
   return (
     <div className="space-y-7">
+      {/* Off-screen PDF source for card downloads: it mirrors the active resume
+          store, so the download handler loads the clicked resume into the store,
+          waits a tick, then exports this node - no need to open the editor. */}
+      <div aria-hidden className="hidden">
+        <LivePreview previewOnly />
+      </div>
+
       {resumes.map((rec) => {
         const doc: ResumeDoc = {
           id: rec.id,
@@ -126,26 +138,39 @@ export function DashboardResumes() {
           loadDocument(rec.id, rec.data);
           router.push("/resumes/write/personal");
         };
-        // Download is a premium action: free users go to the subscription page;
-        // premium users open THIS resume, and a sessionStorage flag tells the
-        // editor to auto-export the PDF once its preview mounts - so a click on
-        // the card downloads the right resume.
-        const download = () => {
-          if (!premium) {
+        // Free accounts may download up to 3 distinct resumes; a further one
+        // needs a subscription (premium is unlimited). Within the allowance the
+        // resume is exported to a PDF right here - no navigation: the clicked
+        // resume is loaded into the hidden off-screen preview below, which the
+        // exporter captures.
+        const download = async () => {
+          if (!canDownloadResume(rec.id)) {
             router.push("/payment");
             return;
           }
+          if (exportingId) return; // a download is already in flight
           loadDocument(rec.id, rec.data);
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("resume-co:dl", "1");
+          setExportingId(rec.id);
+          try {
+            // Let the hidden preview commit the loaded resume, then settle fonts.
+            await new Promise((r) => setTimeout(r, 80));
+            try {
+              await document.fonts?.ready;
+            } catch {
+              /* fonts API absent - proceed anyway */
+            }
+            await downloadResume();
+            recordResumeDownload(rec.id);
+          } finally {
+            setExportingId(null);
           }
-          router.push("/resumes/write/personal");
         };
         return (
           <ResumeCard
             key={rec.id}
             resume={doc}
             resumeBullets={experienceBullets(rec.data)}
+            downloading={exportingId === rec.id}
             onEdit={open}
             onDownload={download}
             onCopy={() => {
@@ -179,7 +204,13 @@ export function DashboardResumes() {
         <Link href={newResumeHref}>
           <GhostButton className="h-12 bg-card px-7 text-base shadow-card ring-1 ring-border transition-colors hover:bg-primary/10 hover:text-primary hover:ring-primary/30">
             <Plus className="size-4" />
-            {atLimit ? "Subscribe to add more" : "Create new resume"}
+            {/* Free + at the cap: subscribe. Subscribed: a positive "Build my
+                resume" CTA (matches the empty state). Free under the cap: create. */}
+            {atLimit
+              ? "Subscribe to add more"
+              : premium
+                ? "Build my resume"
+                : "Create new resume"}
           </GhostButton>
         </Link>
         {!premium && (

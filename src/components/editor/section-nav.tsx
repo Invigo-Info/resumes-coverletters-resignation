@@ -13,7 +13,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
+import {
+  useResumeStore,
+  isSectionComplete,
+  type SectionKey,
+} from "@/lib/store/resume-store";
 import { ADDITIONAL_CONFIG } from "./sections/additional-config";
 
 /**
@@ -48,6 +52,9 @@ export function SectionNav({
   const order = useResumeStore((s) => s.sectionOrder);
   const active = useResumeStore((s) => s.activeSection);
   const unlockedSections = useResumeStore((s) => s.unlockedSections);
+  // Full state, so each section's status dot can reflect whether it actually
+  // holds saved data (green) or is empty (grey) - see isSectionComplete.
+  const resume = useResumeStore();
   const additional = useResumeStore((s) => s.additional);
   const setActive = useResumeStore((s) => s.setActiveSection);
   const moveSection = useResumeStore((s) => s.moveSection);
@@ -129,6 +136,9 @@ export function SectionNav({
           // to it (via Next). Locked sections render disabled and non-clickable;
           // reordering/dragging is also blocked until a section is unlocked.
           const unlocked = unlockedSections.includes(key);
+          // Green dot only when the section genuinely has saved data; an unlocked
+          // but empty section stays grey.
+          const complete = isSectionComplete(resume, key);
           const canDrag = Boolean(meta.reorderable) && unlocked;
           const movableIdx = meta.reorderable ? movableKeys.indexOf(key) : -1;
           const canUp = movableIdx > 0;
@@ -179,20 +189,20 @@ export function SectionNav({
                 <span className="flex-1 truncate pr-6">{meta.label}</span>
               </button>
 
-              {/* Status dot on the progress rail: green once the section has been
-                  passed (unlocked and no longer current), a solid dark dot for the
-                  current section, and a hollow marker while it is still locked.
-                  Fades out while hovering/focusing an unlocked reorderable row so
-                  the drag handle can take its place. */}
+              {/* Status dot on the progress rail: a solid dark dot for the current
+                  section, green when a section holds saved data, and a hollow
+                  marker when it is empty or still locked. Fades out while
+                  hovering/focusing an unlocked reorderable row so the drag handle
+                  can take its place. */}
               <span
                 aria-hidden
                 className={cn(
                   "pointer-events-none absolute right-3 top-1/2 z-10 size-2.5 -translate-y-1/2 rounded-full transition-all",
-                  !unlocked
-                    ? "border-2 border-muted-foreground/30 bg-card"
-                    : isActive
-                      ? "bg-foreground"
-                      : "bg-progress-done",
+                  isActive
+                    ? "bg-foreground"
+                    : unlocked && complete
+                      ? "bg-progress-done"
+                      : "border-2 border-muted-foreground/30 bg-card",
                   canDrag && "group-hover:opacity-0 group-focus-within:opacity-0"
                 )}
               />

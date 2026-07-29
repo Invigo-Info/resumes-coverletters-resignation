@@ -741,13 +741,17 @@ export const useResumeStore = create<ResumeState>()(
     })),
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
   loadDocument: (id, data) =>
-    set((s) => ({
-      ...s,
-      ...withUniqueIds(data),
-      id,
-      unlockedSections: ["personal"],
-      importedResume: true,
-    })),
+    set((s) => {
+      const merged = { ...s, ...withUniqueIds(data), id, importedResume: true };
+      return {
+        ...merged,
+        // A saved resume is fully accessible: unlock every section so the sidebar
+        // lists them all as navigable with data-driven status dots, rather than
+        // relocking it into the guided flow (only "personal" reachable) as a
+        // fresh/uploaded resume does.
+        unlockedSections: [...merged.sectionOrder],
+      };
+    }),
     }),
     {
       name: "resume-co:resume",
@@ -858,6 +862,50 @@ export function getProgressItems(s: ResumeState): ProgressItem[] {
 export function getProgress(s: ResumeState): number {
   const earned = getProgressItems(s).reduce((acc, i) => acc + (i.done ? i.weight : 0), 0);
   return Math.min(100, Math.max(0, BASE_PROGRESS + earned));
+}
+
+/**
+ * Does a section hold real saved data? Drives the sidebar / mobile status dots
+ * (green when complete, grey when empty), independent of the guided-flow unlock
+ * state - so an opened saved resume shows a green dot on every section the user
+ * has actually filled, and grey only on the ones genuinely left empty.
+ */
+export function isSectionComplete(s: ResumeState, key: SectionKey): boolean {
+  switch (key) {
+    case "personal":
+      return !!(
+        s.personal.firstName.trim() ||
+        s.personal.lastName.trim() ||
+        s.personal.jobTitle.trim()
+      );
+    case "contact":
+      return !!(
+        s.contact.email.trim() ||
+        s.contact.phone.trim() ||
+        s.contact.location.trim() ||
+        s.contact.linkedin.trim()
+      );
+    case "summary":
+      return hasText(s.summary);
+    case "employment":
+      return s.employment.some(
+        (e) => e.company.trim() || e.jobTitle.trim() || hasText(e.description)
+      );
+    case "skills":
+      return s.skills.some((sk) => sk.name.trim());
+    case "education":
+      return s.education.some((e) => e.institution.trim() || e.degree.trim());
+    default: {
+      // Additional (user-added) section: courses, languages, hobbies, links, etc.
+      const sec = s.additional.find((a) => a.id === key);
+      return !!sec?.entries.some((e) =>
+        Object.entries(e).some(
+          ([field, value]) =>
+            field !== "id" && typeof value === "string" && value.trim()
+        )
+      );
+    }
+  }
 }
 
 /** One actionable suggestion on the Improve page (weight = points it adds). */

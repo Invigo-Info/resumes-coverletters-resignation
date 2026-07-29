@@ -14,6 +14,11 @@ import {
 } from "@/lib/store/resignation-letter-documents-store";
 import { generateResignationLetter } from "@/lib/resignation-letter/ai";
 import { bodyToHtml } from "@/lib/resignation-letter/format";
+import {
+  canDownloadResignationLetter,
+  recordResignationLetterDownload,
+} from "@/lib/resume-download-gate";
+import { downloadResignationLetter } from "@/lib/resignation-letter/download";
 import { cn } from "@/lib/utils";
 
 type Mode = "write" | "design";
@@ -69,6 +74,8 @@ function ResignationLetterPreviewContent() {
     openInWrite ? "content" : "personal"
   );
   const [generating, setGenerating] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const letterId = useResignationLetterStore((s) => s.id);
 
   // Persist the finished resignation letter into the dashboard's drafts list.
   useResignationLetterAutosave();
@@ -98,10 +105,22 @@ function ResignationLetterPreviewContent() {
       .finally(() => setGenerating(false));
   }, []);
 
-  // Download is premium: start the Stripe subscription checkout, returning to the
-  // resignation-letter dashboard once the payment completes.
-  function handleDownload() {
-    router.push(`/payment?next=${encodeURIComponent(RESIGNATION_DASHBOARD)}`);
+  // Free accounts may download up to 3 distinct resignation letters; a further
+  // one needs a subscription (premium is unlimited). Within the allowance we
+  // export the PDF; over it we start the Stripe checkout, returning to the
+  // resignation-letter dashboard.
+  async function handleDownload() {
+    if (!canDownloadResignationLetter(letterId)) {
+      router.push(`/payment?next=${encodeURIComponent(RESIGNATION_DASHBOARD)}`);
+      return;
+    }
+    setDownloading(true);
+    try {
+      await downloadResignationLetter();
+      recordResignationLetterDownload(letterId);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -158,11 +177,17 @@ function ResignationLetterPreviewContent() {
 
         <button
           onClick={handleDownload}
-          disabled={generating}
+          disabled={generating || downloading}
           className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          <Download className="size-4" />
-          <span className="hidden sm:inline">Download</span>
+          {downloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
+          <span className="hidden sm:inline">
+            {downloading ? "Preparing…" : "Download"}
+          </span>
         </button>
       </div>
 
@@ -205,10 +230,15 @@ function ResignationLetterPreviewContent() {
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-card-lg transition-colors hover:bg-primary/90"
+            disabled={downloading}
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-card-lg transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
-            <Download className="size-4" />
-            Download
+            {downloading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            {downloading ? "Preparing…" : "Download"}
           </button>
         </div>
       )}

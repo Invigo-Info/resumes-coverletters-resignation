@@ -13,8 +13,14 @@ import {
   ChevronRight,
   Check,
   Download,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
+import {
+  canDownloadCoverLetter,
+  recordCoverLetterDownload,
+} from "@/lib/resume-download-gate";
+import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import {
   useCoverLetterStore,
   type CLFontId,
@@ -84,7 +90,9 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
   const router = useRouter();
   const design = useCoverLetterStore((s) => s.design);
   const setDesign = useCoverLetterStore((s) => s.setDesign);
+  const letterId = useCoverLetterStore((s) => s.id);
   const [start, setStart] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   const visible = coverLetterTemplates.slice(start, start + 3);
   const canPrev = start > 0;
@@ -92,10 +100,21 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
 
   const spacing = design.spacing ?? "normal";
 
-  // Download is premium: start the Stripe subscription checkout, returning to the
-  // cover-letters dashboard once the payment completes.
-  function handleDownload() {
-    router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
+  // Free accounts may download up to 3 distinct cover letters; a further one
+  // needs a subscription (premium is unlimited). Within the allowance we export
+  // the PDF; over it we start the Stripe checkout, returning to the dashboard.
+  async function handleDownload() {
+    if (!canDownloadCoverLetter(letterId)) {
+      router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
+      return;
+    }
+    setDownloading(true);
+    try {
+      await downloadCoverLetter();
+      recordCoverLetterDownload(letterId);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -265,10 +284,15 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
         </button>
         <button
           onClick={handleDownload}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          disabled={downloading}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          <Download className="size-4" />
-          Download
+          {downloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
+          {downloading ? "Preparing…" : "Download"}
         </button>
       </div>
     </div>

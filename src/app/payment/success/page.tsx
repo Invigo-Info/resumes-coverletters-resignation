@@ -4,6 +4,9 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { UnlockPremium } from "@/components/payment/unlock-premium";
 import { getStripe } from "@/lib/stripe/server";
+import { auth } from "@/auth";
+import { upsertEntitlement } from "@/lib/entitlements";
+import { isDbEnabled } from "@/lib/db";
 
 /**
  * Post-checkout confirmation page. Reads the Stripe session_id from the URL,
@@ -28,8 +31,36 @@ export default async function PaymentSuccessPage({
       const s = await stripe.checkout.sessions.retrieve(session_id);
       status = s.status ?? null;
       email = s.customer_details?.email ?? null;
+
+      // A verified, completed checkout grants premium server-side right here -
+      // so access sticks even when the Stripe webhook isn't configured (the
+      // webhook still maintains the later lifecycle: renewals/cancellations).
+      // Keyed by the signed-in email, which is what /api/entitlement reads.
+      if (s.status === "complete" && isDbEnabled()) {
+        const authed = await auth();
+        const userEmail = authed?.user?.email ?? email ?? undefined;
+        if (userEmail) {
+          const plan = typeof s.metadata?.plan === "string" ? s.metadata.plan : null;
+          const customerId =
+            typeof s.customer === "string" ? s.customer : (s.customer?.id ?? null);
+          const subId =
+            typeof s.subscription === "string"
+              ? s.subscription
+              : (s.subscription?.id ?? null);
+          await upsertEntitlement(
+            userEmail,
+            {
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subId,
+              status: "active",
+              plan,
+            },
+            Date.now()
+          );
+        }
+      }
     } catch {
-      /* ignore */
+      /* ignore - the client UnlockPremium below still flips the local flag */
     }
   }
 

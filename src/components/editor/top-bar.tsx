@@ -19,7 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
 import { downloadResume } from "@/lib/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
@@ -74,22 +74,20 @@ export function TopBar({
   const StageIcon = stage.Icon;
   const resumeId = useResumeStore((s) => s.id);
   const router = useRouter();
-  // Downloading is a premium action - free users are sent to the subscription
-  // page first (mirrors builder.resume.co). `premium` starts false.
-  const premium = usePaywall((s) => s.premium);
   const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
-  // Download is gated: free users go to the subscription page (/payment); premium
-  // users get the PDF directly (spinner on the button until it resolves).
+  // Free accounts may download up to 3 distinct resumes; a further one needs a
+  // subscription. Premium is unlimited. Over the allowance -> /payment.
   async function handleDownload() {
-    if (!premium) {
+    if (!canDownloadResume(resumeId)) {
       router.push("/payment");
       return;
     }
     setDownloading(true);
     try {
       await downloadResume();
+      recordResumeDownload(resumeId);
     } finally {
       setDownloading(false);
     }

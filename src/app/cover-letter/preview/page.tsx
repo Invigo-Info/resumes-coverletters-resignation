@@ -10,6 +10,11 @@ import { CoverLetterDesignPanel } from "@/components/cover-letter/design-panel";
 import { WriteMode, type Section as WriteSection } from "@/components/cover-letter/write-mode";
 import { HelpPill } from "@/components/layout/help-pill";
 import { useCoverLetterStore, letterCompletion } from "@/lib/store/cover-letter-store";
+import {
+  canDownloadCoverLetter,
+  recordCoverLetterDownload,
+} from "@/lib/resume-download-gate";
+import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
@@ -80,10 +85,22 @@ function CoverLetterPreviewContent() {
       .finally(() => setGenerating(false));
   }, []);
 
-  // Download is premium: start the Stripe subscription checkout, returning to the
-  // cover-letters dashboard once the payment completes.
-  function handleDownload() {
-    router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
+  // Free accounts may download up to 3 distinct cover letters; a further one
+  // needs a subscription (premium is unlimited). Within the allowance we export
+  // the PDF; over it we start the Stripe checkout, returning to the dashboard.
+  const [downloading, setDownloading] = useState(false);
+  async function handleDownload() {
+    if (!canDownloadCoverLetter(s.id)) {
+      router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
+      return;
+    }
+    setDownloading(true);
+    try {
+      await downloadCoverLetter();
+      recordCoverLetterDownload(s.id);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -141,11 +158,17 @@ function CoverLetterPreviewContent() {
 
         <button
           onClick={handleDownload}
-          disabled={generating}
+          disabled={generating || downloading}
           className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          <Download className="size-4" />
-          <span className="hidden sm:inline">Download</span>
+          {downloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
+          <span className="hidden sm:inline">
+            {downloading ? "Preparing…" : "Download"}
+          </span>
         </button>
       </div>
 

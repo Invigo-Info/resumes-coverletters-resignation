@@ -2,7 +2,11 @@
 
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
+import {
+  useResumeStore,
+  isSectionComplete,
+  type SectionKey,
+} from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { cn } from "@/lib/utils";
 import { SECTION_META } from "./section-nav";
@@ -60,8 +64,8 @@ export function EditorFooter({
 
 /**
  * Mobile section-progress rail: one tappable dot per section, mirroring the
- * desktop left-nav rail. Green marks a passed (unlocked, non-current) section,
- * a solid dark dot marks the current one, and a hollow marker marks a still
+ * desktop left-nav rail. A solid dark dot marks the current section, green marks
+ * a section that holds saved data, and a hollow marker marks an empty or still
  * locked section. Locked dots are disabled - the guided flow only unlocks a
  * section once the user has advanced to it.
  */
@@ -71,6 +75,8 @@ function SectionProgressDots() {
   const unlockedSections = useResumeStore((s) => s.unlockedSections);
   const additional = useResumeStore((s) => s.additional);
   const setActive = useResumeStore((s) => s.setActiveSection);
+  // Full state so each dot reflects whether its section holds saved data.
+  const resume = useResumeStore();
 
   const labelFor = (key: SectionKey) =>
     SECTION_META[key]?.label ??
@@ -82,6 +88,7 @@ function SectionProgressDots() {
       {order.map((key) => {
         const isActive = key === active;
         const unlocked = unlockedSections.includes(key);
+        const complete = isSectionComplete(resume, key);
         return (
           <button
             key={key}
@@ -96,11 +103,11 @@ function SectionProgressDots() {
               "shrink-0 rounded-full outline-none transition-all focus-visible:ring-3 focus-visible:ring-ring/40",
               unlocked ? "cursor-pointer" : "cursor-not-allowed",
               isActive ? "size-2.5" : "size-2",
-              !unlocked
-                ? "border-2 border-muted-foreground/30 bg-card"
-                : isActive
-                  ? "bg-foreground"
-                  : "bg-progress-done"
+              isActive
+                ? "bg-foreground"
+                : unlocked && complete
+                  ? "bg-progress-done"
+                  : "border-2 border-muted-foreground/30 bg-card"
             )}
           />
         );

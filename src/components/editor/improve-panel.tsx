@@ -27,7 +27,7 @@ import {
 } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { Confetti } from "@/components/brand/confetti";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
 import { downloadResume } from "@/lib/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { cn } from "@/lib/utils";
@@ -71,9 +71,6 @@ export function ImprovePanel({
 }) {
   const s = useResumeStore();
   const router = useRouter();
-  // Downloading is a premium action - free users are sent to the subscription
-  // page first (mirrors builder.resume.co). `premium` starts false.
-  const premium = usePaywall((st) => st.premium);
   // Remaining improvement suggestions; an empty list means the resume is complete.
   const todo = getImproveSuggestions(s);
   const complete = todo.length === 0;
@@ -98,16 +95,17 @@ export function ImprovePanel({
     if (!allStepsDone) prevAllDone.current = false;
   }, [allStepsDone]);
 
-  // Download is gated: free users go to the subscription page (/payment) first;
-  // premium users get the PDF directly (spinner on the button until it resolves).
+  // Free accounts may download up to 3 distinct resumes; a further one needs a
+  // subscription. Premium is unlimited. Over the allowance -> /payment.
   async function handleDownload() {
-    if (!premium) {
+    if (!canDownloadResume(s.id)) {
       router.push("/payment");
       return;
     }
     setDownloading(true);
     try {
       await downloadResume();
+      recordResumeDownload(s.id);
     } finally {
       setDownloading(false);
     }

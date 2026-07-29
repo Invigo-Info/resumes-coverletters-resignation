@@ -70,6 +70,17 @@ function PaymentCard({ plan, next }: { plan: string; next: string }) {
           <code className="rounded bg-muted px-1">.env.local</code> and restart - the secure payment
           form appears here. Test card: 4242 4242 4242 4242, any future date / CVC.
         </p>
+        {/* Dev-only: with no Stripe keys there's no way to finish checkout, so
+            offer a simulated completion that runs the same success flow (which
+            flips the premium flag). Never rendered in production builds. */}
+        {process.env.NODE_ENV !== "production" && (
+          <Link
+            href={`/payment/success${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+            className="mt-2 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            Simulate subscription (dev only)
+          </Link>
+        )}
       </div>
     );
   } else if (loadError) {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Download, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { Download, Loader2, Pencil, Sparkles, Trash2 } from "lucide-react";
 import type { ResumeDoc } from "@/lib/mock-data";
 import { usePaywall } from "@/lib/cover-letter/paywall";
 import { cn } from "@/lib/utils";
@@ -76,6 +76,7 @@ export function ResumeCard({
   onDownload,
   onCopy,
   onDelete,
+  downloading = false,
 }: {
   resume: ResumeDoc;
   /** The candidate's real experience bullets, used to ground AI tailoring. */
@@ -84,6 +85,8 @@ export function ResumeCard({
   onDownload?: () => void;
   onCopy?: () => void;
   onDelete?: () => void;
+  /** True while this resume's PDF is being generated (shows a spinner). */
+  downloading?: boolean;
 }) {
   const router = useRouter();
   const premium = usePaywall((s) => s.premium);
@@ -133,10 +136,15 @@ export function ResumeCard({
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <ActionButton
               variant="primary"
+              disabled={downloading}
               onClick={onDownload ?? (() => router.push("/resumes/write/personal"))}
             >
-              <Download className="size-4" />
-              Download
+              {downloading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              {downloading ? "Preparing…" : "Download"}
             </ActionButton>
             <ActionButton
               variant="secondary"
