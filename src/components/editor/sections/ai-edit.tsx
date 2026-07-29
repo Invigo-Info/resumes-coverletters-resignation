@@ -41,22 +41,34 @@ export const AI_PRESETS = [
   },
 ] as const;
 
+const SHORTER_PRESET = AI_PRESETS.find((p) => p.key === "shorter");
+
+/**
+ * Only "Shorter" may condense several bullets into fewer; Improve, More human,
+ * and any "Ask AI to..." request keep one rewritten bullet per input bullet.
+ */
+export function allowsBulletMerge(instruction: string): boolean {
+  return !!SHORTER_PRESET && instruction === SHORTER_PRESET.instruction;
+}
+
 /** How full a writing area is: too little, getting there, or right. */
 export type Status = { label: string; tone: "bad" | "warn" | "good" };
 
 /**
  * Bullet-count feedback for a responsibilities editor. Recruiters skim: one
  * bullet says nothing, four or more tells a story.
- *   1 bullet  -> "Add more"    (red)
- *   2-3       -> "Keep going"  (amber)
- *   4+        -> "Good length" (green)
+ *   1 bullet  -> "Add more"            (red)
+ *   2-3       -> "Keep going"          (amber)
+ *   4-6       -> "Good length"         (green)
+ *   7+        -> "Consider shortening" (amber)  recruiters skim; too many dilutes
  * Zero bullets shows nothing - the placeholder is already doing that job.
  */
 export function bulletStatus(count: number): Status | null {
   if (count <= 0) return null;
   if (count === 1) return { label: "Add more", tone: "bad" };
   if (count <= 3) return { label: "Keep going", tone: "warn" };
-  return { label: "Good length", tone: "good" };
+  if (count <= 6) return { label: "Good length", tone: "good" };
+  return { label: "Consider shortening", tone: "warn" };
 }
 
 /**

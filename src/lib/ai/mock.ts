@@ -8,6 +8,8 @@
  * To enable real AI: add GEMINI_API_KEY=... to resume-co/.env.local
  */
 
+import { dedupeSuggestions, hasFakeMetric } from "./validate";
+
 /** Selectable summary tones (id + label + swatch) for the summary generator. */
 export const SUMMARY_TONES = [
   { id: "visionary", label: "Visionary", color: "#6366f1" },
@@ -178,21 +180,57 @@ export async function improveBullets(opts: {
    *  present, suggestions are generated to complement these instead of being
    *  generic role-based ideas. */
   existing?: string[];
+  /** Every idea already displayed for this entry, so "Show more" never repeats
+   *  one - passed to the model AND used to filter its reply. */
+  previouslyShown?: string[];
+  /** Ideas the user has already inserted as bullets. */
+  previouslyAdded?: string[];
 }): Promise<string[]> {
   const existing = (opts.existing ?? []).map((b) => b.trim()).filter(Boolean);
-  // The server prompt reads `jobTitle`; send it under that name or every
-  // suggestion comes back for a generic "professional".
-  const ai = await callAi<string[]>("bullets", {
-    jobTitle: opts.role?.trim() || "",
-    company: opts.company,
-    page: opts.page,
-    existing,
-  });
-  if (ai && Array.isArray(ai)) return ai;
+  const shown = (opts.previouslyShown ?? []).map((b) => b.trim()).filter(Boolean);
+  const added = (opts.previouslyAdded ?? []).map((b) => b.trim()).filter(Boolean);
+  const excludePool = [...existing, ...shown, ...added];
+
+  // One server round-trip. `alsoExclude` carries what we have accepted so far in
+  // a repair pass, so the model does not hand back the same ideas again.
+  const fetchRaw = (alsoExclude: string[]) =>
+    callAi<string[]>("bullets", {
+      // The server prompt reads `jobTitle`; send it under that name or every
+      // suggestion comes back for a generic "professional".
+      jobTitle: opts.role?.trim() || "",
+      company: opts.company,
+      page: opts.page,
+      existing,
+      previouslyShown: shown,
+      previouslyAdded: added,
+      alsoExclude,
+    });
+
+  const first = await fetchRaw([]);
+  if (first && Array.isArray(first)) {
+    // Drop invented metrics (a title-only idea has no context to justify a
+    // number) and any near-duplicate of the exclusion history or of each other.
+    let clean = dedupeSuggestions(
+      first.filter((s) => typeof s === "string" && !hasFakeMetric(s)),
+      excludePool
+    );
+    // One bounded repair pass to top back up toward 7 after filtering.
+    if (clean.length < 7) {
+      const more = await fetchRaw(clean);
+      if (more && Array.isArray(more)) {
+        clean = dedupeSuggestions(
+          [...clean, ...more.filter((s) => typeof s === "string" && !hasFakeMetric(s))],
+          excludePool
+        );
+      }
+    }
+    if (clean.length) return clean.slice(0, 7);
+  }
+
   await delay(500);
-  // Fallback (no AI key): draw from the generic pool but skip anything the
-  // resume already says, so suggestions never duplicate the extracted bullets.
-  const seen = new Set(existing.map((b) => b.toLowerCase()));
+  // Fallback (no AI key): draw from the generic pool but skip anything already
+  // in the resume, shown, or added, so suggestions never repeat.
+  const seen = new Set(excludePool.map((b) => b.toLowerCase()));
   const pool = BULLET_POOL.filter((b) => !seen.has(b.toLowerCase()));
   const src = pool.length >= 7 ? pool : BULLET_POOL;
   const start = ((opts.page ?? 0) * 7) % src.length;
@@ -220,11 +258,16 @@ export async function rewriteBullets(opts: {
   bullets: string[];
   instruction: string;
   jobTitle?: string;
+  /** When true (only the "Shorter" preset), the model may merge near-duplicate
+   *  bullets into fewer. Otherwise it must return one rewritten bullet per
+   *  input bullet, in order. */
+  allowMerge?: boolean;
 }): Promise<string[] | null> {
   const ai = await callAi<string[]>("rewriteBullets", {
     bullets: opts.bullets,
     instruction: opts.instruction,
     jobTitle: opts.jobTitle,
+    mergeAllowed: opts.allowMerge ?? false,
   });
   if (ai && Array.isArray(ai)) {
     const cleaned = ai

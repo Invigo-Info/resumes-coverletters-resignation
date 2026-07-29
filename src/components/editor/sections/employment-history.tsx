@@ -18,7 +18,8 @@ import {
   type EmploymentEntry,
 } from "@/lib/store/resume-store";
 import { improveBullets, rewriteBullets } from "@/lib/ai/mock";
-import { EditWithAiMenu, BulletStatusBadge } from "./ai-edit";
+import { isNearDuplicate } from "@/lib/ai/validate";
+import { EditWithAiMenu, BulletStatusBadge, allowsBulletMerge } from "./ai-edit";
 import { Field, FieldWrap, EditableSectionHeading } from "./field";
 import { EntryCard, AddMoreButton } from "./entry-card";
 import { RichTextEditor } from "../rich-text-editor";
@@ -102,6 +103,11 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   const [preview, setPreview] = useState<string[] | null>(null);
   const [previewInstruction, setPreviewInstruction] = useState("");
   const loadedFor = useRef<string | null>(null);
+  // Per-entry exclusion history so "Show more ideas" never repeats an idea:
+  // every idea ever displayed (shown) and every idea inserted (added). Refs, not
+  // state - they feed the next fetch without triggering a re-render themselves.
+  const shownRef = useRef<string[]>([]);
+  const addedRef = useRef<string[]>([]);
   // The "Edit with AI" result panel, so we can scroll it into view when it opens.
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -122,13 +128,16 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       // different suggestions (short signature keeps the key bounded).
       const sig = `${existing.length}:${existing.join("|").slice(0, 60).toLowerCase()}`;
       const cacheKey = `${role.toLowerCase()}::${sig}::${nextPage}`;
-      const cached = ideaCache.get(cacheKey);
-      if (cached) {
-        // Replace, never append: "Show more ideas" swaps in a fresh set and
-        // drops the previous one, so only the newly generated bullets show.
-        setIdeas(cached);
-        setPage(nextPage);
-        return;
+      // Only reuse the cache for the first page. "Show more" (page > 0) must stay
+      // fresh and honour the growing exclusion history, so it always refetches.
+      if (nextPage === 0) {
+        const cached = ideaCache.get(cacheKey);
+        if (cached) {
+          for (const b of cached) if (!shownRef.current.includes(b)) shownRef.current.push(b);
+          setIdeas(cached);
+          setPage(nextPage);
+          return;
+        }
       }
       setLoading(true);
       // Clear the old ideas up front so they're removed while the new set loads
@@ -139,8 +148,12 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
         company: e.company,
         page: nextPage,
         existing,
+        previouslyShown: shownRef.current,
+        previouslyAdded: addedRef.current,
       });
-      ideaCache.set(cacheKey, more);
+      // Record everything shown so the next "Show more" excludes it.
+      for (const b of more) if (!shownRef.current.includes(b)) shownRef.current.push(b);
+      if (nextPage === 0) ideaCache.set(cacheKey, more);
       setIdeas(more);
       setPage(nextPage);
       setLoading(false);
@@ -200,6 +213,8 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
         ? `${instruction} Give a fresh alternative phrasing, different from a previous attempt.`
         : instruction,
       jobTitle: entry.jobTitle,
+      // Only "Shorter" may merge bullets; every other action stays one-for-one.
+      allowMerge: allowsBulletMerge(instruction),
     });
     setEditing(false);
     setEditingSource(null);
@@ -225,12 +240,22 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
 
   // Append a suggested bullet into the description's <ul> (creating one if needed).
   function insert(text: string, index: number) {
+    // Guard against inserting a bullet that already exists in the description
+    // (exact or lightly reworded). Still drop it from the list so it stops
+    // showing, but leave the description untouched.
+    if (isNearDuplicate(text, htmlToBullets(entry.description))) {
+      toast.info("That point is already in your description.");
+      setIdeas(ideas.filter((_, i) => i !== index));
+      return;
+    }
     const current = entry.description.replace(/<p><\/p>/g, "").trim();
     const li = `<li>${escapeHtml(text)}</li>`;
     const next = current.includes("<ul>")
       ? current.replace("</ul>", `${li}</ul>`)
       : `${current}<ul>${li}</ul>`;
     updateEmployment(entry.id, { description: next });
+    // Record the inserted bullet so future suggestions never repeat it.
+    if (!addedRef.current.includes(text)) addedRef.current.push(text);
     // Remove the chosen suggestion so it no longer shows in the list.
     const remaining = ideas.filter((_, i) => i !== index);
     setIdeas(remaining);
