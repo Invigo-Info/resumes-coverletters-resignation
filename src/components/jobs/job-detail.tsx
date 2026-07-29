@@ -15,6 +15,7 @@ import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { useTailorStore } from "@/lib/store/tailor-store";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
+import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
 import { CompanyLogo } from "./company-logo";
 import { KeywordMatchCard } from "./match-scoreboard";
 import { ImproveKeywordsFlow } from "./improve-keywords-flow";
@@ -62,8 +63,12 @@ export function JobDetail({
 }) {
   const router = useRouter();
   const setApplyJob = useApplyStore((s) => s.setJob);
+  const setApplyResumeId = useApplyStore((s) => s.setResumeId);
   const setTailor = useTailorStore((s) => s.setTailor);
   const patchJobDetails = useCoverLetterStore((s) => s.patchJobDetails);
+  const resetCoverLetter = useCoverLetterStore((s) => s.reset);
+  const setCoverLetterFlow = useCoverLetterStore((s) => s.setFlow);
+  const hydrateCoverLetter = useCoverLetterStore((s) => s.hydrate);
   const [improveOpen, setImproveOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
 
@@ -84,9 +89,16 @@ export function JobDetail({
     setApplyOpen(true);
   };
 
-  // Seed the cover-letter store with this job's details (shared by both the
-  // Generate and Write paths below).
-  const seedCoverLetter = () => {
+  // Gateway option: write a cover letter. Seed it from the SAME resume that
+  // backs this job match (so the letter's skills/experience/details reflect the
+  // selected resume), apply this job's details, then open the writing editor
+  // directly - the preview generates the body from the seeded store on mount.
+  const goWriteCoverLetter = async () => {
+    resetCoverLetter();
+    setCoverLetterFlow("use-resume", { sourceResumeId: resumeId });
+    const parsed = await parseResumeForCoverLetter("use-resume", resumeId);
+    hydrateCoverLetter(parsed);
+    // Override with THIS job's target details (the resume parse leaves them blank).
     patchJobDetails({
       desiredJobTitle: job.title,
       companyName: job.company,
@@ -96,18 +108,18 @@ export function JobDetail({
           "\n"
         ),
     });
-  };
-
-  // Gateway option: generate a cover letter via the guided builder start screen.
-  const goCoverLetter = () => {
-    seedCoverLetter();
-    router.push("/cover-letter/new");
-  };
-
-  // Gateway option: jump straight into the writing editor to write it yourself.
-  const goWriteCoverLetter = () => {
-    seedCoverLetter();
     router.push("/cover-letter/preview?mode=write");
+  };
+
+  // Gateway option: prepare for the interview. Carry the SAME job + resume that
+  // back this match (via the apply store + URL) so the questions and answers are
+  // grounded in the selected resume and this job - not a generic practice one.
+  const goInterview = () => {
+    setApplyJob(job);
+    setApplyResumeId(resumeId);
+    router.push(
+      `/interview-prep?jobId=${encodeURIComponent(job.id)}&resumeId=${encodeURIComponent(resumeId)}`
+    );
   };
 
   // Gateway option: skip straight to the employer's posting (new tab).
@@ -243,8 +255,8 @@ export function JobDetail({
         setApplyOpen(false);
         setImproveOpen(true);
       }}
-      onCoverLetter={goCoverLetter}
       onWriteCoverLetter={goWriteCoverLetter}
+      onInterview={goInterview}
       onSkip={skipAndApply}
     />
 

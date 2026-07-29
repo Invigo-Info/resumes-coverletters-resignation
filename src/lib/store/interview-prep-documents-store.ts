@@ -13,6 +13,10 @@ export interface SavedInterviewPrepData {
   interviewType: InterviewType;
   /** The custom instruction for the "other" type, when applicable. */
   customDetail?: string;
+  /** Id of the resume this prep was grounded in (so a re-open stays grounded). */
+  resumeId?: string;
+  /** True when generated via "Just practicing" (compact questions-only layout). */
+  practice?: boolean;
   prep: InterviewPrep;
 }
 

@@ -1,7 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Sparkles, Mail, PenLine, SkipForward, ChevronRight } from "lucide-react";
+import {
+  Sparkles,
+  PenLine,
+  MessagesSquare,
+  SkipForward,
+  ChevronRight,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CompanyLogo } from "./company-logo";
 import { cn } from "@/lib/utils";
@@ -63,16 +69,16 @@ export function ApplyGatewayDialog({
   onOpenChange,
   job,
   onTailor,
-  onCoverLetter,
   onWriteCoverLetter,
+  onInterview,
   onSkip,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: JobPosting;
   onTailor: () => void;
-  onCoverLetter: () => void;
   onWriteCoverLetter: () => void;
+  onInterview: () => void;
   onSkip: () => void;
 }) {
   return (
@@ -105,16 +111,16 @@ export function ApplyGatewayDialog({
             onClick={onTailor}
           />
           <GatewayOption
-            icon={<Mail className="size-5" />}
-            title="Generate a cover letter"
-            subtitle="Show your interest in the role"
-            onClick={onCoverLetter}
-          />
-          <GatewayOption
             icon={<PenLine className="size-5" />}
             title="Write a cover letter"
             subtitle="AI will guide you step by step"
             onClick={onWriteCoverLetter}
+          />
+          <GatewayOption
+            icon={<MessagesSquare className="size-5" />}
+            title="Prepare for the interview"
+            subtitle="Go in confident"
+            onClick={onInterview}
           />
           <GatewayOption
             icon={<SkipForward className="size-5" />}

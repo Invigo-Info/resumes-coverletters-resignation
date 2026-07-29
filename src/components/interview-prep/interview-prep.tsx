@@ -568,6 +568,8 @@ function makeJob(company: string, description: string, role: string): JobPosting
  */
 function PrepEntry({ onDone }: { onDone: () => void }) {
   const setJob = useApplyStore((s) => s.setJob);
+  const currentJob = useApplyStore((s) => s.job);
+  const setPractice = useApplyStore((s) => s.setPractice);
   const role = useResumeStore((s) => s.personal.jobTitle);
   const [companyOpen, setCompanyOpen] = useState(true);
   const [company, setCompany] = useState("");
@@ -575,11 +577,17 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
 
   const startSpecific = () => {
     if (!company.trim()) return;
+    setPractice(false);
     setJob(makeJob(cleanCompany(company), jobDesc, role));
     onDone();
   };
   const startPractice = () => {
-    setJob(makeJob("your target company", "", role));
+    // "Just practicing" renders the compact questions-only results. Keep an
+    // already-selected real job (e.g. arriving from Apply now on a specific /jobs
+    // posting) so its title/company/description still ground the questions; only
+    // synthesize a generic practice target when there is no job.
+    setPractice(true);
+    if (!currentJob) setJob(makeJob("your target company", "", role));
     onDone();
   };
 
@@ -714,9 +722,14 @@ export function InterviewPrepView({
   const router = useRouter();
   const storeJob = useApplyStore((s) => s.job);
   const setApplyJob = useApplyStore((s) => s.setJob);
+  const applyResumeId = useApplyStore((s) => s.resumeId);
+  const setApplyResumeId = useApplyStore((s) => s.setResumeId);
+  const applyPractice = useApplyStore((s) => s.practice);
+  const setApplyPractice = useApplyStore((s) => s.setPractice);
   // A re-opened sheet carries its own job; otherwise use the active apply job.
   const job = initialSaved ? initialSaved.job : storeJob;
-  const hasResume = useDocumentsStore((s) => s.resumes.length > 0);
+  const savedResumes = useDocumentsStore((s) => s.resumes);
+  const hasResume = savedResumes.length > 0;
   const activeRole = useResumeStore((s) => s.personal.jobTitle);
   const activeSkills = useResumeStore((s) => s.skills);
   const activeSummary = useResumeStore((s) => s.summary);
@@ -728,7 +741,11 @@ export function InterviewPrepView({
   // Re-opening a saved sheet: publish its job to the apply store so downstream
   // actions (Download, Apply) have the same context as a freshly generated sheet.
   useEffect(() => {
-    if (initialSaved) setApplyJob(initialSaved.job);
+    if (initialSaved) {
+      setApplyJob(initialSaved.job);
+      if (initialSaved.resumeId) setApplyResumeId(initialSaved.resumeId);
+      setApplyPractice(Boolean(initialSaved.practice));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -763,7 +780,14 @@ export function InterviewPrepView({
       title: interviewPrepTitle(job, type),
       updatedAt: Date.now(),
       templateId: "",
-      data: { job, interviewType: type, customDetail: detail, prep },
+      data: {
+        job,
+        interviewType: type,
+        customDetail: detail,
+        prep,
+        resumeId: applyResumeId ?? undefined,
+        practice: applyPractice,
+      },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prep, job, type]);
@@ -791,6 +815,34 @@ export function InterviewPrepView({
   }, [loading]);
 
   const resume = useMemo<ScoreResume>(() => {
+    // Prefer the resume selected for THIS job (apply-store resumeId) so the prep
+    // is grounded in the same resume used for the match; fall back to the active
+    // resume store. Employment (with its achievements) and education are folded
+    // into `experience` so answers can reference real history, not invented data.
+    const rec = applyResumeId
+      ? savedResumes.find((r) => r.id === applyResumeId)
+      : undefined;
+    if (rec) {
+      const d = rec.data;
+      const role =
+        d.personal?.jobTitle?.trim() ||
+        d.employment?.find((e) => e.jobTitle?.trim())?.jobTitle ||
+        "";
+      return {
+        role,
+        skills: (d.skills ?? []).map((s) => s.name).filter(Boolean),
+        summary: stripHtml(d.summary || ""),
+        experience: [
+          ...(d.employment ?? []).map(
+            (e) =>
+              `${e.jobTitle ?? ""} ${e.company ?? ""} ${stripHtml(e.description || "")}`
+          ),
+          ...(d.education ?? [])
+            .map((e) => `${e.degree ?? ""} ${e.institution ?? ""}`.trim())
+            .filter(Boolean),
+        ].join("\n"),
+      };
+    }
     const role =
       activeRole.trim() ||
       activeEmployment.find((e) => e.jobTitle.trim())?.jobTitle ||
@@ -803,15 +855,16 @@ export function InterviewPrepView({
         .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
         .join("\n"),
     };
-  }, [activeRole, activeSkills, activeSummary, activeEmployment]);
+  }, [applyResumeId, savedResumes, activeRole, activeSkills, activeSummary, activeEmployment]);
 
   const generate = async (t: InterviewType, detail?: string) => {
     if (!job) return;
     setType(t);
     setLoading(true);
     setPrep(null);
-    // "Just practicing" is a generic job (no real company): use the instant
-    // heuristic instead of waiting 5-10s on the AI for little added value.
+    // Use the AI whenever there's a real job so the sample answers are grounded
+    // in the selected resume (the image's per-question answers). Only the pure
+    // generic sentinel (no real job at all) uses the instant heuristic.
     const fast = (job.company ?? "").trim().toLowerCase() === "your target company";
     const p = await getInterviewPrep(job, resume, t, detail, fast);
     setPrep(p);
@@ -869,9 +922,11 @@ export function InterviewPrepView({
     return <PrepEntry onDone={() => setEntered(true)} />;
   }
 
-  // "Just practicing" produces a generic job with no real company; its inner pages
-  // skip the company/role context and start at the practice questions.
+  // "Just practicing" (flag) OR the generic sentinel job renders the compact
+  // questions-only layout: skip the company/role/values sections and open
+  // straight at the questions (grounded in the selected resume + this job).
   const practice =
+    applyPractice ||
     (job?.company ?? "").trim().toLowerCase() === "your target company";
 
   /* ----- Loading (also covers the auto-generate window on locked routes,
