@@ -11,7 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useDocumentsStore } from "@/lib/store/documents-store";
+import {
+  useDocumentsStore,
+  type ResumeDocData,
+} from "@/lib/store/documents-store";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useJobsStore } from "@/lib/store/jobs-store";
 import {
@@ -20,6 +23,7 @@ import {
   fetchDismissedJobs,
   pushDismissedJob,
 } from "@/lib/store/jobs-sync";
+import { fetchServerDocuments } from "@/lib/store/documents-sync";
 import {
   generateJobs,
   jobCountFor,
@@ -206,6 +210,42 @@ export function JobSearch() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Hydrate resumes from the account so the Recommended list can build a profile
+  // even when this browser's local documents store is empty - e.g. a fresh
+  // device, or right after the per-account cache reset clears local data. The
+  // dashboard already does this; the Jobs page must too, or a signed-in user
+  // with saved resumes would see an empty jobs list. Merge newest-wins by id.
+  useEffect(() => {
+    let alive = true;
+    fetchServerDocuments().then((server) => {
+      if (!alive || !server || server.resumes.length === 0) return;
+      useDocumentsStore.setState((s) => {
+        const byId = new Map(s.resumes.map((r) => [r.id, r]));
+        for (const rec of server.resumes) {
+          if (!rec?.id) continue;
+          const existing = byId.get(rec.id);
+          if (!existing || rec.updatedAt >= existing.updatedAt) {
+            byId.set(rec.id, {
+              id: rec.id,
+              title: rec.title,
+              updatedAt: rec.updatedAt,
+              templateId: rec.templateId ?? "",
+              data: rec.data as ResumeDocData,
+            });
+          }
+        }
+        return {
+          resumes: Array.from(byId.values()).sort(
+            (a, b) => b.updatedAt - a.updatedAt
+          ),
+        };
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Cross-device sync: pull the account's saved jobs, back up any local-only
   // saves to the server, then merge server saves into the local store (union -
