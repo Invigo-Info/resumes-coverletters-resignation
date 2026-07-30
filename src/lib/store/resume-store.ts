@@ -631,6 +631,11 @@ export const useResumeStore = create<ResumeState>()(
         ],
         sectionOrder: order,
         activeSection: id,
+        // Unlock the new section so the nav lists it as navigable - without this
+        // it renders disabled and clicking it (after leaving) does nothing.
+        unlockedSections: s.unlockedSections.includes(id)
+          ? s.unlockedSections
+          : [...s.unlockedSections, id],
       };
     });
     return id;

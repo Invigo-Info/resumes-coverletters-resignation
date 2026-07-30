@@ -69,6 +69,16 @@ function htmlToBullets(html: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Whether a job is ongoing (present tense) vs ended (past tense): a blank end
+ * date, or one that reads as "Present"/"Current"/etc., means the role is
+ * current. Drives the tense of AI-generated responsibilities.
+ */
+function isCurrentRole(endDate: string): boolean {
+  const end = (endDate ?? "").trim();
+  return !end || /present|current|now|ongoing|to date|till date/i.test(end);
+}
+
 /** Wrap plain bullet strings back into a <ul>. */
 function bulletsToUl(bullets: string[]): string {
   const items = bullets
@@ -108,6 +118,11 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
   // state - they feed the next fetch without triggering a re-render themselves.
   const shownRef = useRef<string[]>([]);
   const addedRef = useRef<string[]>([]);
+  // Monotonic token: only the latest suggestion request may render. When the job
+  // title changes mid-typing, an earlier in-flight fetch (for a partial title)
+  // must not overwrite the newer one - otherwise the list appears, then is
+  // replaced by a different set seconds later.
+  const reqRef = useRef(0);
   // The "Edit with AI" result panel, so we can scroll it into view when it opens.
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +135,9 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
     async (nextPage: number) => {
       const e = useResumeStore.getState().employment.find((x) => x.id === entry.id);
       if (!e) return;
+      // Claim the latest-request token up front, so any older in-flight fetch is
+      // invalidated (its result is dropped below) the moment this one starts.
+      const myReq = ++reqRef.current;
       const role = e.jobTitle.trim();
       // Suggestions build on the bullets already in this entry (e.g. parsed from
       // an uploaded resume), so they complement the candidate's real experience.
@@ -150,7 +168,13 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
         existing,
         previouslyShown: shownRef.current,
         previouslyAdded: addedRef.current,
+        // Present tense for an ongoing job, past tense for a role that ended.
+        current: isCurrentRole(e.endDate),
       });
+      // A newer request (title changed, or Show-more) superseded this one while
+      // it was in flight: discard so an old title's suggestions never overwrite
+      // the latest. The newer request owns the loading/list state.
+      if (myReq !== reqRef.current) return;
       // Record everything shown so the next "Show more" excludes it.
       for (const b of more) if (!shownRef.current.includes(b)) shownRef.current.push(b);
       if (nextPage === 0) ideaCache.set(cacheKey, more);
@@ -177,7 +201,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       loadedFor.current = key;
       setIdeas([]);
       fetchIdeas(0);
-    }, 500);
+    }, 800);
     return () => clearTimeout(t);
   }, [entry.jobTitle, fetchIdeas]);
 
@@ -215,6 +239,8 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
       jobTitle: entry.jobTitle,
       // Only "Shorter" may merge bullets; every other action stays one-for-one.
       allowMerge: allowsBulletMerge(instruction),
+      // Present tense for an ongoing job, past tense for a role that ended.
+      current: isCurrentRole(entry.endDate),
     });
     setEditing(false);
     setEditingSource(null);

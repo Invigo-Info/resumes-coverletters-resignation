@@ -10,9 +10,18 @@ import {
   GraduationCap,
   Plus,
   AlignJustify,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Sections that offer AI content generation (a "Write/Improve with AI" draft,
+ * AI bullet suggestions, or AI skill suggestions). These get an AI badge in the
+ * nav so the user can see at a glance where AI help is available. Sections with
+ * only field-level autocomplete are intentionally excluded.
+ */
+const AI_SECTIONS: ReadonlySet<string> = new Set(["summary", "employment", "skills"]);
 import {
   useResumeStore,
   isSectionComplete,
@@ -170,7 +179,7 @@ export function SectionNav({
                 disabled={!unlocked}
                 aria-disabled={!unlocked}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-xl py-2.5 pl-3 pr-8 text-left text-sm font-medium transition-colors",
                   !unlocked
                     ? "cursor-not-allowed text-foreground/40"
                     : isActive
@@ -184,9 +193,22 @@ export function SectionNav({
                     unlocked ? "text-muted-foreground" : "text-foreground/30"
                   )}
                 />
-                {/* Room on the right for the status dot / drag handle so a long
-                    label never runs under it. */}
-                <span className="flex-1 truncate pr-6">{meta.label}</span>
+                {/* The right padding reserves room for the status dot / drag
+                    handle so a long label never runs under it. */}
+                <span className="flex-1 truncate">{meta.label}</span>
+                {/* AI badge: this section has AI generation available. */}
+                {AI_SECTIONS.has(key) && (
+                  <span
+                    className={cn(
+                      "shrink-0",
+                      unlocked ? "text-[var(--ai-text)]" : "text-foreground/30"
+                    )}
+                    title="AI-assisted"
+                  >
+                    <Sparkles className="size-3.5" aria-hidden />
+                    <span className="sr-only">AI-assisted</span>
+                  </span>
+                )}
               </button>
 
               {/* Status dot on the progress rail: a solid dark dot for the current

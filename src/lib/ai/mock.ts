@@ -194,6 +194,9 @@ export async function improveBullets(opts: {
   previouslyShown?: string[];
   /** Ideas the user has already inserted as bullets. */
   previouslyAdded?: string[];
+  /** True when this job is ongoing (no end date / "Present"), so suggestions are
+   *  written in present tense; false for a past role -> past tense. */
+  current?: boolean;
 }): Promise<string[]> {
   const existing = (opts.existing ?? []).map((b) => b.trim()).filter(Boolean);
   const shown = (opts.previouslyShown ?? []).map((b) => b.trim()).filter(Boolean);
@@ -213,6 +216,7 @@ export async function improveBullets(opts: {
       previouslyShown: shown,
       previouslyAdded: added,
       alsoExclude,
+      current: opts.current,
     });
 
   const first = await fetchRaw([]);
@@ -271,12 +275,15 @@ export async function rewriteBullets(opts: {
    *  bullets into fewer. Otherwise it must return one rewritten bullet per
    *  input bullet, in order. */
   allowMerge?: boolean;
+  /** True when this job is ongoing (present tense); false for a past role. */
+  current?: boolean;
 }): Promise<string[] | null> {
   const ai = await callAi<string[]>("rewriteBullets", {
     bullets: opts.bullets,
     instruction: opts.instruction,
     jobTitle: opts.jobTitle,
     mergeAllowed: opts.allowMerge ?? false,
+    current: opts.current,
   });
   if (ai && Array.isArray(ai)) {
     const cleaned = ai
@@ -376,10 +383,15 @@ export async function generateSkills(opts: {
   const ai = await callAi<{ hard: string[]; soft: string[] }>("skills", opts);
   if (ai && ai.hard && ai.soft) return ai;
   await delay(400);
-  const off = (opts.seed ?? 0) * 2;
-  const pick = (pool: string[]) =>
-    Array.from({ length: 7 }, (_, i) => pool[(off + i) % pool.length]).filter(
-      (s) => !(opts.exclude ?? []).includes(s)
-    );
+  // Fallback (AI unavailable): return a RANDOM 7 from the pool (Fisher-Yates),
+  // excluding already-chosen skills, so it isn't the same fixed set every time.
+  const pick = (pool: string[]) => {
+    const avail = pool.filter((s) => !(opts.exclude ?? []).includes(s));
+    for (let i = avail.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [avail[i], avail[j]] = [avail[j], avail[i]];
+    }
+    return avail.slice(0, 7);
+  };
   return { hard: pick(HARD_SKILLS), soft: pick(SOFT_SKILLS) };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore, type SkillEntry } from "@/lib/store/resume-store";
@@ -222,16 +222,31 @@ export function SkillsForm() {
   const chosen = new Set(selected.map((sk) => sk.name.trim().toLowerCase()));
   const count = selected.length;
 
+  // Monotonic token so only the latest request may render (a title change must
+  // not let an older in-flight fetch overwrite the newer suggestions).
+  const reqRef = useRef(0);
+
   // Fetch fresh hard/soft suggestions for the current job title, excluding
   // already-chosen skills; seed lets "Regenerate" produce a different set.
   const loadSuggestions = useCallback(
     async (nextSeed: number) => {
+      const role = jobTitle.trim();
+      const myReq = ++reqRef.current;
       setLoading(true);
+      // Clear the previous set up front so a stale/default list never lingers
+      // behind the spinner while the new suggestions load.
+      setHard([]);
+      setSoft([]);
       const exclude = useResumeStore
         .getState()
         .skills.map((s) => s.name)
         .filter(Boolean);
-      const res = await generateSkills({ jobTitle, exclude, seed: nextSeed });
+      // With no title the model gets a generic role and a varying seed, so the
+      // suggestions are AI-generated and different each time rather than a fixed
+      // default set. With a title they are tailored to it.
+      const res = await generateSkills({ jobTitle: role, exclude, seed: nextSeed });
+      // A newer request superseded this one while it was in flight: discard.
+      if (myReq !== reqRef.current) return;
       setHard(res.hard);
       setSoft(res.soft);
       setLoading(false);
@@ -240,10 +255,14 @@ export function SkillsForm() {
   );
 
   // Suggestions follow the desired job title: set or change it in Personal
-  // details and the recommended skill set changes with it.
+  // details and the recommended skill set changes with it. With NO title we
+  // start from a random seed so the generic suggestions vary each visit instead
+  // of always showing the same set; a title starts from its primary set (0).
   useEffect(() => {
-    loadSuggestions(0);
-    setSeed(0);
+    const initial = jobTitle.trim() ? 0 : 1 + Math.floor(Math.random() * 6);
+    setSeed(initial);
+    loadSuggestions(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadSuggestions]);
 
   /** Add a skill, ignoring blanks and case-insensitive duplicates. */
@@ -422,18 +441,40 @@ export function SkillsForm() {
         </div>
       )}
 
-      {/* AI suggestions */}
+      {/* AI suggestions. Always AI-generated (never a fixed default set): a
+          generic-but-varying set with no title, tailored once a title exists.
+          A skeleton shows while a set loads so no stale list lingers. */}
       <div className="mt-7 space-y-5">
-        <SuggestionGroup
-          label="Hard skills"
-          items={hard.filter((s) => !chosen.has(s.trim().toLowerCase()))}
-          onAdd={add}
-        />
-        <SuggestionGroup
-          label="Soft skills"
-          items={soft.filter((s) => !chosen.has(s.trim().toLowerCase()))}
-          onAdd={add}
-        />
+        {loading && hard.length === 0 && soft.length === 0 ? (
+          // Skeleton chips while the set loads (no default flash).
+          ["Hard skills", "Soft skills"].map((label) => (
+            <div key={label}>
+              <p className="mb-2.5 text-sm text-muted-foreground">{label}</p>
+              <div className="flex flex-wrap gap-2.5">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={i}
+                    className="h-10 animate-pulse rounded-full bg-muted"
+                    style={{ width: `${6 + ((i * 3) % 5)}rem` }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <>
+            <SuggestionGroup
+              label="Hard skills"
+              items={hard.filter((s) => !chosen.has(s.trim().toLowerCase()))}
+              onAdd={add}
+            />
+            <SuggestionGroup
+              label="Soft skills"
+              items={soft.filter((s) => !chosen.has(s.trim().toLowerCase()))}
+              onAdd={add}
+            />
+          </>
+        )}
         <button
           type="button"
           onClick={() => {
