@@ -369,8 +369,10 @@ export async function parseResumeText(text: string): Promise<Partial<ResumeState
 
 /* ------------------------------ fallback ----------------------------- */
 
-/** Canned sample resume used when no real file is parsed (cloud-import demo). */
-const MOCK_RESUME: Partial<ResumeState> = {
+/** Canned sample resume used when no real file is parsed (cloud-import demo).
+ *  Also reused as the filler content for template-picker thumbnails, so every
+ *  style card shows a realistic, populated page. */
+export const MOCK_RESUME: Partial<ResumeState> = {
   personal: {
     firstName: "Sophia",
     lastName: "Carter",

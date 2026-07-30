@@ -8,6 +8,20 @@ import {
 import { aiBodySchema, type Task } from "@/lib/schemas";
 import { limit, clientIp } from "@/lib/rate-limit";
 import { auth } from "@/auth";
+import type { ComputedExperience } from "@/lib/experience";
+import { validateSummary, repairInstruction } from "@/lib/summary-validate";
+
+/**
+ * Factuality + anti-puffery rules shared by the summary prompts. Kept truthful
+ * to the resume: never invent years, metrics, tools, employers, or credentials,
+ * and never dress claims up with unsupported superlatives. Mirrors the "core
+ * factuality rules" of the Professional Summary spec.
+ */
+const SUMMARY_FACTUALITY = `Factuality (strict):
+- State years of experience ONLY from the AUTHORITATIVE line in the data; if it says NOT ESTABLISHED, omit years entirely and never guess a number.
+- Never invent or assume: metrics, percentages, money amounts, team/customer/project counts, awards, promotions, degrees, certifications, licences, employers, tools, technologies, or measurable achievements.
+- Use a number, tool, technology, or credential ONLY if it appears in the resume data below. A desired job title is not proof the person held that role; a target job description is not proof of a skill.
+- Do NOT use unsupported puffery or claim words such as: visionary, expert, world-class, guru, rockstar, proven track record, highly accomplished, award-winning, industry-leading, best-in-class, second to none, consistently exceeded targets, delivered measurable results.`;
 
 // Cap AI calls to prevent cost-abuse (denial-of-wallet). Two windows:
 //  - per-minute burst, generous enough that normal typing/autocomplete and
@@ -115,7 +129,18 @@ function summaryContextBlock(p: Record<string, unknown>): {
         .join("; ")
     : "(none provided)";
 
-  const block = `Employment history (most recent first):
+  // Authoritative years-of-experience line. The app computes this (overlap-
+  // merged) and the model must state it verbatim - it must NEVER derive years
+  // from the dates itself. "omit" means no number may be stated at all.
+  const ce = p.computedExperience as ComputedExperience | undefined;
+  const yearsLine =
+    ce && ce.displayStyle !== "omit" && ce.relevantYears != null
+      ? `Years of relevant experience (AUTHORITATIVE - computed by the system; state this number EXACTLY when you mention experience, and NEVER recalculate, increase, or change it): ${ce.relevantYears} years.`
+      : `Years of relevant experience: NOT ESTABLISHED - do NOT state any number of years; if experience is under a year or the dates are unclear, use early-career wording (for example "Early-career professional") instead of a number.`;
+
+  const block = `${yearsLine}
+
+Employment history (most recent first):
 ${empLines}
 
 Skills: ${skills.length ? skills.join(", ") : "(none provided)"}
@@ -124,6 +149,27 @@ Education: ${eduLine}`;
     block,
     hasData: emp.length > 0 || skills.length > 0 || edu.length > 0,
   };
+}
+
+/**
+ * All resume text a summary may legitimately draw numbers/tools from, for the
+ * post-generation validator (bullets, titles, companies, skills, education).
+ */
+function summaryEvidenceText(p: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const emp = Array.isArray(p.employment) ? (p.employment as Record<string, unknown>[]) : [];
+  for (const e of emp) {
+    if (Array.isArray(e.bullets)) parts.push(...(e.bullets as string[]));
+    if (typeof e.jobTitle === "string") parts.push(e.jobTitle);
+    if (typeof e.company === "string") parts.push(e.company);
+  }
+  if (Array.isArray(p.skills)) parts.push(...(p.skills as string[]));
+  const edu = Array.isArray(p.education) ? (p.education as Record<string, unknown>[]) : [];
+  for (const e of edu) {
+    if (typeof e.degree === "string") parts.push(e.degree);
+    if (typeof e.institution === "string") parts.push(e.institution);
+  }
+  return parts.filter(Boolean).join(" ");
 }
 
 /** Coerce an unknown payload field into a trimmed, non-empty string array. */
@@ -180,14 +226,15 @@ Lead with the higher-priority inputs; do not fall back to generic phrasing when 
 
 Silent analysis first (do not print any of it):
 - Infer career level from titles and tenure (0-1y entry, 2-4y early, 5-10y mid, 10-15y senior, 15y+ executive; a target role different from past titles means career change - emphasise transferable strengths).
-- Choose ONE power adjective that fits the role (e.g. Strategic, Results-driven, Analytical, Innovative, Dynamic, Motivated) and open with it.
+- Choose ONE grounded, role-appropriate opening adjective (e.g. Strategic, Results-driven, Analytical, Innovative, Dynamic, Motivated) and open with it. Never use a puffery adjective (see Factuality).
 
 Rules:
 - 2 to 4 sentences (about 70-100 words). Third person, active voice, no pronouns ("I", "my", "me"). Plain prose - no markdown, headings, or lists.
-- Open with the power adjective plus the professional title; state years of experience WHEN the employment dates make it inferable, otherwise lead with the role.
+- Open with the opening adjective plus the professional title; state years of experience only per the AUTHORITATIVE line.
 - Weave in the 2-3 strongest skill themes the data supports and end with a value statement tied to the target role.
-- Include a measurable achievement ONLY if it appears in the bullets below. Do NOT invent companies, metrics, years of experience, certifications, or tools. Quantify only when the data supports it; otherwise use qualitative impact.
-- Avoid generic filler words (hardworking, dedicated) and buzzword-heavy phrasing.${hasData ? "" : "\n- Little structured data was provided: write a solid but GENERIC summary for the target role, keep claims modest, and do not fabricate specifics."}
+- Include a measurable achievement ONLY if it appears in the bullets below. Quantify only when the data supports it; otherwise use qualitative impact.
+
+${SUMMARY_FACTUALITY}${hasData ? "" : "\n- Little structured data was provided: write a solid but GENERIC summary for the target role, keep claims modest, and do not fabricate specifics."}
 
 ${block}
 
@@ -196,11 +243,37 @@ Return only the summary text.`,
     }
     case "improveSummary": {
       const { block } = summaryContextBlock(p);
+      const selected = (p.selectedText as string)?.trim();
+      // Selected-text mode: rewrite ONLY the highlighted fragment and return just
+      // its replacement - the client splices it back in place (spec section 11).
+      if (selected) {
+        return {
+          json: false,
+          prompt: `You are a certified professional resume writer. Rewrite ONLY the highlighted fragment of a Professional Summary, keeping it truthful to the resume data below.
+
+${SUMMARY_FACTUALITY}
+
+Rules:
+- Return ONLY the rewritten fragment - no surrounding sentences, no quotes, no markdown, no explanation.
+- Keep it grammatical as a drop-in replacement for the fragment (similar length unless the instruction says otherwise).
+- Third person, no pronouns ("I", "my", "me"). Preserve every supported fact in the fragment; do not add new numbers, tools, or claims.
+${p.instruction ? `- Apply this instruction: "${p.instruction}". Never change the number of years of experience to an unsupported value.` : ""}
+
+${block}
+
+Highlighted fragment to rewrite:
+"""${selected}"""
+
+Return only the replacement text.`,
+        };
+      }
       return {
         json: false,
-        prompt: `You are a certified professional resume writer and ATS optimization expert. Improve this resume Professional Summary. Keep it truthful to the candidate's resume data below - never invent employers, metrics, achievements, years of experience, certifications, or tools the data does not support.
+        prompt: `You are a certified professional resume writer and ATS optimization expert. Improve this resume Professional Summary.
 Tone: ${p.tone || "confident"}. 2-4 sentences (about 70-100 words), third person, active voice, no pronouns ("I", "my", or "me"), plain prose, no markdown.
-Open with a power adjective plus the professional title; state years of experience when inferable; highlight the 2-3 strongest skill themes and end on value tied to the target role. Quantify only when the data supports it, otherwise use qualitative impact. Avoid generic words (hardworking, dedicated).
+Open with a grounded, role-appropriate adjective plus the professional title; state years of experience only per the AUTHORITATIVE line; highlight the 2-3 strongest skill themes and end on value tied to the target role. Quantify only when the data supports it, otherwise use qualitative impact.
+
+${SUMMARY_FACTUALITY}
 
 Build from the STRONGEST available inputs, in priority order: (1) target role, (2) most recent job title and its achievements, (3) skills and tools, (4) education and background, (5) the user instruction. If the current summary text names a DIFFERENT role or conflicts with the resume data, prefer the target role and employment history over the existing text.
 ${p.instruction ? `Also follow this free-form instruction from the user: "${p.instruction}". Interpret casual/imperfect wording charitably and apply exactly what the user asks - this is the user's OWN resume, so honour explicit edits such as a specific number of years of experience, a point to emphasise, the length, or the tone, even when it differs from the dates below. Do NOT, on your own initiative, invent additional employers, companies, metrics, achievements, tools, or certifications the user did not ask for and the data does not support.` : ""}
@@ -778,6 +851,30 @@ export async function POST(req: Request) {
       }
     }
     if (lastErr) throw lastErr;
+
+    // Summary tasks: validate the draft against the resume evidence and the
+    // trusted years figure, then run ONE AI repair pass if it stated an
+    // unsupported number/percentage, the wrong years, or banned puffery. Keeps
+    // the generated summary honest before it ever reaches the user.
+    if ((task === "summary" || task === "improveSummary") && text) {
+      const computed = payload.computedExperience as ComputedExperience | undefined;
+      if (computed) {
+        const issues = validateSummary(text, summaryEvidenceText(payload), computed);
+        if (issues.length) {
+          try {
+            const repaired = await gemini(
+              key,
+              `${prompt}\n\nYour previous attempt was:\n"""${text}"""\n\n${repairInstruction(issues)}\n\nReturn only the corrected summary text.`,
+              false
+            );
+            if (repaired.trim()) text = repaired.trim();
+          } catch {
+            /* repair failed - return the original draft rather than nothing */
+          }
+        }
+      }
+    }
+
     if (json) {
       const cleaned = text.replace(/^```json\s*|\s*```$/g, "");
       return NextResponse.json({ data: JSON.parse(cleaned) });

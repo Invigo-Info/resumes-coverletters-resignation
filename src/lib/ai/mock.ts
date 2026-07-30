@@ -9,6 +9,7 @@
  */
 
 import { dedupeSuggestions, hasFakeMetric } from "./validate";
+import type { ComputedExperience } from "@/lib/experience";
 
 /** Selectable summary tones (id + label + swatch) for the summary generator. */
 export const SUMMARY_TONES = [
@@ -125,6 +126,9 @@ export interface SummaryContext {
   }[];
   skills?: string[];
   education?: { degree?: string; institution?: string }[];
+  /** Authoritative years-of-experience figure, computed by the app (never the
+   *  AI) from the FULL employment history. The prompt states it verbatim. */
+  computedExperience?: ComputedExperience;
 }
 
 /**
@@ -157,12 +161,17 @@ export async function improveSummary(
     text: string;
     jobTitle?: string;
     instruction?: string;
+    /** When set, only THIS highlighted fragment is rewritten and returned (the
+     *  caller splices it back in), instead of the whole summary. */
+    selectedText?: string;
   } & SummaryContext
 ): Promise<string> {
   const ai = await callAi<string>("improveSummary", opts);
   if (ai) return ai;
   await delay(500);
-  return fallbackSummary(opts.tone, opts.jobTitle);
+  // No AI available: for a selection edit, leave the fragment unchanged rather
+  // than splicing a whole generic summary into it; otherwise fall back to canned.
+  return opts.selectedText ? opts.selectedText : fallbackSummary(opts.tone, opts.jobTitle);
 }
 
 /**

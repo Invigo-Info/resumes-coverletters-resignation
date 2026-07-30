@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Brush,
@@ -21,16 +20,36 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useResumeStore } from "@/lib/store/resume-store";
+import {
+  useResumeStore,
+  previewStateFromDoc,
+  designForTemplate,
+  type ResumeState,
+} from "@/lib/store/resume-store";
+import { MOCK_RESUME } from "@/lib/ai/parseResume";
+import { ScaledResumePreview } from "@/components/editor/scaled-resume-preview";
 import {
   templates,
   templateTabs,
   isAtsFriendly,
-  templateImage,
   DEFAULT_TEMPLATE_ID,
   type ResumeTemplate,
   type TemplateCategory,
 } from "@/lib/templates";
+
+/**
+ * A live thumbnail of ONE template style, rendering the canned sample resume in
+ * that template's design (black by default, per `designForTemplate`). Renders
+ * exactly what the editor produces when the template is selected, so the picker
+ * matches the result. Fills its relatively-positioned parent.
+ */
+function GalleryThumbnail({ templateId }: { templateId: string }) {
+  const state = useMemo<ResumeState>(() => {
+    const base = previewStateFromDoc({ ...MOCK_RESUME, templateId });
+    return { ...base, design: designForTemplate(base.design, templateId) };
+  }, [templateId]);
+  return <ScaledResumePreview state={state} />;
+}
 
 /** Per-tab leading icon keyed by category label (never an emoji). */
 const TAB_ICON: Record<string, LucideIcon> = {
@@ -40,9 +59,6 @@ const TAB_ICON: Record<string, LucideIcon> = {
   Professional: Briefcase,
   Student: GraduationCap,
 };
-
-/** The first row loads eagerly (it is the LCP); the rest lazy-load on scroll. */
-const EAGER_COUNT = 3;
 
 /**
  * Template picker grid with category tabs. This is a quick decision step, not a
@@ -57,12 +73,7 @@ export function TemplateGallery() {
   );
   // Default selection: whatever the user already picked, else the house pick.
   const [selected, setSelected] = useState(chosen || DEFAULT_TEMPLATE_ID);
-  const [preview, setPreview] = useState<{ template: ResumeTemplate; image: string } | null>(null);
-
-  // The active category folder ("All templates" has none, so previews use the
-  // default /templates copy).
-  const activeCategory: TemplateCategory | undefined =
-    active === "All templates" ? undefined : active;
+  const [preview, setPreview] = useState<{ template: ResumeTemplate } | null>(null);
 
   // Templates shown for the active tab ("All" shows everything; otherwise
   // filter by category). Memoized so the list only recomputes when the tab
@@ -112,17 +123,13 @@ export function TemplateGallery() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((t, i) => (
+        {visible.map((t) => (
           <TemplateCard
             key={t.id}
             template={t}
-            image={templateImage(t, activeCategory)}
             selected={t.id === selected}
-            eager={i < EAGER_COUNT}
             onUse={() => use(t)}
-            onPreview={() =>
-              setPreview({ template: t, image: templateImage(t, activeCategory) })
-            }
+            onPreview={() => setPreview({ template: t })}
           />
         ))}
       </div>
@@ -139,17 +146,12 @@ export function TemplateGallery() {
 /** One template in the grid: preview, badges, hover CTA, name and usage count. */
 function TemplateCard({
   template: t,
-  image,
   selected,
-  eager,
   onUse,
   onPreview,
 }: {
   template: ResumeTemplate;
-  /** Preview image for the active category folder. */
-  image: string;
   selected: boolean;
-  eager: boolean;
   onUse: () => void;
   onPreview: () => void;
 }) {
@@ -169,16 +171,8 @@ function TemplateCard({
           aria-label={`Use the ${t.name} template`}
           className="block w-full outline-none"
         >
-          <div className="relative aspect-[210/297] w-full bg-white">
-            <Image
-              src={image}
-              alt={`${t.name} template preview`}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              priority={eager}
-              loading={eager ? undefined : "lazy"}
-              className="object-cover object-top"
-            />
+          <div className="relative aspect-[210/297] w-full overflow-hidden bg-white">
+            <GalleryThumbnail templateId={t.id} />
           </div>
 
           {/* Hover / keyboard-focus overlay with the primary CTA. */}
@@ -254,7 +248,7 @@ function PreviewModal({
   onClose,
   onUse,
 }: {
-  preview: { template: ResumeTemplate; image: string } | null;
+  preview: { template: ResumeTemplate } | null;
   onClose: () => void;
   onUse: (t: ResumeTemplate) => void;
 }) {
@@ -275,13 +269,7 @@ function PreviewModal({
             </DialogDescription>
 
             <div className="relative mt-2 aspect-[210/297] w-full overflow-hidden rounded-xl bg-white ring-1 ring-border">
-              <Image
-                src={preview.image}
-                alt={`${t.name} template, full preview`}
-                fill
-                sizes="(max-width: 640px) 100vw, 512px"
-                className="object-contain object-top"
-              />
+              <GalleryThumbnail templateId={t.id} />
             </div>
 
             <button

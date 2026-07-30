@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./safe-storage";
 import { getTemplate, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
 import { fontPairsForTemplate, styleStem } from "@/lib/font-pairs";
+import { getResumeTheme, DEFAULT_THEME_ID } from "@/lib/resume-themes";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -159,6 +160,10 @@ export interface ResumeState {
   summary: string; // HTML
   /** Editable heading for the Summary section (renamable via the pencil). */
   summaryTitle: string;
+  /** Signature of the resume sections the applied summary was written from
+   *  (employment/skills/education). When it drifts, the summary section offers
+   *  to regenerate. "" until a summary is applied via Use. */
+  summaryBasis: string;
   employment: EmploymentEntry[];
   /** Editable heading for the Employment section (renamable via the pencil). */
   employmentTitle: string;
@@ -203,6 +208,7 @@ export interface ResumeState {
   setContact: (patch: Partial<ContactInfo>) => void;
   setSummary: (html: string) => void;
   setSummaryTitle: (title: string) => void;
+  setSummaryBasis: (basis: string) => void;
 
   addEmployment: () => void;
   updateEmployment: (id: string, patch: Partial<EmploymentEntry>) => void;
@@ -381,6 +387,7 @@ type ResumeData = Pick<
   | "contactTitle"
   | "summary"
   | "summaryTitle"
+  | "summaryBasis"
   | "employment"
   | "employmentTitle"
   | "skills"
@@ -413,6 +420,7 @@ const emptyResume = (): ResumeData => ({
   contactTitle: "Contact information",
   summary: "",
   summaryTitle: "Professional summary",
+  summaryBasis: "",
   employment: [],
   employmentTitle: "Employment history",
   skills: [],
@@ -452,6 +460,43 @@ const emptyResume = (): ResumeData => ({
  * user's own content in their chosen template. `design`/`sectionOrder` are
  * merged defensively so an older/partial record can't crash the render.
  */
+/**
+ * The design that `applyTemplate(id)` would produce from the current design,
+ * WITHOUT mutating the store. Exported so a live style thumbnail can render the
+ * exact look selecting that template yields (so the carousel thumbnail matches
+ * the preview). Applies the template's preset over the current design, resets
+ * the combination background, picks the style-specific font pair (the saved pick
+ * for this style, else its default), and clears the color-theme id so the theme
+ * re-resolves from the preset's own color/bg.
+ */
+export function designForTemplate(
+  design: DesignOptions,
+  id: string
+): DesignOptions {
+  const t = getTemplate(id);
+  if (!t) return design;
+  const stem = styleStem(t);
+  const pairs = fontPairsForTemplate(t);
+  const savedId = design.fontByStyle?.[stem];
+  const pair = pairs.find((p) => p.id === savedId) ?? pairs[0];
+  // Every newly selected style defaults to the BLACK color theme, regardless of
+  // the template preset's own accent - so a fresh style always starts black and
+  // the user drives the color from the Colors section afterwards (which writes
+  // its own themeId/color/bg and stays until another style is picked). We keep
+  // the preset's LAYOUT (columns, dark, heading variant) and font pair; only the
+  // color/background/theme are forced to black here.
+  const black = getResumeTheme(DEFAULT_THEME_ID);
+  return {
+    ...design,
+    ...t.preset,
+    font: pair.primary,
+    fontSecondary: pair.secondary,
+    color: black?.accent ?? "#111827",
+    bg: black?.contentBg ?? "",
+    themeId: DEFAULT_THEME_ID,
+  };
+}
+
 export function previewStateFromDoc(data: Partial<ResumeState>): ResumeState {
   const base = emptyResume();
   return {
@@ -480,30 +525,7 @@ export const useResumeStore = create<ResumeState>()(
     set((s) => {
       const t = getTemplate(id);
       if (!t) return { templateId: id };
-      // Font pairs are style-specific (see font-pairs.ts). Apply the style's
-      // saved pair if one was chosen earlier for THIS style, else its Option-1
-      // default - so switching styles replaces the whole pair rather than
-      // keeping the previous style's fonts, and returning to a style restores
-      // the user's earlier pick.
-      const stem = styleStem(t);
-      const pairs = fontPairsForTemplate(t);
-      const savedId = s.design.fontByStyle?.[stem];
-      const pair = pairs.find((p) => p.id === savedId) ?? pairs[0];
-      // Reset the combination background unless the template's preset sets one.
-      // Clear the color-theme id: the preset writes its own color/bg, so let the
-      // theme re-resolve from those (a matching swatch lights up; otherwise the
-      // sidebar keeps its neutral default) instead of a stale id fighting it.
-      return {
-        templateId: id,
-        design: {
-          ...s.design,
-          bg: "",
-          ...t.preset,
-          font: pair.primary,
-          fontSecondary: pair.secondary,
-          themeId: undefined,
-        },
-      };
+      return { templateId: id, design: designForTemplate(s.design, id) };
     }),
   setDesign: (patch) => set((s) => ({ design: { ...s.design, ...patch } })),
   setPersonal: (patch) =>
@@ -511,6 +533,7 @@ export const useResumeStore = create<ResumeState>()(
   setContact: (patch) => set((s) => ({ contact: { ...s.contact, ...patch } })),
   setSummary: (html) => set({ summary: html }),
   setSummaryTitle: (title) => set({ summaryTitle: title }),
+  setSummaryBasis: (summaryBasis) => set({ summaryBasis }),
 
   addEmployment: () =>
     set((s) => ({ employment: [...s.employment, emptyEmployment()] })),
@@ -781,6 +804,9 @@ export const useResumeStore = create<ResumeState>()(
       const merged = { ...s, ...withUniqueIds(doc), id, importedResume: true };
       return {
         ...merged,
+        // Reset the summary basis: a freshly loaded resume has no applied-summary
+        // baseline yet, so the "resume changed" prompt starts clean per resume.
+        summaryBasis: "",
         // A saved resume is fully accessible: unlock every section so the sidebar
         // lists them all as navigable with data-driven status dots, rather than
         // relocking it into the guided flow (only "personal" reachable) as a

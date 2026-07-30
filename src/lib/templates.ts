@@ -107,6 +107,17 @@ const BASE_TEMPLATES: BaseTemplate[] = [
   { id: "balanced", name: "Balanced", used: 4367, file: "newton.jpg", preset: { columns: "right", dark: true, font: "roboto", color: "#2563eb", variant: "underline" } },
   { id: "essential", name: "Essential", used: 3924, file: "turing.jpg", preset: { columns: "right", dark: false, font: "georgia", color: "#0f766e", bg: "#e7f3ee", variant: "serifRule" } },
   { id: "executive", name: "Executive", used: 2891, file: "curie.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#1e3a8a", variant: "band" } },
+  // Additional ATS-optimized styles: single-column, light, standard fonts and
+  // clear heading rules - the layout ATS parsers read most reliably. Each has a
+  // distinct color/font/heading skin so the live carousel thumbnail reads apart.
+  // (They reuse existing ATS-friendly preview files for the gallery/fallback;
+  // the Design-tab carousel renders them live from the preset.)
+  { id: "ats-modern", name: "ATS Modern", used: 4210, file: "hopper.jpg", preset: { columns: "centered", dark: false, font: "roboto", color: "#0f172a", variant: "underline" } },
+  { id: "ats-classic", name: "ATS Classic", used: 3760, file: "bentz.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#111827", variant: "classic" } },
+  { id: "ats-minimal", name: "ATS Minimal", used: 3980, file: "feynman.jpg", preset: { columns: "left", dark: false, font: "roboto", color: "#1f2937", variant: "minimal" } },
+  { id: "ats-professional", name: "ATS Professional", used: 4480, file: "lamarr.jpg", preset: { columns: "centered", dark: false, font: "roboto", color: "#1e3a8a", variant: "bar" } },
+  { id: "ats-executive", name: "ATS Executive", used: 3120, file: "curie.jpg", preset: { columns: "centered", dark: false, font: "georgia", color: "#0f766e", variant: "caps" } },
+  { id: "ats-elegant", name: "ATS Elegant", used: 3350, file: "turing.jpg", preset: { columns: "left", dark: false, font: "garamond", color: "#111827", variant: "serifRule" } },
 ];
 
 /** The templates, with categories + default image derived from the folders. */

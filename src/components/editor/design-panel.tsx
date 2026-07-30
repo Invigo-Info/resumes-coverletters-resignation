@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { StyleThumbnail } from "./style-thumbnail";
 import {
   ChevronLeft,
   ChevronRight,
@@ -118,13 +118,7 @@ export function DesignPanel({
                       active ? "ring-2 ring-primary" : "ring-border hover:ring-primary/40"
                     )}
                   >
-                    <Image
-                      src={t.image}
-                      alt={t.name}
-                      fill
-                      sizes="150px"
-                      className="object-cover object-top"
-                    />
+                    <StyleThumbnail templateId={t.id} />
                     {active && (
                       <span className="absolute bottom-0 left-0 grid size-5 place-items-center rounded-br-none rounded-tr-md bg-primary text-white">
                         <Check className="size-3" />

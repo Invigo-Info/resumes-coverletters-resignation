@@ -10,9 +10,13 @@ import {
   ChevronLeft,
   ChevronRight,
   WandSparkles,
+  TriangleAlert,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
+import { computeExperience } from "@/lib/experience";
+import { detectYearsConflict, stripYearsRequest } from "@/lib/summary-guards";
 import {
   generateSummary,
   improveSummary,
@@ -21,7 +25,10 @@ import {
 } from "@/lib/ai/mock";
 import { EditWithAiMenu, SummaryStatusBadge } from "./ai-edit";
 import { EditableSectionHeading } from "./field";
-import { RichTextEditor } from "../rich-text-editor";
+import { RichTextEditor, type RichTextEditorHandle } from "../rich-text-editor";
+
+/** Most temporary candidates kept per editing session (spec: cap at 10). */
+const MAX_VARIANTS = 10;
 
 /** Escape user text before embedding it in summary HTML. */
 const escapeHtml = (s: string) =>
@@ -62,6 +69,25 @@ function textToHtml(text: string): string {
   return blocks.length ? blocks.map((b) => `<p>${b}</p>`).join("") : "";
 }
 
+/**
+ * A stable signature of the resume sections a summary is written from
+ * (employment, skills, education). Stored when a summary is applied; a later
+ * mismatch means those details changed and the summary may be out of date.
+ */
+function summarySignature(st: ResumeState): string {
+  return JSON.stringify({
+    e: st.employment.map((e) => [
+      e.jobTitle,
+      e.company,
+      e.startDate,
+      e.endDate,
+      htmlToText(e.description),
+    ]),
+    s: st.skills.map((sk) => sk.name),
+    d: st.education.map((ed) => [ed.degree, ed.institution]),
+  });
+}
+
 /** One AI draft, plus the tone it was written in. */
 interface Variant {
   text: string;
@@ -89,8 +115,26 @@ export function ProfessionalSummaryForm() {
   const summaryTitle = useResumeStore((s) => s.summaryTitle);
   const setSummaryTitle = useResumeStore((s) => s.setSummaryTitle);
   const jobTitle = useResumeStore((s) => s.personal.jobTitle);
+  const setActiveSection = useResumeStore((s) => s.setActiveSection);
+  const setSummaryBasis = useResumeStore((s) => s.setSummaryBasis);
+  // A summary needs a role to write about: a desired job title (Personal
+  // details) OR a job title in the employment history. Without one, we show a
+  // missing-context note instead of drafting a misleading generic summary.
+  const hasRole = useResumeStore((s) =>
+    Boolean(s.personal.jobTitle.trim() || s.employment.some((e) => e.jobTitle.trim()))
+  );
 
   const [busy, setBusy] = useState(false);
+  // Set when an "Ask AI to..." request demands more years than the resume dates
+  // support - we surface a conflict with a safe alternative instead of sending it.
+  const [conflict, setConflict] = useState<{
+    requested: number;
+    supported: number | null;
+    instruction: string;
+  } | null>(null);
+  // Set when the resume sections drifted since the applied summary was written,
+  // offering a one-tap regenerate (the saved summary stays until Use).
+  const [changedPrompt, setChangedPrompt] = useState(false);
   // Which control kicked off the running AI call, so only that button spins -
   // the toolbar "Improve with AI" and the panel "Rewrite" share one busy flag
   // but must never show their loading label at the same time.
@@ -100,11 +144,21 @@ export function ProfessionalSummaryForm() {
   const [index, setIndex] = useState(0);
   /** The instruction that opened the panel; "" means "write from scratch". */
   const [instruction, setInstruction] = useState("");
+  // True while a selected-text edit runs (no draft panel), so the toolbar button
+  // shows its own spinner rather than the panel's "Generating..." indicator.
+  const [selBusy, setSelBusy] = useState(false);
   // The AI draft panel, so we can scroll it into view when it opens.
   const previewRef = useRef<HTMLDivElement>(null);
+  // Editor handle for selected-text editing (read the selection, splice a reply).
+  const editorRef = useRef<RichTextEditorHandle>(null);
+  // Monotonic token: a draft only applies if it is still the latest request, so a
+  // response that resolves after a newer one (or a section change) is ignored.
+  const reqId = useRef(0);
 
   const hasContent = htmlToText(summary).length > 0;
   const current = variants[index];
+  // No role and nothing written yet: block generation, show a missing-context note.
+  const needsRole = !hasRole && !hasContent;
 
   // When an "Improve with AI" / "Write with AI" action opens the draft panel,
   // scroll it into view so the generated summary is visible right away.
@@ -126,6 +180,33 @@ export function ProfessionalSummaryForm() {
     // rewrite asking AI to improve nothing. Fall back to writing from scratch.
     const refine = Boolean(nextInstruction) && text.length > 0;
 
+    const st = useResumeStore.getState();
+    // Trusted years, computed from ALL employment (not the 3 sent for content).
+    const computedExperience = computeExperience(
+      st.employment.map((e) => ({ startDate: e.startDate, endDate: e.endDate }))
+    );
+
+    // Generating from scratch with no role would produce a misleading generic
+    // summary - block it and let the missing-context note guide the user.
+    if (!refine && !hasRole) {
+      toast.error("Add a job title first", {
+        description:
+          "Enter a desired job title in Personal details, or a role in Employment history.",
+      });
+      return;
+    }
+
+    // A custom "Ask AI to..." request that demands more years than the resume
+    // supports is a conflict: show it (with a safe alternative) instead of asking
+    // the model to fabricate experience.
+    const conflictInfo = detectYearsConflict(nextInstruction, computedExperience);
+    if (conflictInfo) {
+      setConflict({ ...conflictInfo, instruction: nextInstruction });
+      return;
+    }
+    setConflict(null);
+
+    const myReq = ++reqId.current; // this draft's token (stale check after await)
     setInstruction(nextInstruction);
     setPanelOpen(true);
     setBusy(true);
@@ -137,9 +218,8 @@ export function ProfessionalSummaryForm() {
       setIndex(0);
     }
 
-    // Ground the summary in the candidate's real resume data, read fresh so it
+    // Ground the summary in the candidate's real resume data (read above), so it
     // reflects the latest employment / skills / education.
-    const st = useResumeStore.getState();
     const ctx = {
       employment: st.employment.slice(0, 3).map((e) => ({
         jobTitle: e.jobTitle,
@@ -154,11 +234,16 @@ export function ProfessionalSummaryForm() {
         degree: e.degree,
         institution: e.institution,
       })),
+      // The AI states this verbatim and never recalculates it.
+      computedExperience,
     };
 
     const result = refine
       ? await improveSummary({ tone, text, jobTitle, instruction: nextInstruction, ...ctx })
       : await generateSummary({ tone, jobTitle, ...ctx });
+
+    // Ignore a response that is no longer the latest request (rapid re-runs).
+    if (myReq !== reqId.current) return;
 
     setBusy(false);
     setBusySource(null);
@@ -172,8 +257,10 @@ export function ProfessionalSummaryForm() {
     }
 
     const next: Variant = { text: result, tone };
-    setVariants((prev) => (append ? [...prev, next] : [next]));
-    setIndex(append ? variants.length : 0); // land on the draft we just made
+    // Cap the session's candidate history: keep the newest MAX_VARIANTS, so a
+    // long Rewrite streak can't grow the pager unbounded.
+    setVariants((prev) => (append ? [...prev, next].slice(-MAX_VARIANTS) : [next]));
+    setIndex(append ? Math.min(variants.length, MAX_VARIANTS - 1) : 0);
   }
 
   /** Toolbar action: write from scratch, or refine with the chosen preset. */
@@ -183,21 +270,79 @@ export function ProfessionalSummaryForm() {
    *  earlier ones so the pager can walk back to them. */
   const rewriteWith = (nextInstruction: string) => draft(nextInstruction, true);
 
-  // On entering the section, automatically draft a summary so an AI suggestion
-  // shows straight away - refining the EXISTING summary when there is one, or
-  // writing a first version grounded in the resume data. Runs once per visit and
-  // only when there's something to build on, so a blank resume isn't given a
-  // generic draft. It stays a suggestion until the user clicks Use.
+  /**
+   * Toolbar "Improve with AI": if the user has highlighted part of the summary,
+   * rewrite ONLY that fragment in place; otherwise draft/refine the whole thing.
+   */
+  function runAiSmart(nextInstruction: string) {
+    const sel = editorRef.current?.getSelectionInfo();
+    if (sel?.hasSelection) {
+      void editSelection(nextInstruction, sel.selectedText);
+      return;
+    }
+    runAi(nextInstruction);
+  }
+
+  /** Rewrite just the highlighted fragment and splice the reply back in place. */
+  async function editSelection(nextInstruction: string, selectedText: string) {
+    if (busy || selBusy) return;
+    setSelBusy(true);
+    const st = useResumeStore.getState();
+    const ctx = {
+      employment: st.employment.slice(0, 3).map((e) => ({
+        jobTitle: e.jobTitle,
+        company: e.company,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        location: e.location,
+        bullets: htmlToBullets(e.description),
+      })),
+      skills: st.skills.map((sk) => sk.name).filter(Boolean),
+      education: st.education.map((e) => ({ degree: e.degree, institution: e.institution })),
+      computedExperience: computeExperience(
+        st.employment.map((e) => ({ startDate: e.startDate, endDate: e.endDate }))
+      ),
+    };
+    const result = await improveSummary({
+      tone: toneAt(0).id,
+      text: selectedText,
+      jobTitle,
+      instruction: nextInstruction || "Improve this",
+      selectedText,
+      ...ctx,
+    });
+    setSelBusy(false);
+    if (!result?.trim()) {
+      toast.error("Couldn't reach AI", { description: "Please try again in a moment." });
+      return;
+    }
+    editorRef.current?.replaceSelection(result.trim());
+    toast.success("Selection updated", {
+      action: { label: "Undo", onClick: () => editorRef.current?.undo() },
+    });
+  }
+
+  // On entering the section, decide what to show once:
+  //  - No summary yet, with a role + some resume data -> draft a first version.
+  //  - A summary exists -> do NOT auto-regenerate (per spec). Establish the
+  //    change baseline the first time; on later visits, if the resume drifted,
+  //    offer to generate an updated version instead of silently rewriting.
   const didAutoDraft = useRef(false);
   useEffect(() => {
     if (didAutoDraft.current) return;
+    didAutoDraft.current = true;
     const st = useResumeStore.getState();
     const hasSummary = htmlToText(st.summary).length > 0;
-    const hasBasis =
-      hasSummary || st.employment.length > 0 || st.skills.length > 0;
-    if (!hasBasis) return;
-    didAutoDraft.current = true;
-    draft(hasSummary ? AUTO_IMPROVE_INSTRUCTION : "", false);
+    if (hasSummary) {
+      const sig = summarySignature(st);
+      if (!st.summaryBasis) setSummaryBasis(sig); // first baseline for this summary
+      else if (st.summaryBasis !== sig) setChangedPrompt(true);
+      return;
+    }
+    // No summary: only draft when there's a role AND something to build from.
+    const hasBasisData = st.employment.length > 0 || st.skills.length > 0;
+    if (!hasRole || !hasBasisData) return;
+    draft("", false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -205,10 +350,34 @@ export function ProfessionalSummaryForm() {
   function usePreview() {
     if (!current) return;
     setSummary(textToHtml(current.text));
+    // Record the resume state this summary was written from, so a later change
+    // to employment/skills/education can offer a refreshed version.
+    setSummaryBasis(summarySignature(useResumeStore.getState()));
     setPanelOpen(false);
     setVariants([]);
     setIndex(0);
+    setChangedPrompt(false);
     toast.success("Summary updated");
+  }
+
+  /** Conflict action: run the request WITHOUT the unsupported years demand. */
+  function useSafeAlternative() {
+    if (!conflict) return;
+    const safe = stripYearsRequest(conflict.instruction) || AUTO_IMPROVE_INSTRUCTION;
+    setConflict(null);
+    draft(safe, false);
+  }
+
+  /** Regenerate after a resume change: a fresh candidate; saved summary stays. */
+  function regenerateFromChange() {
+    setChangedPrompt(false);
+    draft(AUTO_IMPROVE_INSTRUCTION, false);
+  }
+
+  /** Dismiss the change prompt and stop nagging until the next real change. */
+  function dismissChangePrompt() {
+    setChangedPrompt(false);
+    setSummaryBasis(summarySignature(useResumeStore.getState()));
   }
 
   function closePanel() {
@@ -226,7 +395,37 @@ export function ProfessionalSummaryForm() {
         description="This section draws the most attention from recruiters. Start with your role and years of experience, then mention 2-3 key skills and achievements. Keep it to 2-4 sentences."
       />
 
+      {/* Resume changed since this summary was written: offer to refresh it. The
+          saved summary stays put; regenerate only produces a candidate. */}
+      {changedPrompt && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-accent px-4 py-3">
+          <TriangleAlert className="size-4 shrink-0 text-[var(--ai-text)]" aria-hidden />
+          <p className="min-w-0 flex-1 text-sm font-medium text-accent-foreground">
+            Your resume details changed. Generate an updated summary?
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={dismissChangePrompt}
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Not now
+            </button>
+            <button
+              type="button"
+              onClick={regenerateFromChange}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ai-solid)] px-4 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <WandSparkles className="size-4" />
+              Generate updated summary
+            </button>
+          </div>
+        </div>
+      )}
+
       <RichTextEditor
+        ref={editorRef}
         value={summary}
         onChange={setSummary}
         minHeight={150}
@@ -235,15 +434,13 @@ export function ProfessionalSummaryForm() {
           <div className="flex items-center gap-3">
             <SummaryStatusBadge html={summary} />
             {hasContent ? (
-              /* Content exists -> refine it. Neutral styling: this is a tweak,
-                 not a fresh start. */
+              /* Content exists -> refine it (or, with text highlighted, edit just
+                 the selection in place). The button spins only for a selection
+                 edit; a whole-summary draft shows the panel's "Generating..." */
               <EditWithAiMenu
-                // The toolbar button never spins: while a toolbar-initiated draft
-                // runs, the panel below shows "Generating..." - that is the only
-                // loading indicator. The button just disables so it can't refire.
-                busy={false}
-                disabled={busy}
-                onRun={runAi}
+                busy={selBusy}
+                disabled={busy || selBusy}
+                onRun={runAiSmart}
                 label="Improve with AI"
                 busyLabel="Improving…"
               />
@@ -358,12 +555,84 @@ export function ProfessionalSummaryForm() {
         </div>
       )}
 
-      {!hasContent && !panelOpen && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Tip: write it yourself, or let{" "}
-          <span className="font-semibold text-[var(--ai-text)]">Write with AI</span>{" "}
-          draft a first version you can edit.
-        </p>
+      {/* Conflict: the request asked for more years than the resume supports. */}
+      {conflict && (
+        <div className="mt-3 rounded-xl border border-[#D97706]/40 bg-[#D97706]/5 px-4 py-3">
+          <div className="flex items-start gap-2.5">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[#B45309]" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                That would overstate your experience
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {conflict.supported != null
+                  ? `Your employment dates support ${conflict.supported} ${conflict.supported === 1 ? "year" : "years"} of experience, not ${conflict.requested}. Update your dates, or generate a version without an unsupported number.`
+                  : `Your employment dates do not establish a specific number of years, so a "${conflict.requested}-year" claim cannot be supported. Add or complete your dates, or generate a version without a years figure.`}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={useSafeAlternative}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ai-solid)] px-4 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <Check className="size-4" />
+                  Use safe alternative
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConflict(null);
+                    setActiveSection("employment");
+                  }}
+                  className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  Review employment dates
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConflict(null)}
+                  aria-label="Dismiss conflict"
+                  className="ml-auto grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Missing context: no role to write about yet. */}
+      {needsRole ? (
+        <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 px-4 py-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Add a job title to generate a summary
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Enter a desired job title in Personal details, or add a role in your
+              Employment history, then the AI can write a summary grounded in it.
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveSection("personal")}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              Add job title
+            </button>
+          </div>
+        </div>
+      ) : (
+        !hasContent &&
+        !panelOpen && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Tip: write it yourself, or let{" "}
+            <span className="font-semibold text-[var(--ai-text)]">Write with AI</span>{" "}
+            draft a first version you can edit.
+          </p>
+        )
       )}
     </div>
   );
