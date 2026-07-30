@@ -72,6 +72,7 @@ function ActionButton({
 export function ResumeCard({
   resume,
   resumeBullets,
+  thumbnail,
   onEdit,
   onDownload,
   onCopy,
@@ -81,6 +82,9 @@ export function ResumeCard({
   resume: ResumeDoc;
   /** The candidate's real experience bullets, used to ground AI tailoring. */
   resumeBullets?: string[];
+  /** A live render of the user's own resume in its chosen template. When given,
+   *  it replaces the stock template image so the card shows the real content. */
+  thumbnail?: React.ReactNode;
   onEdit?: () => void;
   onDownload?: () => void;
   onCopy?: () => void;
@@ -113,13 +117,15 @@ export function ResumeCard({
             flex-col it would otherwise stretch full-width (image stuck top-left).
             Centered on mobile, left-aligned once the card goes side-by-side. */}
         <div className="mx-auto w-[150px] shrink-0 overflow-hidden rounded-lg ring-1 ring-border sm:mx-0 md:w-[170px]">
-          <Image
-            src={resume.thumb}
-            alt={`${resume.title} preview`}
-            width={170}
-            height={227}
-            className="h-auto w-full object-cover"
-          />
+          {thumbnail ?? (
+            <Image
+              src={resume.thumb}
+              alt={`${resume.title} preview`}
+              width={170}
+              height={227}
+              className="h-auto w-full object-cover"
+            />
+          )}
         </div>
 
         {/* Details + actions */}

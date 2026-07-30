@@ -442,6 +442,26 @@ const emptyResume = (): ResumeData => ({
   hoveredSkillId: null,
 });
 
+/**
+ * Build a complete, read-only resume state from a saved draft's data, for
+ * rendering a live thumbnail with `<LivePreview previewOnly />`. In previewOnly
+ * mode LivePreview never invokes a setter or reads transient editor state
+ * (active section/entry, hovered skill), so this fills those with pristine
+ * defaults and stubs the rest - every VISUAL field (personal, sections, design,
+ * template, order) comes straight from the record so the thumbnail matches the
+ * user's own content in their chosen template. `design`/`sectionOrder` are
+ * merged defensively so an older/partial record can't crash the render.
+ */
+export function previewStateFromDoc(data: Partial<ResumeState>): ResumeState {
+  const base = emptyResume();
+  return {
+    ...base,
+    ...data,
+    design: { ...base.design, ...(data.design ?? {}) },
+    sectionOrder: data.sectionOrder ?? base.sectionOrder,
+  } as unknown as ResumeState;
+}
+
 /* ------------------------------------------------------------------ */
 /* Store                                                              */
 /* ------------------------------------------------------------------ */
@@ -742,7 +762,23 @@ export const useResumeStore = create<ResumeState>()(
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
   loadDocument: (id, data) =>
     set((s) => {
-      const merged = { ...s, ...withUniqueIds(data), id, importedResume: true };
+      // Defensive: a legacy/corrupted record may arrive with `data` as a JSON
+      // string (double- or triple-encoded on the server) instead of an object.
+      // Spreading a string would blank the editor, so decode it back to an
+      // object first - looping since some rows were re-saved while corrupted.
+      let decoded: unknown = data;
+      for (let i = 0; i < 6 && typeof decoded === "string"; i++) {
+        try {
+          decoded = JSON.parse(decoded);
+        } catch {
+          decoded = {};
+          break;
+        }
+      }
+      const doc = (
+        decoded && typeof decoded === "object" ? decoded : {}
+      ) as Partial<ResumeState>;
+      const merged = { ...s, ...withUniqueIds(doc), id, importedResume: true };
       return {
         ...merged,
         // A saved resume is fully accessible: unlock every section so the sidebar

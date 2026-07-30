@@ -63,6 +63,30 @@ function normalize(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * Decode a possibly multi-encoded JSON value down to its real object/array.
+ *
+ * A document's `data` is always an object, but legacy rows were written with
+ * `${JSON.stringify(data)}::jsonb`, which double-encodes under postgres.js (it
+ * JSON-encodes the string parameter again for the jsonb cast). Those rows store
+ * a jsonb *string* and round-trip as a STRING instead of an object; spreading
+ * that into the resume store yields character-indexed junk and a blank editor.
+ * Some rows were even re-saved from a corrupted read and are double/triple
+ * encoded, so a single parse isn't enough - loop until it's no longer a JSON
+ * string. Genuine objects pass through untouched.
+ */
+function decodeJson(value: unknown): unknown {
+  let v = value;
+  for (let i = 0; i < 6 && typeof v === "string"; i++) {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      break; // not JSON (or fully decoded to a plain string) - keep as-is
+    }
+  }
+  return v;
+}
+
 /** Merge a stored bucket with the canonical empty shape (tolerates old files). */
 function withDefaults(docs: Partial<UserDocuments> | undefined): UserDocuments {
   return { ...emptyUserDocuments(), ...docs };
@@ -146,7 +170,7 @@ async function pgGetUserDocuments(email: string): Promise<UserDocuments> {
       title: r.title,
       updatedAt: Number(r.updated_at),
       templateId: r.template_id ?? undefined,
-      data: r.data,
+      data: decodeJson(r.data),
     });
   }
   return docs;
@@ -158,11 +182,17 @@ async function pgUpsertDocument(
   record: StoredDocument
 ): Promise<void> {
   const sql = getSql();
+  // Store `data` as a proper jsonb OBJECT via postgres.js's `sql.json` helper.
+  // `${JSON.stringify(data)}::jsonb` double-encodes here (postgres.js re-encodes
+  // the string param for the jsonb cast), producing a jsonb string that blanks
+  // the editor on read. `decodeJson` also normalizes any legacy string that
+  // arrives from a corrupted round-trip back into an object before storing.
+  const data = decodeJson(record.data);
   await sql`
     insert into documents (email, type, id, title, template_id, data, updated_at)
     values (
       ${normalize(email)}, ${type}, ${record.id}, ${record.title},
-      ${record.templateId ?? null}, ${JSON.stringify(record.data)}::jsonb,
+      ${record.templateId ?? null}, ${sql.json(data as never)},
       ${record.updatedAt}
     )
     on conflict (email, type, id) do update set

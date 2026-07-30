@@ -25,6 +25,7 @@ import {
 import { getTemplate } from "@/lib/templates";
 import { downloadResume } from "@/lib/download-pdf";
 import { LivePreview } from "@/components/editor/live-preview";
+import { ResumeThumbnail } from "./resume-thumbnail";
 import type { ResumeDoc } from "@/lib/mock-data";
 
 /** Collect the resume's real experience bullets, so the AI tailoring flow can
@@ -170,6 +171,7 @@ export function DashboardResumes() {
             key={rec.id}
             resume={doc}
             resumeBullets={experienceBullets(rec.data)}
+            thumbnail={<ResumeThumbnail id={rec.id} data={rec.data} />}
             downloading={exportingId === rec.id}
             onEdit={open}
             onDownload={download}

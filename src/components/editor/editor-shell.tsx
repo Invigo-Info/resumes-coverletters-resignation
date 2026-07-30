@@ -249,7 +249,7 @@ export function EditorShell({
               </div>
             </main>
             <section className="hidden min-w-0 flex-1 xl:block">
-              <PreviewPane paneClassName="bg-[#EFF4FF]" savePillClassName="bg-white/70" />
+              <PreviewPane paneClassName="bg-white" previewOnly />
             </section>
           </div>
         )}

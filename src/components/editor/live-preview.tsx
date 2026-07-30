@@ -3,6 +3,7 @@
 import { Children, type CSSProperties } from "react";
 import {
   useResumeStore,
+  type ResumeState,
   type SectionKey,
   type AdditionalSection,
   type DesignOptions,
@@ -128,8 +129,19 @@ function isSidebar(key: SectionKey, additional: AdditionalSection[]) {
  * one/two-column + dark-sidebar layout), reorders sections, and overlays
  * editor-only highlights (active section/entry/block) that are stripped from export.
  */
-export function LivePreview({ previewOnly = false }: { previewOnly?: boolean } = {}) {
-  const s = useResumeStore();
+export function LivePreview({
+  previewOnly = false,
+  state,
+}: {
+  previewOnly?: boolean;
+  /** Render this resume instead of the live editor store (used for read-only
+   *  thumbnails). Only honored with `previewOnly`, where no setter is called. */
+  state?: ResumeState;
+} = {}) {
+  // Always subscribe to the store (hook rules); an explicit `state` overrides it
+  // so each thumbnail can render its OWN resume, not the one being edited.
+  const store = useResumeStore();
+  const s = state ?? store;
   const { design } = s;
   const accent = design.color;
   // The selected color theme is a COMPLETE palette: it colors the sidebar panel
