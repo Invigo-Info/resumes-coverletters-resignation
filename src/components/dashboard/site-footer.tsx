@@ -11,7 +11,7 @@ const LINKS: { label: string; href: string }[] = [
 /** Site-wide footer: copyright line plus the secondary navigation links. */
 export function SiteFooter() {
   return (
-    <footer className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-8 text-center text-sm text-muted-foreground">
+    <footer className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-8 text-center text-sm text-muted-foreground print:hidden">
       <span>© 2026, Resumewriter.ai. All rights reserved</span>
       <span aria-hidden className="hidden sm:inline">·</span>
       <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">

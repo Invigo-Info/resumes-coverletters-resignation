@@ -39,7 +39,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
   const initial = (email || session?.user?.name || "").trim().charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-sm print:hidden">
       <div className="mx-auto flex h-16 w-full items-center gap-6 px-4 sm:px-6 lg:px-10">
         {/* Left: logo + tabs */}
         <Link href="/" aria-label="resumewriter.ai home">

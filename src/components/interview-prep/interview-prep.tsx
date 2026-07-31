@@ -45,6 +45,7 @@ import type { ScoreResume } from "@/lib/jobs/scoreboard";
 import {
   getInterviewPrep,
   getMoreQuestions,
+  streamInterviewPrep,
   INTERVIEW_TYPES,
   type InterviewType,
   type InterviewPrep,
@@ -334,9 +335,10 @@ function StreamCard({
   onDone: () => void;
 }) {
   const gradient = Q_GRADIENTS[index % Q_GRADIENTS.length];
+  // Only the coaching tips type in line by line; the sample answer renders in its
+  // own subtle box once the tips are done (matching the reference card format).
   const lines = useMemo(() => {
     const g = q.guidance.filter(Boolean);
-    if (q.sample) g.push(q.sample);
     return g.length
       ? g
       : ["Prepare a clear, specific answer grounded in your real experience."];
@@ -384,7 +386,7 @@ function StreamCard({
   }, [revealed, previewing, lines]);
 
   return (
-    <div className={`rounded-2xl bg-linear-to-br p-5 shadow-card ${gradient}`}>
+    <div className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ${gradient}`}>
       <p className="font-semibold text-white">{q.question}</p>
       <div className="mt-3">
         {lines.map((ln, i) => {
@@ -398,12 +400,17 @@ function StreamCard({
               {arriving ? (
                 <SkeletonLine />
               ) : (
-                <p className="text-sm leading-relaxed text-white/90">{ln}</p>
+                <p className="text-sm leading-relaxed text-white/85">{ln}</p>
               )}
             </div>
           );
         })}
       </div>
+      {q.sample && revealed >= lines.length && (
+        <p className="mt-3 rounded-xl bg-white/10 p-3 text-sm leading-relaxed text-white/95">
+          {q.sample}
+        </p>
+      )}
     </div>
   );
 }
@@ -768,8 +775,12 @@ export function InterviewPrepView({
   // sheet instead of piling up duplicates. Skips the first render of a re-opened
   // sheet (it is already saved) so merely viewing it does not bump its timestamp.
   const skipInitialSave = useRef(Boolean(initialSaved));
+  // True while a practice sheet is streaming in - suppresses the auto-save so it
+  // fires once with the complete sheet, not once per streamed question.
+  const streamingRef = useRef(false);
   useEffect(() => {
     if (!prep || !job || !type) return;
+    if (streamingRef.current) return;
     if (skipInitialSave.current) {
       skipInitialSave.current = false;
       return;
@@ -862,11 +873,64 @@ export function InterviewPrepView({
     setType(t);
     setLoading(true);
     setPrep(null);
-    // Use the AI whenever there's a real job so the sample answers are grounded
-    // in the selected resume (the image's per-question answers). Only the pure
-    // generic sentinel (no real job at all) uses the instant heuristic.
-    const fast = (job.company ?? "").trim().toLowerCase() === "your target company";
-    const p = await getInterviewPrep(job, resume, t, detail, fast);
+    // Always use the AI so the questions and sample answers are grounded in the
+    // selected resume. "Just practicing" (the practice flag, or the generic
+    // sentinel job with no real company) generates resume-only questions that
+    // follow the resume-only spec's per-type counts, tips and sample rules.
+    const resumeOnly =
+      applyPractice ||
+      (job.company ?? "").trim().toLowerCase() === "your target company";
+
+    // Option B: stream the practice questions so each card paints as it arrives
+    // (the first shows in ~1.5s instead of a ~5s blank wait). Falls back to the
+    // blocking path if streaming is unavailable (no key / error).
+    if (resumeOnly) {
+      const shell: InterviewPrep = {
+        company: { name: "", description: "", bullets: [] },
+        role: { title: resume.role || t, keySkills: [], summary: "" },
+        values: [],
+        mentions: [],
+        questions: [],
+        candidateQuestions: [],
+      };
+      streamingRef.current = true;
+      let firstCard = true;
+      const received = await streamInterviewPrep(
+        job,
+        resume,
+        t,
+        {
+          onQuestion: (q) => {
+            if (firstCard) {
+              firstCard = false;
+              setLoading(false); // first card replaces the skeleton
+              window.scrollTo({ top: 0 });
+            }
+            setPrep((prev) => {
+              const base = prev ?? shell;
+              return { ...base, questions: [...base.questions, q] };
+            });
+          },
+          onCandidates: (items) => {
+            setPrep((prev) => {
+              const base = prev ?? shell;
+              return { ...base, candidateQuestions: items };
+            });
+          },
+        },
+        detail
+      );
+      streamingRef.current = false;
+      if (received > 0) {
+        // Force one auto-save now that the full sheet is assembled.
+        setPrep((prev) => (prev ? { ...prev } : prev));
+        setLoading(false);
+        return;
+      }
+      // Streaming produced nothing usable - fall through to the blocking path.
+    }
+
+    const p = await getInterviewPrep(job, resume, t, detail, false, resumeOnly);
     setPrep(p);
     setLoading(false);
     window.scrollTo({ top: 0 });
@@ -894,12 +958,16 @@ export function InterviewPrepView({
   const getMore = async () => {
     if (!job || !prep || !type) return;
     setMoreLoading(true);
+    const resumeOnly =
+      applyPractice ||
+      (job.company ?? "").trim().toLowerCase() === "your target company";
     const more = await getMoreQuestions(
       job,
       resume,
       type,
       prep.questions.map((q) => q.question),
-      type === "other" ? customText : undefined
+      type === "other" ? customText : undefined,
+      resumeOnly
     );
     setPrep((p) => (p ? { ...p, questions: [...p.questions, ...more] } : p));
     setMoreLoading(false);
@@ -1096,10 +1164,12 @@ export function InterviewPrepView({
   }
 
   /* ----- Generated prep page ----- */
-  // Stream only on the dedicated routes, and never while preparing to print -
-  // `forceShow` collapses the whole page to its full static form so the PDF
-  // captures every section and question.
-  const streaming = streamQuestions && !forceShow;
+  // The section-by-section reveal animation applies only to the company-specific
+  // flow. Practice mode already streams its cards in live (each question is
+  // appended as its NDJSON line arrives, and "Get more" appends too), so it
+  // renders the plain growing card list - no reveal wrapper, which would
+  // otherwise trap the appended cards. Never stream while preparing to print.
+  const streaming = streamQuestions && !forceShow && !practice;
 
   // Each major section is built into this array so it can either render inline
   // (default) or, on the streaming routes, be revealed one at a time with a
@@ -1264,21 +1334,23 @@ export function InterviewPrepView({
             {prep.questions.map((q, i) => (
               <div
                 key={i}
-                className={`rounded-2xl bg-linear-to-br p-5 shadow-card ${Q_GRADIENTS[i % Q_GRADIENTS.length]}`}
+                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ${Q_GRADIENTS[i % Q_GRADIENTS.length]}`}
               >
                 <p className="font-semibold text-white">{q.question}</p>
                 {q.guidance.length > 0 && (
-                  <ul className="mt-2 space-y-1.5">
+                  <div className="mt-3">
                     {q.guidance.map((g, j) => (
-                      <li key={j} className="flex gap-2 text-sm text-white/90">
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-white/60" />
+                      <p
+                        key={j}
+                        className="border-t border-white/15 py-2 text-sm leading-relaxed text-white/85 first:border-t-0 first:pt-0"
+                      >
                         {g}
-                      </li>
+                      </p>
                     ))}
-                  </ul>
+                  </div>
                 )}
                 {q.sample && (
-                  <p className="mt-3 rounded-xl bg-white/15 p-3 text-sm italic leading-relaxed text-white/90">
+                  <p className="mt-3 rounded-xl bg-white/10 p-3 text-sm leading-relaxed text-white/95">
                     {q.sample}
                   </p>
                 )}
@@ -1321,7 +1393,7 @@ export function InterviewPrepView({
             {prep.candidateQuestions.map((q, i) => (
               <div
                 key={i}
-                className={`rounded-2xl bg-linear-to-br p-4 shadow-card ${CQ_GRADIENTS[i % CQ_GRADIENTS.length]}`}
+                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-4 shadow-card ${CQ_GRADIENTS[i % CQ_GRADIENTS.length]}`}
               >
                 <p className="font-semibold text-white">{q}</p>
               </div>
@@ -1403,6 +1475,14 @@ export function InterviewPrepView({
             Everything you need to ace your interview
           </h1>
         </>
+      )}
+
+      {/* Practice hides its on-screen title, so give the printed PDF a heading
+          that identifies the sheet (print-only). */}
+      {practice && type && (
+        <h1 className="hidden text-center font-heading text-2xl font-extrabold tracking-tight text-foreground print:block">
+          Interview prep - {INTERVIEW_TYPES.find((t) => t.id === type)?.title ?? ""}
+        </h1>
       )}
 
       {streaming ? (

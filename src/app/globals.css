@@ -460,3 +460,23 @@
 [data-resume-preview][data-resume-theme="dark"] .text-neutral-500 {
   color: #9ca3af !important;
 }
+
+/*
+  Print / "Download PDF" rules. The interview-prep sheet uses window.print() to
+  produce its PDF, so this makes the printed page read as a clean document:
+  sensible margins, headings that never dangle at a page break (individual cards
+  already set break-inside-avoid), and no leftover fixed overlays. App chrome
+  (top nav, footer, help pill) is hidden via `print:hidden` on those components.
+  The resume/cover-letter exports use html2canvas on a specific element, so they
+  ignore these rules entirely - only true browser printing is affected.
+*/
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+}

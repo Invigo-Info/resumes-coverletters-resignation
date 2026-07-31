@@ -671,7 +671,8 @@ export function buildHeuristicPrep(
   job: JobPosting,
   resume: ScoreResume,
   type: InterviewType,
-  customDetail?: string
+  customDetail?: string,
+  resumeOnly = false
 ): InterviewPrep {
   const skills = topSkills(job, resume);
   const acc = extractAccomplishments(resume);
@@ -717,7 +718,10 @@ export function buildHeuristicPrep(
     mentions: buildMentions(resume, acc),
     questions,
     // Other mode omits the "questions to ask" section by default (spec §11).
-    candidateQuestions: type === "other" ? [] : TYPE_CANDIDATE_QS[type],
+    // Technical omits it too - both the resume-only and the company-specific
+    // specs state Technical has no candidate-to-interviewer questions.
+    candidateQuestions:
+      type === "other" || type === "technical" ? [] : TYPE_CANDIDATE_QS[type],
   };
 }
 
@@ -773,7 +777,8 @@ async function callPrepAi(
   resume: ScoreResume,
   type: InterviewType,
   customDetail?: string,
-  exclude: string[] = []
+  exclude: string[] = [],
+  resumeOnly = false
 ): Promise<InterviewPrep | null> {
   try {
     const res = await fetch("/api/ai", {
@@ -796,6 +801,7 @@ async function callPrepAi(
           interviewType: type,
           customDetail: customDetail || "",
           exclude,
+          resumeOnly,
         },
       }),
     });
@@ -817,11 +823,104 @@ export async function getInterviewPrep(
   resume: ScoreResume,
   type: InterviewType,
   customDetail?: string,
-  fast = false
+  fast = false,
+  resumeOnly = false
 ): Promise<InterviewPrep> {
-  if (fast) return buildHeuristicPrep(job, resume, type, customDetail);
-  const ai = await callPrepAi(job, resume, type, customDetail);
-  return ai ?? buildHeuristicPrep(job, resume, type, customDetail);
+  if (fast) return buildHeuristicPrep(job, resume, type, customDetail, resumeOnly);
+  const ai = await callPrepAi(job, resume, type, customDetail, [], resumeOnly);
+  return ai ?? buildHeuristicPrep(job, resume, type, customDetail, resumeOnly);
+}
+
+/** Callbacks for streamed practice questions (Option B). */
+export interface PrepStreamHandlers {
+  onQuestion: (q: PrepQuestion) => void;
+  onCandidates: (items: string[]) => void;
+}
+
+/**
+ * Stream resume-only ("Just practicing") questions so the UI paints each card as
+ * it arrives, instead of waiting for the whole sheet. Returns the number of
+ * questions received - 0 means nothing usable (no key, rate limit, network or
+ * parse failure), and the caller should fall back to the blocking path.
+ */
+export async function streamInterviewPrep(
+  job: JobPosting,
+  resume: ScoreResume,
+  type: InterviewType,
+  handlers: PrepStreamHandlers,
+  customDetail?: string
+): Promise<number> {
+  let count = 0;
+  try {
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: "interviewPrep",
+        payload: {
+          job: { title: job.title, company: job.company },
+          resume,
+          interviewType: type,
+          customDetail: customDetail || "",
+          exclude: [],
+          resumeOnly: true,
+          stream: true,
+        },
+      }),
+    });
+    // No readable stream (no key / rate limited / server fell back to JSON) ->
+    // signal the caller to use the blocking path.
+    if (!res.ok || !res.body) return 0;
+    if ((res.headers.get("content-type") || "").includes("application/json")) return 0;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    // Enforce the spec's tip cap: Technical is exactly 2; Screening/Manager/Other
+    // are at most 3. The model occasionally over-delivers, so cap it here.
+    const tipCap = type === "technical" ? 2 : 3;
+
+    const handleLine = (raw: string) => {
+      const line = raw.trim();
+      if (!line || line === "```" || /^```(?:json)?$/i.test(line)) return;
+      let obj: unknown;
+      try {
+        obj = JSON.parse(line);
+      } catch {
+        return; // a partial or non-JSON line - skip it
+      }
+      if (!obj || typeof obj !== "object") return;
+      const o = obj as Record<string, unknown>;
+      if (o.type === "question" && typeof o.question === "string" && o.question.trim()) {
+        count++;
+        handlers.onQuestion({
+          question: o.question.trim(),
+          guidance: Array.isArray(o.guidance)
+            ? o.guidance.map(String).filter(Boolean).slice(0, tipCap)
+            : [],
+          sample:
+            typeof o.sample === "string" && o.sample.trim() ? o.sample.trim() : undefined,
+        });
+      } else if (o.type === "candidates" && Array.isArray(o.items)) {
+        handlers.onCandidates(o.items.map(String).filter(Boolean));
+      }
+    };
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buffer.indexOf("\n")) >= 0) {
+        handleLine(buffer.slice(0, nl));
+        buffer = buffer.slice(nl + 1);
+      }
+    }
+    if (buffer.trim()) handleLine(buffer);
+    return count;
+  } catch {
+    return count;
+  }
 }
 
 /** Fetch an additional batch of questions (for "Get more questions"). */
@@ -830,14 +929,15 @@ export async function getMoreQuestions(
   resume: ScoreResume,
   type: InterviewType,
   existing: string[],
-  customDetail?: string
+  customDetail?: string,
+  resumeOnly = false
 ): Promise<PrepQuestion[]> {
-  const ai = await callPrepAi(job, resume, type, customDetail, existing);
+  const ai = await callPrepAi(job, resume, type, customDetail, existing, resumeOnly);
   if (ai) {
     return ai.questions.filter((q) => !existing.includes(q.question));
   }
   // Heuristic: rotate the pool, skipping ones already shown.
-  return buildHeuristicPrep(job, resume, type, customDetail).questions.filter(
+  return buildHeuristicPrep(job, resume, type, customDetail, resumeOnly).questions.filter(
     (q) => !existing.includes(q.question)
   );
 }

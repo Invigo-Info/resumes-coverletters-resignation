@@ -59,7 +59,11 @@ async function gemini(
   key: string,
   prompt: string,
   json: boolean,
-  file?: InlineFile
+  file?: InlineFile,
+  // `fast` disables the model's thinking budget (gemini-2.5-flash thinks by
+  // default, adding several seconds). Only structured, low-reasoning tasks that
+  // value latency over deliberation opt in - never faithful-extraction paths.
+  fast = false
 ) {
   const parts: Record<string, unknown>[] = [];
   if (file) parts.push({ inlineData: { mimeType: file.mimeType, data: file.data } });
@@ -74,6 +78,8 @@ async function gemini(
         // Extraction must be faithful, not creative → low temperature for parsing.
         temperature: file ? 0.1 : 0.8,
         ...(json ? { responseMimeType: "application/json" } : {}),
+        // Skip the thinking phase for latency-sensitive tasks (~8s → ~2s).
+        ...(fast ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     }),
   });
@@ -83,6 +89,91 @@ async function gemini(
     data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text).join("") ??
     "";
   return text.trim();
+}
+
+/**
+ * Stream a resume-only interview task as NDJSON (Option B). Calls Gemini's SSE
+ * endpoint and forwards the model's text - one JSON object per line - to the
+ * client as it is produced, so each question card renders the moment its line
+ * arrives. On any upstream failure it returns { fallback: true } JSON so the
+ * client drops back to the blocking path. Only the practice interview flow uses
+ * this; every other task keeps the blocking JSON response unchanged.
+ */
+async function streamInterviewNdjson(
+  key: string,
+  prompt: string,
+  fast: boolean
+): Promise<Response> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${key}`;
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          ...(fast ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        },
+      }),
+    });
+  } catch {
+    return NextResponse.json({ fallback: true });
+  }
+  if (!upstream.ok || !upstream.body) return NextResponse.json({ fallback: true });
+
+  const reader = upstream.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      // Gemini SSE emits `data: {json}` lines; a line can span reads, so keep a
+      // buffer and only process lines terminated by a newline.
+      let sseBuffer = "";
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = sseBuffer.indexOf("\n")) >= 0) {
+            const line = sseBuffer.slice(0, nl).trim();
+            sseBuffer = sseBuffer.slice(nl + 1);
+            if (!line.startsWith("data:")) continue;
+            const dataStr = line.slice(5).trim();
+            if (!dataStr || dataStr === "[DONE]") continue;
+            try {
+              const obj = JSON.parse(dataStr) as {
+                candidates?: { content?: { parts?: { text?: string }[] } }[];
+              };
+              const text =
+                obj.candidates?.[0]?.content?.parts
+                  ?.map((pp) => pp.text ?? "")
+                  .join("") ?? "";
+              if (text) controller.enqueue(encoder.encode(text));
+            } catch {
+              /* ignore a keep-alive / non-JSON line */
+            }
+          }
+        }
+      } catch {
+        /* upstream aborted mid-stream - close with what we have */
+      }
+      controller.close();
+    },
+    cancel() {
+      reader.cancel().catch(() => {});
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 /**
@@ -208,7 +299,10 @@ STYLE (for every generated or rewritten bullet)
 OUTPUT
 - Return valid JSON only, exactly as the task section specifies. No markdown fences, no text before or after the JSON, no HTML.`;
 
-function buildPrompt(task: Task, p: Record<string, unknown>): { prompt: string; json: boolean } {
+function buildPrompt(
+  task: Task,
+  p: Record<string, unknown>
+): { prompt: string; json: boolean; fast?: boolean } {
   const role = (p.jobTitle as string) || "professional";
   switch (task) {
     case "summary": {
@@ -678,61 +772,187 @@ description: """${(job.description || "").slice(0, 4000)}"""`,
       const custom = (p.customDetail as string) || "";
       const exclude = (p.exclude as string[]) || [];
       const more = exclude.length > 0;
+      // Resume-only ("Just practicing") mode: no job description, no target
+      // company. Questions, tips and answers come solely from the resume and
+      // follow the resume-only spec's per-type counts (screening 2-3 tips +
+      // short sample; manager exactly 3 tips + sample when supported; technical
+      // exactly 2 tips + no sample; technical has no candidate questions).
+      const resumeOnly = Boolean(p.resumeOnly);
+
+      if (resumeOnly) {
+        // Per-type structure straight from the resume-only spec. Order and
+        // purpose are fixed; wording adapts to the candidate's real field.
+        const RESUME_STRUCTURE: Record<string, string> = {
+          screening: `SCREENING CALL (resume-only) - EXACTLY 7 questions, this order and purpose:
+1) "Tell me about yourself."
+2) "Why are you looking for a new role?" (positive, future-focused)
+3) One primary skill, qualification, or experience check drawn from the resume.
+4) One additional role-specific skill or tool check drawn from the resume.
+5) Relevant experience duration, education, project, internship, or licence (use only years the resume states; never inflate).
+6) Location, availability, start timing, schedule, relocation, or work setup.
+7) "What are your salary expectations?"
+Each question: 2 OR 3 coaching tips. Give a "sample" spoken answer of 20-35 words (1-2 short sentences, first person, conversational, one or two strong resume facts - no long STAR story). For questions 6 and 7 (and any other personal-preference question) the "sample" MUST be a safe, non-committal template that asks for their range/timeline first and never invents the candidate's preference. candidateQuestions: EXACTLY 3 short questions the candidate can ask (e.g. new role or backfill, interview process, when to expect a reply).`,
+          manager: `MEETING WITH A MANAGER (resume-only) - EXACTLY 7 questions:
+1) "Tell me about yourself." (entry-level: lead with projects/placements)
+2) "Walk me through your most recent role, internship, or project."
+3) Professional-development direction.
+4) A strong VERIFIED achievement or result from the resume - convert a real metric into a follow-up ("You did X - how?"); if no metric, ask about a project they are proud of. Never invent a number.
+5) A challenge, problem, failure, or difficult situation.
+6) Collaboration, stakeholder management, teamwork, communication, or leadership.
+7) A second role-specific management, decision-making, or motivation question.
+Each question: EXACTLY 3 coaching tips. Include a "sample" answer of 30-50 words (2-3 short sentences, first person, uses "I", brief Situation-Action-Result) for MOST questions - any question the resume gives you material to answer (roles, achievements, skills, projects). OMIT "sample" ONLY for a behavioural question (a failure, conflict, or difficult situation) when the resume holds no matching example; for those, use the 3 tips to guide choosing and structuring a real example. candidateQuestions: EXACTLY 3 (success in the role, the team's biggest challenge, the team/manager working style).`,
+          technical: `TECHNICAL (resume-only) - EXACTLY 7 role-specific questions:
+1) How the candidate keeps relevant knowledge current.
+2) The strongest core skill, tool, or process.
+3) A second important technical skill or process.
+4) How the candidate achieved a supported technical result.
+5) Quality, safety, accuracy, reliability, or risk control (for regulated/high-risk work - nursing, trades, electrical, construction, aviation, lab - this MUST be a safety/compliance question).
+6) A practical technical challenge.
+7) Troubleshooting, technical communication, or cross-functional problem-solving.
+Occupation-aware: ask only about skills, tools, processes, safety requirements or methods the resume supports; never assume a tool not listed; never default to software/coding unless the role is software. Each question: EXACTLY 2 coaching tips. Do NOT provide sample answers - OMIT "sample" on every question. candidateQuestions: [] (Technical has NO candidate questions).`,
+          other: `OTHER (custom, resume-only) - the candidate's custom instruction is the blueprint: "${custom || "(none given - use a general practical set)"}". Generate 7 non-duplicate questions across facets (setup, process, tools, a real example, troubleshooting, measurement, communication), grounded ONLY in resume evidence. 2-3 coaching tips each; include a short "sample" only when the resume supports it. candidateQuestions: [].`,
+        };
+
+        // For "Get more questions" the per-type BLUEPRINT above (with its fixed
+        // "EXACTLY 7" list) must NOT be sent - it would force the model back to 7
+        // and re-emit the originals. Instead send just the per-type format rules
+        // so it produces 3 genuinely new questions in the same shape.
+        const RESUME_MORE_RULES: Record<string, string> = {
+          screening: `Follow SCREENING CALL format: 2 or 3 coaching tips per question, plus one 20-35 word first-person "sample" answer (for a salary/availability/relocation/notice/start-date question the "sample" is a safe, non-committal template that never invents a preference).`,
+          manager: `Follow MEETING WITH A MANAGER format: EXACTLY 3 coaching tips per question, plus a 30-50 word first-person "sample" answer for MOST questions (omit "sample" only for a behavioural failure/conflict question the resume has no example for).`,
+          technical: `Follow TECHNICAL format: EXACTLY 2 coaching tips per question; OMIT "sample" on every question.`,
+          other: `2-3 coaching tips per question; include a short "sample" only when the resume supports it.`,
+        };
+
+        // Body shared by both output formats: the factuality rules, the per-type
+        // structure (or "get more" rules), the generation count, and the tone.
+        const sharedBody = `RESUME-ONLY MODE: there is NO job description and NO target company. Base every question, tip and answer ONLY on the candidate resume below. Never reference a specific employer you are interviewing with. Never invent employers, job titles, employment dates, tools, technologies, skills, qualifications, certifications, projects, metrics, percentages, budgets, team sizes, or years of experience - use a fact only when the resume supports it, and years only from what the resume states. A desired job title is a preparation target, not proof the candidate held that role.
+
+First silently classify the occupation, industry, specialisation, seniority, work environment and whether the role is regulated/high-risk, so wording fits the candidate's actual field and never borrows marketing/software/office language for an unrelated job. For a student or entry-level candidate with little or no formal employment, draw on education, academic projects, internships, volunteering, clubs, extracurriculars and coursework; it is fine for an answer to say this would be their first formal role; never imply school work was paid employment.
+
+${more ? (RESUME_MORE_RULES[type] ?? RESUME_MORE_RULES.screening) : (RESUME_STRUCTURE[type] ?? RESUME_STRUCTURE.screening)}
+
+${more ? `Generate EXACTLY 3 NEW questions for this interview type - nothing else. Do NOT repeat or paraphrase any of these already-shown questions: ${JSON.stringify(exclude)}. Cover resume evidence or interview areas not already covered. There must be NO candidate questions.` : "Generate EXACTLY 7 questions."} No two questions may test the same thing with different wording.
+
+Tone: questions sound like real spoken interview questions in plain English, one clear ask each (no compound "and ... and" questions). Coaching tips are short imperative phrases spoken to the candidate ("Lead with...", "Name...", "Keep it brief...", "Focus on...") anchored to real resume evidence, not generic advice that fits everyone. Sample answers are first person, natural when spoken, use contractions, never say "according to my resume", and never over-stuff metrics or tools. Do not mention that any answer was generated.
+
+Keep everything SHORT and simple - short and easy to read beats long and thorough: each question is about 4-10 plain words, each coaching tip is about 4-8 words, and each sample answer is as brief as it can be while still answering (stay at the low end of the word range). One clear idea per line.`;
+
+        const candidateBlock = `CANDIDATE:
+role: ${resume.role || ""}
+skills: ${JSON.stringify(resume.skills || [])}
+summary: """${(resume.summary || "").slice(0, 1200)}"""
+experience: """${(resume.experience || "").slice(0, 2500)}"""`;
+
+        // Streaming (Option B): emit NDJSON so the client renders each question
+        // card the moment its line arrives. Only the practice flow sets `stream`.
+        if (p.stream === true) {
+          return {
+            json: false,
+            fast: true,
+            prompt: `Output your answer as NDJSON - exactly ONE compact JSON object per line and NOTHING else: no markdown fences, no surrounding array, no blank lines, no commentary.
+
+Emit the question lines first, one per line, each of this exact shape:
+{"type":"question","question":string,"guidance":[short coaching tips],"sample":string}
+OMIT the "sample" field entirely when the interview type or question calls for no sample answer (see the format rules below).
+
+After all question lines, emit exactly ONE final line for the questions the candidate can ask:
+{"type":"candidates","items":[short questions]}
+The "items" array MUST be empty ([]) for Technical and for any "get more" request.
+
+${sharedBody}
+
+${candidateBlock}`,
+          };
+        }
+
+        return {
+          json: true,
+          // Practice questions are a structured, resume-grounded task, not deep
+          // reasoning - skip thinking so the page fills in ~2s, not ~8s.
+          fast: true,
+          prompt: `Generate resume-only interview-prep questions as JSON with EXACTLY these keys:
+{
+  "role": { "title": string, "keySkills": [], "summary": "" },
+  "company": { "name": "", "description": "", "bullets": [] },
+  "values": [],
+  "mentions": [],
+  "questions": [ { "question": string, "guidance": [short coaching tips], "sample": "first-person sample answer - OMIT when the type/question calls for none" } ],
+  "candidateQuestions": [short questions the candidate can ask]
+}
+
+${sharedBody}
+
+Return JSON only, no markdown.
+
+${candidateBlock}`,
+        };
+      }
 
       // Universal, occupation-independent question structure per interview type.
       // Each keeps a FIXED purpose per position; wording adapts to the occupation,
       // seniority and evidence. Colours/layout are set by the app, never by the AI.
       const STRUCTURE: Record<string, string> = {
-        screening: `SCREENING CALL - universal recruiter-level 7-question structure (keep this order and purpose):
+        screening: `SCREENING CALL (company-specific) - EXACTLY 7 questions in this order and purpose:
 1) "Tell me about yourself."
 2) "Why are you looking for a new role?" (positive, future-focused)
-3) "Why <ACTUAL EMPLOYER>?" - use the real hiring company; if it is confidential/unknown use "What interests you about this opportunity?"
-4) "What interests you about this role?"
-5) The single most important job-specific requirement, chosen in priority order: mandatory licence/certification/registration/clearance, else required years/type of experience, else a critical language, else the core skill/tool. NEVER state a licence is active unless the resume confirms it.
-6) The most important remaining work condition: work authorisation, location/relocation, remote/hybrid/on-site, shift/weekend/on-call, travel, driving licence, or start date/notice.
-7) "What are your salary expectations?" - if a range is published reference it; never invent a market figure.
-Keep every question recruiter-level; do NOT turn this into a technical exam.`,
-        manager: `MEETING WITH A MANAGER - 7-question manager-stage structure (depth, ownership, judgement):
+3) "Why <COMPANY>?" - use the real hiring company, grounded in its verified mission / product / service / work context; never invent emotional passion ("has always been my dream"). If the company is unknown/confidential use "What interests you about this opportunity?".
+4) "What interests you about this <ROLE> role?" - tie to the role's responsibilities and the candidate's resume alignment.
+5) One major skill or experience requirement from the JD (the most important qualification or tool). Never state the candidate has it unless the resume supports it.
+6) One important eligibility, qualification, work-setting, or experience requirement: licence/certification, citizenship/work authorisation, security clearance, relocation, on-site/travel/shift, or start date. When it is a personal/legal/current-status fact (licence active, citizenship, clearance, relocation, on-site availability), the "sample" MUST be a fill-in template the candidate completes (e.g. "My licence is [active/not active] in [state]; my CPR is valid until [date].") and the tips tell them to answer honestly - NEVER invent the answer.
+7) "What are your salary expectations?" - if the JD lists a range, reference it and give a safe answer that stays open within it; if no range, ask for their budgeted range first. Never invent a target figure.
+Each question: 2 OR 3 coaching tips of about 6-14 words. Give a 20-45 word first-person "sample" spoken answer (1-3 short sentences, direct, no long STAR story) for questions the resume supports; for the eligibility question (6) and salary (7) use the template / safe answer above. candidateQuestions: EXACTLY 3 short questions the candidate can ask.`,
+        manager: `MEETING WITH A MANAGER (company-specific) - EXACTLY 7 questions in this order:
 1) "Tell me about yourself." (entry-level: lead with projects/placements)
-2) Current or most relevant experience: "Walk me through your current role at <employer>." (or most recent / a key project)
-3) Motivation and development (age- and level-neutral)
-4) Deep-dive on the STRONGEST VERIFIED achievement/project from the resume - convert a real metric into a follow-up ("You did X - what changed?"); if no metric, ask about a project they are proud of. Never invent a number.
-5) A behavioural ownership/collaboration/leadership competency drawn from the JD (specific enough to produce a real example).
-6) A role-specific SITUATIONAL scenario built from a central JD responsibility (planning/judgement/prioritisation - not technical trivia).
-7) Company motivation ("Why <employer>?") or the most important uncovered competency.
-Avoid salary, work-authorisation and simple logistics (those belong to screening).`,
-        technical: `TECHNICAL / PRACTICAL - 7 open-ended, non-duplicate questions covering the role's real competencies:
-1) Professional knowledge / staying current in the field.
-2) The core end-to-end process the role performs.
-3) A key tool, equipment, software or method from the JD/resume.
-4) A troubleshooting / practical scenario (diagnose then correct).
-5) Safety, compliance, code or quality/accuracy - for regulated or high-risk work (nursing, trades, electrical, construction, aviation, lab) this MUST be a safety/compliance question; otherwise a quality/verification question.
-6) Collaboration, handoff or stakeholder coordination.
-7) Measurement, results or verification.
-This is occupation-aware: for a nurse use clinical process/safety, a plumber uses diagnosis/codes/pressure-testing, an engineer uses design/calculations/standards - NEVER default to software/coding unless the role is software. Prefer "guidance" points over long scripted "sample" answers (a memorised technical answer encourages unsupported claims). Never invent a licence, tool, procedure or metric.`,
+2) "Walk me through your most recent relevant experience."
+3) "How do you see your professional development going forward?"
+4) A resume achievement matched to a major JD responsibility - convert a real metric into a follow-up ("You did X - how?"); if no metric, ask about a project they are proud of. Never invent a number.
+5) How the candidate would approach an important JD responsibility (planning / judgement / prioritisation).
+6) A collaboration, leadership, stakeholder, or behavioural question.
+7) An important company-context, motivation, gap, or fit question ("Why <COMPANY>?" or the most important uncovered competency).
+Each question: EXACTLY 3 coaching tips of about 7-16 words. Include a 30-70 word first-person "sample" answer (2-4 sentences, uses "I", brief Situation-Action-Result, supported metrics only) for MOST questions the resume supports; OMIT "sample" only for a behavioural question with no matching resume example (then the 3 tips guide choosing a real example). Never invent a conflict, failure, or achievement. candidateQuestions: EXACTLY 3 (success in the role, the biggest challenges, the management / team working style).`,
+        technical: `TECHNICAL (company-specific) - EXACTLY 7 role-specific questions in this order:
+1) How the candidate keeps relevant knowledge current.
+2) The primary hard skill or process for this role.
+3) A secondary hard skill or process.
+4) A practical responsibility drawn from the JD.
+5) Quality, safety, compliance, accuracy, or risk control - for regulated/high-risk work (nursing, trades, electrical, construction, aviation, lab) this MUST be a safety/compliance question.
+6) Troubleshooting or a role-specific challenge.
+7) A tool, method, licence, workflow, or operational requirement from the JD.
+Occupation-aware: for a nurse use clinical process/safety, a plumber uses diagnosis/codes/pressure-testing, an engineer uses design/standards - NEVER default to software/coding unless the role is software. You MAY ask about a JD-required skill even when it is not in the resume, but the tips must tell the candidate to answer honestly about the gap - never imply unsupported experience. Each question: EXACTLY 2 coaching tips of about 7-16 words. Do NOT provide sample answers - OMIT "sample" on every question. candidateQuestions: [] (Technical has NO candidate questions).`,
         other: `OTHER (custom) - the user's custom instruction below is the PRIMARY blueprint. Custom instruction: "${custom || "(none given - use a general practical set)"}".
 Generate 7 non-duplicate questions that cover the requested topic/subtopics and format across facets (setup, process, tools, a real scenario, troubleshooting, measurement, communication). Use the JD only for realistic role context and terminology, and the resume only for verified evidence. Do NOT claim the candidate has used a tool just because the instruction names it. Include short "sample" answers only if the instruction asks for them. Return "candidateQuestions": [] for this type.`,
+      };
+
+      // For "Get more questions" the per-type BLUEPRINT above (with its fixed
+      // "EXACTLY 7" list) must NOT be sent - it forces the model back to 7 and
+      // re-emits the originals. Send only the per-type format rules instead.
+      const MORE_RULES: Record<string, string> = {
+        screening: `Follow SCREENING CALL format: 2 or 3 coaching tips (~6-14 words) per question, plus one 20-45 word first-person "sample" answer (for an eligibility / personal-status or salary question use a fill-in template / safe answer that never invents the candidate's status or figure).`,
+        manager: `Follow MEETING WITH A MANAGER format: EXACTLY 3 coaching tips (~7-16 words) per question, plus a 30-70 word first-person "sample" answer for MOST questions (omit "sample" only for a behavioural example the resume does not support).`,
+        technical: `Follow TECHNICAL format: EXACTLY 2 coaching tips (~7-16 words) per question; OMIT "sample" on every question.`,
+        other: `2-3 coaching tips per question; include a short "sample" only when the resume supports it.`,
       };
 
       return {
         json: true,
         prompt: `Generate a job-specific interview-prep sheet as JSON with EXACTLY these keys:
 {
-  "company": { "name": string, "description": string, "bullets": [3-4 short things to know / research before the call], "founded": "optional - only if reliably known", "headquarters": "optional", "employees": "optional" },
-  "role": { "title": string, "keySkills": [6-12 key skills/requirements for this role], "summary": string },
-  "values": [4-5 workplace qualities the employer values - separate from skills],
-  "mentions": [3-5 strongest resume-grounded points to mention, incl. honest gap-positioning when a key requirement is missing],
-  "questions": [ { "question": string, "guidance": [2-3 short coaching lines], "sample": "optional short first-person sample answer grounded ONLY in the resume" } ],
-  "candidateQuestions": [3 questions the candidate can ask the interviewer]
+  "company": { "name": string, "description": string, "bullets": [3-5 verified, interview-relevant company insights - empty array if none are reliably known], "founded": "optional - only if reliably known", "headquarters": "optional", "employees": "optional" },
+  "role": { "title": string, "keySkills": [8-10 concise skills or role themes taken from the job description], "summary": string },
+  "values": [EXACTLY 5 workplace qualities the employer values, ~6-14 words each, drawn from repeated JD language / responsibilities / culture - separate from skills; return fewer only if evidence is genuinely thin, never invent],
+  "mentions": [EXACTLY 4 strongest resume-grounded points that match the JD; every one supported by the resume - return fewer rather than inventing filler],
+  "questions": [ { "question": string, "guidance": [coaching tips - count and word-length per the interview-type rules below], "sample": "first-person sample answer per the interview-type rules - OMIT when the type/question calls for none" } ],
+  "candidateQuestions": [the candidate's questions - per the interview-type rules]
 }
 
 First silently classify the occupation, industry, specialisation, seniority, work environment and whether the role is regulated/high-risk, so wording never borrows marketing/software/office language for an unrelated job.
 
-${STRUCTURE[type] ?? STRUCTURE.screening}
+${more ? (MORE_RULES[type] ?? MORE_RULES.screening) : (STRUCTURE[type] ?? STRUCTURE.screening)}
 
-Generate ${more ? "3-5 ADDITIONAL" : "EXACTLY 7"} question(s).${more ? ` Do NOT repeat or paraphrase any of these already-shown questions: ${JSON.stringify(exclude)}.` : ""} No two questions may test the same thing with different wording.
-Keep it SHORT and simple: each "question" is one plain line of about 5-9 words (no compound "and ... and" questions), and each "guidance" line is 3-6 words in everyday language. Short beats thorough here.
-Rules: Do NOT invent company facts (founded year, HQ, employees, clients, revenue) - omit them if unknown. Base "mentions" and any "sample" answers ONLY on the candidate resume - never fabricate experience, metrics, employers, tools, licences or years. Treat a JD requirement as something to VERIFY, not as candidate experience. For regulated/high-risk roles never assert an active licence and never give unsafe procedural instructions. Return JSON only, no markdown.
+Generate ${more ? `EXACTLY 3 NEW question(s) - nothing else. Do NOT repeat, reword, or paraphrase any of these already-shown questions: ${JSON.stringify(exclude)}. Prefer JD areas not yet covered (responsibilities, required qualifications, partial matches, gaps, company topics). Return "candidateQuestions": [].` : "EXACTLY 7 questions."} No two questions may test the same thing with different wording.
+Keep each question short and realistic - plain professional English, one main ask, no compound "and ... and" questions. Coaching tips and sample answers follow the counts and word-lengths in the interview-type rules above.
+Rules: Do NOT invent company facts (founded year, HQ, employees, clients, revenue, awards, contracts) - omit any you are not confident are verified. Base "mentions" and any "sample" answers ONLY on the candidate resume - never fabricate experience, metrics, employers, tools, licences or years, and use years only as the resume states them. A JD requirement is NOT evidence the candidate has that skill or qualification. For any personal/eligibility fact (citizenship, work authorisation, security clearance, active licence, certification validity, relocation, on-site/travel/shift availability, notice, start date) never assume it - use a fill-in template or a safe answer. For regulated/high-risk roles never assert an active licence and never give unsafe procedural instructions. Return JSON only, no markdown.
 
 JOB:
 title: ${job.title || ""}
@@ -842,8 +1062,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const { prompt, json } = buildPrompt(task, payload);
+    const { prompt, json, fast } = buildPrompt(task, payload);
     const inline = file?.data ? file : undefined;
+
+    // Option B streaming: the resume-only practice interview task streams its
+    // NDJSON so the client paints each question card as it arrives. Scoped by the
+    // payload flags - every other task (and company-specific prep) is untouched.
+    if (task === "interviewPrep" && payload.stream === true && payload.resumeOnly === true) {
+      return streamInterviewNdjson(key, prompt, Boolean(fast));
+    }
 
     // Retry with backoff on transient failures (rate limit / overload / timeout)
     // before falling back, so a single throttled window doesn't break the edit.
@@ -851,7 +1078,7 @@ export async function POST(req: Request) {
     let lastErr: unknown = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        text = await gemini(key, prompt, json, inline);
+        text = await gemini(key, prompt, json, inline, fast);
         lastErr = null;
         break;
       } catch (e) {

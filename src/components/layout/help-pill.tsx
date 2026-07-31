@@ -54,7 +54,7 @@ export function HelpPill({ className }: { className?: string }) {
   return (
     <>
       {open && (
-        <div className="fixed bottom-20 right-5 z-50 flex h-120 max-h-[calc(100vh-7rem)] w-88 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl bg-card shadow-card-lg ring-1 ring-border">
+        <div className="fixed bottom-20 right-5 z-50 flex h-120 max-h-[calc(100vh-7rem)] w-88 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl bg-card shadow-card-lg ring-1 ring-border print:hidden">
           {/* Header */}
           <div className="border-b border-border px-4 py-3 text-center">
             <p className="text-sm font-semibold text-foreground">
@@ -118,7 +118,7 @@ export function HelpPill({ className }: { className?: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className={cn(
-          "fixed bottom-5 right-5 z-50 rounded-full bg-card px-5 py-2.5 text-sm font-medium",
+          "fixed bottom-5 right-5 z-50 rounded-full bg-card px-5 py-2.5 text-sm font-medium print:hidden",
           "text-foreground shadow-card-lg ring-1 ring-border transition-transform hover:-translate-y-0.5",
           className
         )}
