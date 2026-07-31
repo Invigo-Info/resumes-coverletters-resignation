@@ -66,7 +66,7 @@ export function ResumeThumbnail({
           visibility: scale > 0 ? "visible" : "hidden",
         }}
       >
-        <LivePreview previewOnly state={state} />
+        <LivePreview previewOnly thumbnail state={state} />
       </div>
     </div>
   );

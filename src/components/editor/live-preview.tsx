@@ -132,16 +132,23 @@ function isSidebar(key: SectionKey, additional: AdditionalSection[]) {
 export function LivePreview({
   previewOnly = false,
   state,
+  thumbnail = false,
 }: {
   previewOnly?: boolean;
   /** Render this resume instead of the live editor store (used for read-only
    *  thumbnails). Only honored with `previewOnly`, where no setter is called. */
   state?: ResumeState;
+  /** True for a scaled-down thumbnail render. Such copies must NOT carry the
+   *  `data-resume-preview` marker, or the PDF exporter / page pager would target
+   *  a tiny scaled thumbnail instead of the real full-size preview. */
+  thumbnail?: boolean;
 } = {}) {
   // Always subscribe to the store (hook rules); an explicit `state` overrides it
   // so each thumbnail can render its OWN resume, not the one being edited.
   const store = useResumeStore();
   const s = state ?? store;
+  // Only the real full-size preview is a download/pager target.
+  const previewMarker = thumbnail ? undefined : "";
   const { design } = s;
   const accent = design.color;
   // The selected color theme is a COMPLETE palette: it colors the sidebar panel
@@ -746,7 +753,7 @@ export function LivePreview({
     ].filter(Boolean);
     return (
       <div
-        data-resume-preview
+        data-resume-preview={previewMarker}
         data-resume-theme={darkText ? "dark" : undefined}
         className="flex min-h-[calc(100vh-7rem)] w-full overflow-hidden rounded-2xl text-neutral-900"
         style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
@@ -810,7 +817,7 @@ export function LivePreview({
 
   return (
     <div
-      data-resume-preview
+      data-resume-preview={previewMarker}
       data-resume-theme={darkText ? "dark" : undefined}
       className="min-h-[calc(100vh-7rem)] w-full rounded-2xl px-12 py-11 text-neutral-900"
       style={{ ...fontStyle, backgroundColor: design.bg || undefined }}
