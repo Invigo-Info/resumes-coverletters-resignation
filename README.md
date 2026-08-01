@@ -14,10 +14,14 @@ all grounded in the user's own resume, never invented content.
   fabricates employers, metrics, tools, or years.
 - **Cover & resignation letters** — generated from the resume and target role.
 - **Jobs** — search, score against the resume, and tailor.
-- **Interview prep** — two modes:
+- **Interview prep** — start by choosing a resume (pick a saved one or upload a
+  new one), then a mode:
   - *Interview at a specific company* — paste a company + job description; get a
     company/role overview and Screening, Manager, and Technical question sets.
-  - *Just practicing* — resume-only questions when there is no target job.
+  - *Just practicing* — resume-only questions when there is no target job. Each
+    interview type has its own system prompt (Screening / Manager / Technical)
+    with its own tone; the Screening salary answer gives an approximate,
+    resume-tailored market range instead of a canned line.
   Each set follows fixed per-type rules (question counts, coaching-tip counts,
   sample-answer lengths, "questions you can ask") and streams in as it generates.
 

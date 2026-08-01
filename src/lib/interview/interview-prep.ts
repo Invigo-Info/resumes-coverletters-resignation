@@ -880,6 +880,11 @@ export async function streamInterviewPrep(
     // are at most 3. The model occasionally over-delivers, so cap it here.
     const tipCap = type === "technical" ? 2 : 3;
 
+    // Candidate questions the model streamed on its final line (if any). Screening
+    // and Manager must show EXACTLY 3; the streamed final line is occasionally
+    // dropped or under-filled, so we reconcile against this after the stream ends.
+    let candidatesSeen: string[] = [];
+
     const handleLine = (raw: string) => {
       const line = raw.trim();
       if (!line || line === "```" || /^```(?:json)?$/i.test(line)) return;
@@ -902,7 +907,8 @@ export async function streamInterviewPrep(
             typeof o.sample === "string" && o.sample.trim() ? o.sample.trim() : undefined,
         });
       } else if (o.type === "candidates" && Array.isArray(o.items)) {
-        handlers.onCandidates(o.items.map(String).filter(Boolean));
+        candidatesSeen = o.items.map(String).filter(Boolean).slice(0, 3);
+        handlers.onCandidates(candidatesSeen);
       }
     };
 
@@ -917,6 +923,20 @@ export async function streamInterviewPrep(
       }
     }
     if (buffer.trim()) handleLine(buffer);
+
+    // Guarantee the spec's count: Screening and Manager must show EXACTLY 3
+    // candidate questions. When the stream drops or under-fills the final line,
+    // top up from the standard set (deduped). Technical/Other have none by design.
+    if (type === "screening" || type === "manager") {
+      if (candidatesSeen.length < 3) {
+        const filled = [...candidatesSeen];
+        for (const q of TYPE_CANDIDATE_QS[type]) {
+          if (filled.length >= 3) break;
+          if (!filled.some((x) => x.toLowerCase() === q.toLowerCase())) filled.push(q);
+        }
+        handlers.onCandidates(filled.slice(0, 3));
+      }
+    }
     return count;
   } catch {
     return count;

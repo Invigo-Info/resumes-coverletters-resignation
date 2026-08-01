@@ -736,11 +736,11 @@ export function InterviewPrepView({
   // A re-opened sheet carries its own job; otherwise use the active apply job.
   const job = initialSaved ? initialSaved.job : storeJob;
   const savedResumes = useDocumentsStore((s) => s.resumes);
-  const hasResume = savedResumes.length > 0;
   const activeRole = useResumeStore((s) => s.personal.jobTitle);
   const activeSkills = useResumeStore((s) => s.skills);
   const activeSummary = useResumeStore((s) => s.summary);
   const activeEmployment = useResumeStore((s) => s.employment);
+  const activeLocation = useResumeStore((s) => s.contact.location);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -764,6 +764,10 @@ export function InterviewPrepView({
   // it only advances once the user makes a choice there. A re-opened sheet skips
   // straight to its content.
   const [entered, setEntered] = useState(Boolean(initialSaved));
+  // On the main picker page the candidate first chooses which resume to prep from
+  // (saved or a new upload). A re-opened sheet already carries its resume, so it
+  // skips this. Set once a resume is chosen, which advances to the entry screen.
+  const [pickedResume, setPickedResume] = useState(Boolean(initialSaved));
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [customText, setCustomText] = useState(initialSaved?.customDetail ?? "");
   const [prep, setPrep] = useState<InterviewPrep | null>(
@@ -843,6 +847,7 @@ export function InterviewPrepView({
         role,
         skills: (d.skills ?? []).map((s) => s.name).filter(Boolean),
         summary: stripHtml(d.summary || ""),
+        location: d.contact?.location?.trim() || "",
         experience: [
           ...(d.employment ?? []).map(
             (e) =>
@@ -862,11 +867,12 @@ export function InterviewPrepView({
       role,
       skills: activeSkills.map((s) => s.name).filter(Boolean),
       summary: stripHtml(activeSummary || ""),
+      location: activeLocation.trim(),
       experience: activeEmployment
         .map((e) => `${e.jobTitle} ${e.company} ${stripHtml(e.description || "")}`)
         .join("\n"),
     };
-  }, [applyResumeId, savedResumes, activeRole, activeSkills, activeSummary, activeEmployment]);
+  }, [applyResumeId, savedResumes, activeRole, activeSkills, activeSummary, activeEmployment, activeLocation]);
 
   const generate = async (t: InterviewType, detail?: string) => {
     if (!job) return;
@@ -977,10 +983,11 @@ export function InterviewPrepView({
     return <div className="h-64 animate-pulse rounded-2xl bg-secondary" />;
   }
 
-  /* ----- No resume yet (main picker page only): "Start with your resume" upload
-          step. Saving a resume flips this gate and advances to the entry screen. */
-  if (!lockedType && !hasResume && !initialSaved) {
-    return <PrepResumeUpload />;
+  /* ----- "Start with your resume" (main picker page only): choose a saved resume
+          or upload a new one. Picking either advances to the entry screen. On a
+          locked route the active resume is used directly, so this is skipped. */
+  if (!lockedType && !initialSaved && !pickedResume) {
+    return <PrepResumeUpload onPicked={() => setPickedResume(true)} />;
   }
 
   /* ----- The "What are you preparing for?" entry screen. On the main picker page

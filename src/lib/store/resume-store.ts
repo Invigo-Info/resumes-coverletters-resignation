@@ -781,12 +781,20 @@ export const useResumeStore = create<ResumeState>()(
   // "Import from LinkedIn" banner stays hidden. reset() below is the from-scratch
   // path and leaves importedResume false, so the banner shows there.
   hydrate: (data) =>
-    set((s) => ({
-      ...s,
-      ...withUniqueIds(data),
-      unlockedSections: ["personal"],
-      importedResume: true,
-    })),
+    set((s) => {
+      const merged = { ...s, ...withUniqueIds(data), importedResume: true };
+      return {
+        ...merged,
+        // An imported resume arrives complete, so every parsed section is
+        // immediately reachable and editable - exactly like opening a saved
+        // draft (see loadDocument). This includes the custom "extra" sections
+        // lifted from the upload (Projects, Certifications, Internships, ...),
+        // which would otherwise sit locked and invisible behind the guided
+        // flow. A from-scratch resume still starts guided: it uses reset()
+        // (unlockedSections: ["personal"]), never hydrate().
+        unlockedSections: [...merged.sectionOrder],
+      };
+    }),
   reset: () => set({ ...emptyResume(), id: newResumeId() }),
   loadDocument: (id, data) =>
     set((s) => {

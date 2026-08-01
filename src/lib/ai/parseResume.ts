@@ -53,8 +53,16 @@ interface AiLink {
   title?: string;
   url?: string;
 }
-/** The full loose shape the `extractResume` AI task returns before mapping. */
-interface AiResume {
+/** Any resume section without a dedicated home (Projects, Certifications, ...). */
+interface AiExtraSection {
+  header?: string;
+  subheader?: string;
+  bullets?: string[];
+}
+/** The full loose shape the `extractResume` AI task returns before mapping.
+ *  Also the shape a structured provider (e.g. the LinkedIn data API) hands back,
+ *  so both paths share one mapper. */
+export interface AiResume {
   firstName?: string;
   lastName?: string;
   jobTitle?: string;
@@ -71,6 +79,7 @@ interface AiResume {
   hobbies?: string | string[];
   references?: AiReference[];
   links?: AiLink[];
+  extraSections?: AiExtraSection[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -92,6 +101,16 @@ function toParagraphs(text: string): string {
     .map((b) => escapeHtml(b.trim()).replace(/\n/g, "<br/>"))
     .filter(Boolean);
   return blocks.length ? blocks.map((b) => `<p>${b}</p>`).join("") : "";
+}
+
+/** A section heading written in ALL CAPS (a styled heading) reads better as Title
+ *  Case in the editor; the resume template still uppercases it when it renders.
+ *  Mixed-case headings are left exactly as the resume wrote them. */
+function tidyHeading(s: string): string {
+  if (s && s === s.toUpperCase() && /[A-Z]/.test(s)) {
+    return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return s;
 }
 
 /** Bullet strings → a single <ul>. */
@@ -198,6 +217,42 @@ function mapAdditional(d: AiResume): AdditionalSection[] {
         id: `lnk-up-${i + 1}`,
         title: l.title?.trim() || "",
         url: l.url?.trim() || "",
+      })),
+    });
+  }
+
+  // Any section the resume had that has no dedicated home above (Projects,
+  // Certifications, Internships, Volunteering, Awards, Publications, ...) becomes
+  // a Custom additional section titled with the resume's OWN heading. Items that
+  // share a heading are GROUPED into ONE section: e.g. several projects all land
+  // in a single "Projects" section as separate entries (one per project name), so
+  // the left column shows one section per heading, never one section per item.
+  const extras = (d.extraSections ?? []).filter((s) => {
+    const header = (s.header ?? "").trim();
+    return header && ((s.bullets?.length ?? 0) > 0 || (s.subheader ?? "").trim());
+  });
+  const groups = new Map<string, AiExtraSection[]>();
+  for (const s of extras) {
+    const header = tidyHeading((s.header ?? "").trim());
+    const list = groups.get(header);
+    if (list) list.push(s);
+    else groups.set(header, [s]);
+  }
+  let gi = 0;
+  for (const [header, items] of groups) {
+    gi += 1;
+    out.push({
+      id: `add-extra-${gi}`,
+      type: "custom",
+      title: header,
+      entries: items.map((s, j) => ({
+        id: `ext-${gi}-${j + 1}`,
+        // The item's own name (e.g. a project title) becomes the entry header, so
+        // each project shows by name inside the one section. A plain-list section
+        // (no per-item name) keeps an empty header and just carries its bullets.
+        header: s.subheader?.trim() || "",
+        subheader: "",
+        body: bulletsToHtml(s.bullets ?? []),
       })),
     });
   }
@@ -363,6 +418,17 @@ export async function parseResumeText(text: string): Promise<Partial<ResumeState
   if (json.fallback) throw new Error("parse-unavailable"); // no API key on server
   if (!json.data) throw new Error("parse-empty");
   const mapped = mapToResume(json.data as AiResume);
+  if (!isUsable(mapped)) throw new Error("parse-unreadable");
+  return mapped;
+}
+
+/**
+ * Map already-structured extraction JSON (from the LinkedIn data provider) into
+ * the builder's shape - no AI round-trip, since the provider's data is clean and
+ * complete. Throws when it holds nothing usable, so the caller can fall back.
+ */
+export function resumeFromExtraction(data: AiResume): Partial<ResumeState> {
+  const mapped = mapToResume(data);
   if (!isUsable(mapped)) throw new Error("parse-unreadable");
   return mapped;
 }

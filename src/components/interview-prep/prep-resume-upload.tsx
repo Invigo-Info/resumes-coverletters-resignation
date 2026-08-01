@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import { FileUp, ChevronDown, ChevronRight } from "lucide-react";
+import { FileUp, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   UploadingResume,
@@ -17,7 +17,12 @@ import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs"
 import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/resume-store";
-import { saveActiveResume } from "@/lib/store/documents-store";
+import {
+  saveActiveResume,
+  useDocumentsStore,
+  type ResumeRecord,
+} from "@/lib/store/documents-store";
+import { useApplyStore } from "@/lib/store/apply-store";
 import { parseResume } from "@/lib/ai/parseResume";
 import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
 import {
@@ -27,21 +32,43 @@ import {
 } from "@/lib/dropbox";
 
 /**
- * The interview-prep entry step shown when the user has no resume yet. They add a
- * resume (device file, cloud source, or LinkedIn) which the AI scans to build the
- * role-specific prep; once the resume is saved to the documents list the parent
- * advances to the "What are you preparing for?" screen.
+ * The interview-prep "Start with your resume" step. The candidate chooses which
+ * resume to build the prep from: pick one already saved to their account, or add
+ * a new one (device file, cloud source, or LinkedIn). Either choice loads that
+ * resume into the editor store and calls `onPicked`, which advances the parent to
+ * the "What are you preparing for?" screen.
  */
-export function PrepResumeUpload() {
+export function PrepResumeUpload({
+  onPicked,
+}: {
+  /** Fired once a resume is chosen (saved pick or a fresh upload) so the parent
+   *  can advance to the prep flow using that resume. */
+  onPicked?: () => void;
+} = {}) {
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
-  const [open, setOpen] = useState(true);
+  const loadDocument = useResumeStore((s) => s.loadDocument);
+  const savedResumes = useDocumentsStore((s) => s.resumes);
+  const setApplyResumeId = useApplyStore((s) => s.setResumeId);
+  // Saved resumes lead (expanded) when the user has any; the upload card then
+  // starts collapsed as the secondary path. With no saved resumes, upload leads.
+  const hasSaved = savedResumes.length > 0;
+  const [savedOpen, setSavedOpen] = useState(true);
+  const [open, setOpen] = useState(!hasSaved);
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [googleOpen, setGoogleOpen] = useState(false);
   const [linkedInOpen, setLinkedInOpen] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use an existing saved resume: load it into the editor store so the prep is
+  // grounded in its data, remember which one, then advance.
+  function useSaved(rec: ResumeRecord) {
+    loadDocument(rec.id, rec.data);
+    setApplyResumeId(rec.id);
+    onPicked?.();
+  }
 
   // Parse the file, hydrate the resume store, then save it as a document. Saving
   // flips the parent's "has resume" gate, which swaps this screen for the prep
@@ -63,6 +90,7 @@ export function PrepResumeUpload() {
       setPhase("filling"); // show the parsed resume briefly as fields "fill"
       await new Promise((r) => setTimeout(r, 1800));
       saveActiveResume();
+      onPicked?.();
     } catch {
       setPhase(null);
       toast.error("We couldn't read that resume", {
@@ -116,7 +144,59 @@ export function PrepResumeUpload() {
         }}
       />
 
-      <div className="mt-8">
+      {/* Use a saved resume - only when the account has at least one. Lists every
+          saved resume; picking one loads it and advances to the prep flow. */}
+      {hasSaved && (
+        <div className="mt-8">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-black/5">
+            <button
+              type="button"
+              onClick={() => setSavedOpen((v) => !v)}
+              aria-expanded={savedOpen}
+              className="flex w-full cursor-pointer items-center gap-4 px-6 py-5 text-left outline-none"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-sm">
+                <FileText className="size-5" />
+              </span>
+              <span className="flex-1">
+                <span className="block text-lg font-bold text-foreground">
+                  Use a saved resume
+                </span>
+                <span className="block text-sm text-muted-foreground">
+                  From your account
+                </span>
+              </span>
+              <ChevronDown
+                className={cn(
+                  "size-5 shrink-0 text-primary transition-transform",
+                  !savedOpen && "-rotate-90"
+                )}
+              />
+            </button>
+
+            {savedOpen && (
+              <div className="px-6 pb-2">
+                {savedResumes.map((rec) => (
+                  <button
+                    key={rec.id}
+                    type="button"
+                    onClick={() => useSaved(rec)}
+                    className="flex w-full cursor-pointer items-center gap-3 border-t border-border py-3.5 text-left outline-none transition-colors hover:bg-muted/50"
+                  >
+                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 truncate text-sm font-semibold text-foreground">
+                      {rec.title || "Untitled resume"}
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className={cn(hasSaved ? "mt-4" : "mt-8")}>
         <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-black/5">
           <button
             type="button"

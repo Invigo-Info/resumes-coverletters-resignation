@@ -18,6 +18,8 @@ export interface ScoreResume {
   summary: string;
   /** Employment titles + descriptions concatenated as plain text. */
   experience: string;
+  /** Candidate location (city/region), used e.g. to shape a market salary range. */
+  location?: string;
 }
 
 /** One checklist row inside a category (a job signal + whether the resume covers it). */

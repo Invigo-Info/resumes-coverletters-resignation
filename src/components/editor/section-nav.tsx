@@ -94,14 +94,30 @@ export function SectionNav({
     setOverKey(null);
   }
 
-  // Custom sections are numbered in the sidebar (display only) when more than
-  // one exists, based on their CURRENT order - e.g. "1 Custom section",
-  // "2 Publications". Deleting or reordering recomputes these automatically; the
-  // number is never part of the stored title.
-  const customIds = order.filter(
-    (k) => additional.find((a) => a.id === k)?.type === "custom"
-  );
-  const customNumber = new Map(customIds.map((id, i) => [id, i + 1]));
+  // Custom sections are numbered in the sidebar (display only) ONLY within a
+  // group that shares the same title - e.g. two "Custom section"s become
+  // "1 Custom section" / "2 Custom section". A custom section whose title is
+  // unique among customs (Projects, Certifications, Awards, ...) reads clearly on
+  // its own and gets no number. The number is never part of the stored title.
+  const customTitleTotal = new Map<string, number>();
+  for (const k of order) {
+    const sec = additional.find((a) => a.id === k);
+    if (sec?.type === "custom") {
+      const t = sec.title.trim();
+      customTitleTotal.set(t, (customTitleTotal.get(t) ?? 0) + 1);
+    }
+  }
+  const customTitleSeen = new Map<string, number>();
+  const customNumber = new Map<string, number>();
+  for (const k of order) {
+    const sec = additional.find((a) => a.id === k);
+    if (sec?.type === "custom") {
+      const t = sec.title.trim();
+      const seen = (customTitleSeen.get(t) ?? 0) + 1;
+      customTitleSeen.set(t, seen);
+      if ((customTitleTotal.get(t) ?? 0) > 1) customNumber.set(sec.id, seen);
+    }
+  }
 
   // Resolve label/icon/reorderable for a key: built-in sections come from
   // SECTION_META; user-added ones derive theirs from the additional-section config.
@@ -114,8 +130,7 @@ export function SectionNav({
     }
     const sec = additional.find((a) => a.id === key);
     if (sec) {
-      const num =
-        sec.type === "custom" && customIds.length > 1 ? customNumber.get(sec.id) : null;
+      const num = sec.type === "custom" ? customNumber.get(sec.id) ?? null : null;
       return {
         label: num ? `${num} ${sec.title}` : sec.title,
         icon: ADDITIONAL_CONFIG[sec.type].icon,
