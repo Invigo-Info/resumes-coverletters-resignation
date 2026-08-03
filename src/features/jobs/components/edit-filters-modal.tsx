@@ -6,7 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { JobTitleFilterInput } from "@/features/jobs/components/job-title-filter-input";
 import { LocationFilterInput } from "@/features/jobs/components/location-filter-input";
 import {

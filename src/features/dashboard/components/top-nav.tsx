@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Send, Plus, Settings, CircleHelp, LogOut, LayoutDashboard } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { useResumeLimit } from "@/permissions/resume-limit";
 import { cn } from "@/utilities/utils";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/common/dropdown-menu";
 
 /** Primary section tabs shown in the top navigation bar. */
 const TABS = [

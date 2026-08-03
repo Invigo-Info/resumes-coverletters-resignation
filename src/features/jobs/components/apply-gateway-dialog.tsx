@@ -8,7 +8,7 @@ import {
   SkipForward,
   ChevronRight,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/common/dialog";
 import { CompanyLogo } from "./company-logo";
 import { cn } from "@/utilities/utils";
 import type { JobPosting } from "@/features/jobs/lib/job-search";

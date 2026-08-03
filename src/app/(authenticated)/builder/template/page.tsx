@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { BackPill } from "@/components/layout/back-pill";
-import { TemplateGallery } from "@/components/templates/template-gallery";
+import { TemplateGallery } from "@/features/resume-builder/components/templates/template-gallery";
 
 // Template picker page: lets the user choose an ATS-friendly resume template
 // before (or while) building. Selection can be changed again later.

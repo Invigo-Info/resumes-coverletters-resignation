@@ -7,8 +7,8 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { LinkedInIcon } from "@/components/brand/source-icons";
+} from "@/components/common/dialog";
+import { LinkedInIcon } from "@/components/common/brand/source-icons";
 
 const cancelBtn =
   "flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70";

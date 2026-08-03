@@ -18,7 +18,7 @@ import {
 import { cn } from "@/utilities/utils";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
-import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
+import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { LivePreview } from "@/features/resume-builder/components/live-preview";
 import { ScoreRing } from "@/features/jobs/components/match-scoreboard";

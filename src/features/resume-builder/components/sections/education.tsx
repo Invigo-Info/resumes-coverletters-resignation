@@ -16,7 +16,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /** Join start/end into a "start - end" range, skipping blanks. */
 const dateRange = (a: string, b: string) => [a, b].filter(Boolean).join(" - ");

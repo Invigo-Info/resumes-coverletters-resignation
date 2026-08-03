@@ -6,15 +6,15 @@ import { signOut, useSession } from "next-auth/react";
 import { Send, Loader2, UserRoundX, SlidersHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utilities/utils";
-import { Input } from "@/components/ui/input";
-import { PrimaryButton } from "@/components/brand/brand-buttons";
+import { Input } from "@/components/forms/input";
+import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /**
  * Remove every locally-stored piece of account data on deletion: resumes,

@@ -19,7 +19,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import {
   fetchServerDocuments,
   type ServerDocument,

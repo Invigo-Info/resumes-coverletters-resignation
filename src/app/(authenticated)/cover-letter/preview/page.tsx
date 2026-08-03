@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, PenLine, Palette, Download, Loader2, PartyPopper } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { CoverLetterPreview } from "@/features/cover-letter/components/cover-letter-preview";
 import { CoverLetterDesignPanel } from "@/features/cover-letter/components/design-panel";
 import { WriteMode, type Section as WriteSection } from "@/features/cover-letter/components/write-mode";

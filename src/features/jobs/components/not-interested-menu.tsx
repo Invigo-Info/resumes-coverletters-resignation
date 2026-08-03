@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/common/dropdown-menu";
 
 /** The reasons a user can give when dismissing a job (from the screenshots). */
 export const NOT_INTERESTED_REASONS = [

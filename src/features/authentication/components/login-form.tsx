@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 
 /** Google brand "G" mark, inline SVG (an icon, not an emoji). */
 function GoogleGlyph() {

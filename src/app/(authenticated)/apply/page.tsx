@@ -11,7 +11,7 @@ import {
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";

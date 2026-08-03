@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Copy, Check, ExternalLink, ChevronRight } from "lucide-react";
-import { TwitterIcon, FacebookIcon, LinkedInIcon } from "@/components/brand/source-icons";
+import { TwitterIcon, FacebookIcon, LinkedInIcon } from "@/components/common/brand/source-icons";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /**
  * A plausible public share link for a document (no backend, client only).

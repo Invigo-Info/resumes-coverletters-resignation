@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/forms/input";
 import { suggestOptions } from "@/services/ai/mock";
 
 /** Lowercase + strip diacritics for matching (mirrors AutocompleteInput). */

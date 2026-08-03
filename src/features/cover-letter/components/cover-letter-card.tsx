@@ -12,7 +12,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /** Pill-style action button used for the card's Download/Edit/Copy/Share/Delete row. */
 function ActionButton({

@@ -2,8 +2,8 @@
 
 import { cloneElement, useId, useRef, useState, type ReactNode } from "react";
 import { Check, Pencil } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/forms/label";
+import { Input } from "@/components/forms/input";
 import { cn } from "@/utilities/utils";
 
 /** Labeled text input - the standard single-line form field used across sections. */

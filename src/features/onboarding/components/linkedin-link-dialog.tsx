@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { LinkedInIcon } from "@/components/brand/source-icons";
+import { LinkedInIcon } from "@/components/common/brand/source-icons";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { useResumeStore } from "@/features/resume-builder/store/resume-store";
 import { parseResumeText } from "@/services/ai/parseResume";
 import { cn } from "@/utilities/utils";

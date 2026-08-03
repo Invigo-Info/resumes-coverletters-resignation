@@ -32,7 +32,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /** Strip HTML tags to plain text. */
 const strip = (html: string) => html.replace(/<[^>]*>/g, "").trim();

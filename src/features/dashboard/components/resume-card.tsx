@@ -8,13 +8,13 @@ import type { ResumeDoc } from "@/utilities/mock-data";
 import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { cn } from "@/utilities/utils";
 import { TailorDialog } from "./tailor-dialog";
-import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
+import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 
 /**
  * Visual weight for the card's action row. Download and Edit are the two

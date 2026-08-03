@@ -4,7 +4,7 @@ import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/utilities/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/common/button"
 import { XIcon } from "lucide-react"
 
 /** Root of a modal dialog (Base UI Dialog primitive). */

@@ -18,7 +18,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { cn } from "@/utilities/utils";
 import {
   useResumeStore,

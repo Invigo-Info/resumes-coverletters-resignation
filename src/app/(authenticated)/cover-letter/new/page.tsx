@@ -12,7 +12,7 @@ import {
   Loader2,
   RotateCcw,
 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { HomeButton } from "@/components/layout/home-button";
@@ -21,7 +21,7 @@ import {
   DropboxIcon,
   GoogleDriveIcon,
   LinkedInIcon,
-} from "@/components/brand/source-icons";
+} from "@/components/common/brand/source-icons";
 import {
   GoogleConsentDialog,
   LinkedInImportDialog,

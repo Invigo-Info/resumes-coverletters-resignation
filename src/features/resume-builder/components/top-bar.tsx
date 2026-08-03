@@ -22,7 +22,7 @@ import { useResumeStore, getProgress } from "@/features/resume-builder/store/res
 import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
-import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
+import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
 
 /** The three top-level editor stages the TopBar switches between. */
 export type EditorTab = "write" | "design" | "improve";

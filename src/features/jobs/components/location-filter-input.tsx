@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/forms/input";
 import { searchLocations } from "@/features/jobs/lib/locations";
 
 /** Lowercase + strip diacritics for match highlighting. */

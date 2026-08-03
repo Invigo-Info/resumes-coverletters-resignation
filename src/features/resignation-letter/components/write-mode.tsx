@@ -16,7 +16,7 @@ import {
 import { useResignationLetterStore } from "@/features/resignation-letter/store/resignation-letter-store";
 import { useResignationLetterSaveStatus } from "@/features/resignation-letter/store/resignation-letter-documents-store";
 import { RichTextEditor } from "@/features/resume-builder/components/rich-text-editor";
-import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { bodyToHtml, htmlToText } from "@/features/resignation-letter/lib/format";
 import { improveLetterBody } from "@/features/resignation-letter/lib/ai";
 import { ResignationLetterPreview } from "./resignation-letter-preview";

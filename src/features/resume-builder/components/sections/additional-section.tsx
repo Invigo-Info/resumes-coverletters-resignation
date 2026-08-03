@@ -9,21 +9,21 @@ import {
   type AdditionalSection as TAdditionalSection,
   type AdditionalEntry,
 } from "@/features/resume-builder/store/resume-store";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/forms/input";
+import { Label } from "@/components/forms/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/forms/select";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { EditableSectionHeading } from "./field";
 import { EntryCard, AddMoreButton } from "./entry-card";
 import { RichTextEditor } from "../rich-text-editor";

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Plus, RotateCcw, ChevronRight } from "lucide-react";
-import { PrimaryButton } from "@/components/brand/brand-buttons";
+import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { ResignationLetterCard } from "@/features/resignation-letter/components/resignation-letter-card";
 import {
   useResignationLetterStore,

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { PrimaryButton } from "@/components/brand/brand-buttons";
+import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 
 /**
  * Dashboard empty state shown when the user has no documents yet. Illustrates

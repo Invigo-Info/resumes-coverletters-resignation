@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 
 /** Primary call-to-action link, sized for marketing (larger than app buttons). */

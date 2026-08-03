@@ -25,11 +25,11 @@ import {
   getImproveSuggestions,
   type SectionKey,
 } from "@/features/resume-builder/store/resume-store";
-import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
-import { Confetti } from "@/components/brand/confetti";
+import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
+import { Confetti } from "@/components/common/brand/confetti";
 import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
-import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
+import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
 import { cn } from "@/utilities/utils";
 
 // Maps each improvement-suggestion key to the icon shown beside it in the

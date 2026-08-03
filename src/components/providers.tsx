@@ -1,7 +1,7 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
+import { AnalyticsTracker } from "@/components/common/analytics/analytics-tracker";
 import { AccountScope } from "@/features/authentication/components/account-scope";
 
 /** Wraps the app so client components can read the Auth.js session. */

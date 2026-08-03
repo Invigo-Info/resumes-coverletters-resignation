@@ -9,8 +9,8 @@ import {
   Laugh,
   PartyPopper,
 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
-import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { LogoMark } from "@/components/common/brand/logo-mark";
+import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { HelpPill } from "@/components/layout/help-pill";
 import { HomeButton } from "@/components/layout/home-button";
 import { ResignationLetterPreview } from "./resignation-letter-preview";

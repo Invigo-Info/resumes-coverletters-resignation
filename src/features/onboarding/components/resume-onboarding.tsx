@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Sparkles, ScanLine, FileUp, ChevronRight, X, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { StartOptionCard } from "@/features/onboarding/components/start-option-card";
@@ -18,7 +18,7 @@ import {
   DropboxIcon,
   GoogleDriveIcon,
   LinkedInIcon,
-} from "@/components/brand/source-icons";
+} from "@/components/common/brand/source-icons";
 import { GoogleConsentDialog } from "@/features/onboarding/components/cloud-source-dialogs";
 import { LinkedInLinkDialog } from "@/features/onboarding/components/linkedin-link-dialog";
 import { cn } from "@/utilities/utils";

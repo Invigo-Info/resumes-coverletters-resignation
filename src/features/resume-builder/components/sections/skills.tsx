@@ -5,15 +5,15 @@ import { RefreshCw, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore, type SkillEntry } from "@/features/resume-builder/store/resume-store";
 import { generateSkills } from "@/services/ai/mock";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/forms/input";
+import { Label } from "@/components/forms/label";
 import { EditableSectionHeading } from "./field";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { cn } from "@/utilities/utils";
 
 /** A resume reads as thin below this many skills, and full at the upper bound. */

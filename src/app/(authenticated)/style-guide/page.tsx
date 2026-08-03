@@ -1,17 +1,17 @@
 import { Download, Plus, ChevronRight, Share2 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import {
   PrimaryButton,
   GhostButton,
   AiButton,
-} from "@/components/brand/brand-buttons";
+} from "@/components/common/brand/brand-buttons";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Card } from "@/components/common/card";
+import { Input } from "@/components/forms/input";
+import { Label } from "@/components/forms/label";
+import { Badge } from "@/components/common/badge";
+import { Progress } from "@/components/common/progress";
 
 // Single color/gradient swatch tile: a colored block plus its name and optional usage hint.
 function Swatch({

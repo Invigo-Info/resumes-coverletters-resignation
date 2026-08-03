@@ -12,7 +12,7 @@ import {
   DropboxIcon,
   GoogleDriveIcon,
   LinkedInIcon,
-} from "@/components/brand/source-icons";
+} from "@/components/common/brand/source-icons";
 import { GoogleConsentDialog } from "@/features/onboarding/components/cloud-source-dialogs";
 import { LinkedInLinkDialog } from "@/features/onboarding/components/linkedin-link-dialog";
 import { cn } from "@/utilities/utils";

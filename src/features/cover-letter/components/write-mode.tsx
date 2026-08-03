@@ -6,7 +6,7 @@ import { useCoverLetterStore } from "@/features/cover-letter/store/cover-letter-
 import { useCoverLetterSaveStatus } from "@/features/cover-letter/store/cover-letter-documents-store";
 import { RichTextEditor } from "@/features/resume-builder/components/rich-text-editor";
 import { bodyToHtml } from "@/features/cover-letter/lib/format";
-import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/utilities/utils";
 import { CLField } from "./widgets";

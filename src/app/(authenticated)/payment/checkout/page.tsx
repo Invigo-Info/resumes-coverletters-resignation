@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { Lock, CircleCheck, Loader2, ShieldAlert } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
 import { getPlan } from "@/services/payments/plans";
 

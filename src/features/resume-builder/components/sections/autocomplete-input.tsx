@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/forms/input";
 import { cn } from "@/utilities/utils";
 import { suggestOptions } from "@/services/ai/mock";
 

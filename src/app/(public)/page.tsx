@@ -3,7 +3,7 @@ import { TopNav } from "@/features/dashboard/components/top-nav";
 import { DashboardResumes } from "@/features/dashboard/components/dashboard-resumes";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { LandingPage } from "@/components/marketing/landing-page";
+import { LandingPage } from "@/features/marketing/components/landing-page";
 
 /**
  * Site root. Signed-out visitors get the public marketing landing (indexable,

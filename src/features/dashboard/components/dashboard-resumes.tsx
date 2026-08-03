@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
-import { GhostButton } from "@/components/brand/brand-buttons";
+import { GhostButton } from "@/components/common/brand/brand-buttons";
 import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { useResumeLimit } from "@/permissions/resume-limit";
 import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";

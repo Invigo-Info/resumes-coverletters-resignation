@@ -26,7 +26,7 @@ import { useResumeStore, type SectionKey } from "@/features/resume-builder/store
 import { SECTION_META } from "../section-nav";
 import { ADDITIONAL_CONFIG } from "./additional-config";
 import { SectionHeading } from "./field";
-import { PrimaryButton, GhostButton } from "@/components/brand/brand-buttons";
+import { PrimaryButton, GhostButton } from "@/components/common/brand/brand-buttons";
 
 /**
  * Returns a lookup that resolves any section key to its display meta

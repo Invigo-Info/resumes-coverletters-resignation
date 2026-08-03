@@ -25,8 +25,8 @@ import {
   Cactus_Classical_Serif,
 } from "next/font/google";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/common/tooltip";
+import { Toaster } from "@/components/common/sonner";
 import { Providers } from "@/components/providers";
 import { siteUrl } from "@/config/site";
 

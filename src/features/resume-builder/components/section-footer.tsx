@@ -7,7 +7,7 @@ import {
   isSectionComplete,
   type SectionKey,
 } from "@/features/resume-builder/store/resume-store";
-import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
+import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { cn } from "@/utilities/utils";
 import { SECTION_META } from "./section-nav";
 

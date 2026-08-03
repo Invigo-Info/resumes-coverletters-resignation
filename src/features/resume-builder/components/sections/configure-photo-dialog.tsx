@@ -14,7 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/common/dialog";
 import { cn } from "@/utilities/utils";
 
 /** Exported avatar size (square canvas), and the crop-circle share of the frame. */

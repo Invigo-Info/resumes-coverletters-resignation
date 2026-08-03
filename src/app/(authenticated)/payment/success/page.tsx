@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CircleCheck } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
-import { PrimaryButton } from "@/components/brand/brand-buttons";
+import { LogoMark } from "@/components/common/brand/logo-mark";
+import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { UnlockPremium } from "@/features/billing/components/unlock-premium";
 import { getStripe } from "@/services/payments/server";
 import { auth } from "@/features/authentication/auth";

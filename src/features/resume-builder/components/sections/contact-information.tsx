@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Mail, Phone, MapPin, X } from "lucide-react";
-import { LinkedInIcon } from "@/components/brand/source-icons";
+import { LinkedInIcon } from "@/components/common/brand/source-icons";
 import { useResumeStore } from "@/features/resume-builder/store/resume-store";
 import { LinkedInImportDialog } from "./linkedin-import-dialog";
 import {

@@ -11,7 +11,7 @@ import {
   CircleCheck,
   Star,
 } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo-mark";
+import { LogoMark } from "@/components/common/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
 import { PLANS, type PlanId } from "@/services/payments/plans";
 import { cn } from "@/utilities/utils";
