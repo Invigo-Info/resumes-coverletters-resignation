@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { CoverLetterCard } from "./cover-letter-card";
-import { EmptyState } from "@/components/dashboard/empty-state";
+import { EmptyState } from "@/features/dashboard/components/empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { useCoverLetterStore, newCoverLetterId } from "@/lib/store/cover-letter-store";
 import {

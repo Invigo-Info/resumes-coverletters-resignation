@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 
 /** Primary call-to-action link, sized for marketing (larger than app buttons). */
 function CtaPrimary({

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/services/payments/server";
 import { getPlan } from "@/services/payments/plans";
-import { auth } from "@/auth";
+import { auth } from "@/features/authentication/auth";
 
 /**
  * Create a Checkout Session for the chosen plan and return its client secret.

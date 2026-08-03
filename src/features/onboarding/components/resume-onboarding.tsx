@@ -9,18 +9,18 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
-import { StartOptionCard } from "@/components/creation/start-option-card";
+import { StartOptionCard } from "@/features/onboarding/components/start-option-card";
 import {
   UploadingResume,
   type UploadPhase,
-} from "@/components/creation/uploading-resume";
+} from "@/features/onboarding/components/uploading-resume";
 import {
   DropboxIcon,
   GoogleDriveIcon,
   LinkedInIcon,
 } from "@/components/brand/source-icons";
-import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
-import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
+import { GoogleConsentDialog } from "@/features/onboarding/components/cloud-source-dialogs";
+import { LinkedInLinkDialog } from "@/features/onboarding/components/linkedin-link-dialog";
 import { cn } from "@/utilities/utils";
 import { useResumeLimit } from "@/permissions/resume-limit";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";

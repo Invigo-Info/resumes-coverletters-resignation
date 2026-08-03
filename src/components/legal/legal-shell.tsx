@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 
 /**
  * Shared chrome for the legal pages (Terms, Privacy): brand header linking home,

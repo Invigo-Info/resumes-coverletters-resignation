@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/features/authentication/auth";
 import { updateUserName, deleteUser } from "@/services/database/users";
 import { getStripe } from "@/services/payments/server";
 

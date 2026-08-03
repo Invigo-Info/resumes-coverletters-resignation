@@ -7,7 +7,7 @@ import {
 } from "@/validation/upload-validation";
 import { aiBodySchema, type Task } from "@/validation/schemas";
 import { limit, clientIp } from "@/permissions/rate-limit";
-import { auth } from "@/auth";
+import { auth } from "@/features/authentication/auth";
 import type { ComputedExperience } from "@/utilities/experience";
 import { validateSummary, repairInstruction } from "@/validation/summary-validate";
 

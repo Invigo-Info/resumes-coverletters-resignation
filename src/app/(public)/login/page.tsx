@@ -1,5 +1,5 @@
-import { LoginForm } from "@/components/auth/login-form";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { LoginForm } from "@/features/authentication/components/login-form";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 
 // Login page: renders the email/password form, optionally with a Google button.

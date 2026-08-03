@@ -1,7 +1,7 @@
-import { TopNav } from "@/components/dashboard/top-nav";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { TopNav } from "@/features/dashboard/components/top-nav";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { UserDashboard } from "@/components/dashboard/user-dashboard";
+import { UserDashboard } from "@/features/dashboard/components/user-dashboard";
 
 // Unified account dashboard: a single overview of everything the user has stored
 // (resumes, cover letters, resignation letters, saved jobs, interview prep).

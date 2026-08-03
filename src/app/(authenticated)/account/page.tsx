@@ -1,6 +1,6 @@
-import { TopNav } from "@/components/dashboard/top-nav";
-import { AccountSettings } from "@/components/account/account-settings";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { TopNav } from "@/features/dashboard/components/top-nav";
+import { AccountSettings } from "@/features/user-profile/components/account-settings";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 
 // Account settings page: profile/name editing and account deletion for the signed-in user.

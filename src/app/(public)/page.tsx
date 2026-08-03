@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
-import { TopNav } from "@/components/dashboard/top-nav";
-import { DashboardResumes } from "@/components/dashboard/dashboard-resumes";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { auth } from "@/features/authentication/auth";
+import { TopNav } from "@/features/dashboard/components/top-nav";
+import { DashboardResumes } from "@/features/dashboard/components/dashboard-resumes";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 import { LandingPage } from "@/components/marketing/landing-page";
 

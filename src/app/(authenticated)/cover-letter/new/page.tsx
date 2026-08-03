@@ -16,7 +16,7 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HelpPill } from "@/components/layout/help-pill";
 import { HomeButton } from "@/components/layout/home-button";
-import { StartOptionCard } from "@/components/creation/start-option-card";
+import { StartOptionCard } from "@/features/onboarding/components/start-option-card";
 import {
   DropboxIcon,
   GoogleDriveIcon,
@@ -25,7 +25,7 @@ import {
 import {
   GoogleConsentDialog,
   LinkedInImportDialog,
-} from "@/components/creation/cloud-source-dialogs";
+} from "@/features/onboarding/components/cloud-source-dialogs";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
 import { useDocumentsStore } from "@/lib/store/documents-store";

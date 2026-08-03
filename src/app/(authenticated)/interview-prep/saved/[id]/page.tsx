@@ -1,5 +1,5 @@
-import { TopNav } from "@/components/dashboard/top-nav";
-import { SiteFooter } from "@/components/dashboard/site-footer";
+import { TopNav } from "@/features/dashboard/components/top-nav";
+import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
 import { ReopenSavedPrep } from "@/components/interview-prep/reopen-saved-prep";
 
