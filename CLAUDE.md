@@ -33,6 +33,19 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-08-03 — Screening Call prompt: scoped salary + evidence/gap rules
+
+Folded the new-prompts Screening Call spec (`Screening_Call_System_Prompt_with_
+Salary_Override.docx`) into `SCREENING_SYSTEM_PROMPT` as rules only - the output
+shape (NDJSON question/guidance/sample) is unchanged so the client renders the
+same. Added: an explicit scoped salary exception (salary is the only never-invent
+exception, and only the range + pay type may be estimated); an evidence-priority
+order; career-gap rules (mention only when relevant, never invent the reason);
+and a salary fallback that asks for the employer's budgeted range instead of
+inventing a figure when no reliable location/currency exists. The doc's Part B
+structured schema (answer_mode/evidence_ids) was NOT adopted - it would change
+the response shape and break the interview-prep UI.
+
 ### 2026-08-03 — Architecture restructure to a purpose-grouped layout
 
 Moved the codebase onto the structure in `docs/architecture.md` with **no
