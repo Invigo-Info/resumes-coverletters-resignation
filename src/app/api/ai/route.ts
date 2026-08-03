@@ -335,15 +335,15 @@ OCCUPATION AWARENESS
 - First, silently classify the candidate's occupation, industry, specialisation, seniority, work environment, and whether the role is regulated or high-risk, so wording fits their real field and never borrows software/marketing/office language for an unrelated job.
 - For a student or entry-level candidate with little or no formal employment, draw on education, academic projects, internships, volunteering, clubs, extracurriculars, and coursework. It is fine for an answer to say this would be their first formal role. Never imply that school or unpaid work was paid employment.
 
-THE 7 SCREENING QUESTIONS (this order and purpose; adapt wording to the candidate)
-1. "Tell me about yourself."
-2. "Why are you looking for a new role?" (positive, future-focused)
-3. One primary skill, qualification, or experience check drawn from the resume.
-4. One additional role-specific skill or tool check drawn from the resume.
-5. Relevant experience duration, education, project, internship, or licence.
-6. Location, availability, start timing, schedule, relocation, or work setup.
-7. "What are your salary expectations?"
-No two questions may test the same thing with different wording.
+THE 7 SCREENING QUESTIONS (this order and purpose)
+1. "Tell me about yourself." (ask this VERBATIM - do NOT personalise it or add "your N years in ...").
+2. "Why are you looking for a new role?" (VERBATIM; positive, future-focused).
+3. One core skill or competency check - a SHORT, plain, single-topic question about a main skill the resume shows (e.g. "How do you manage a marketing budget?", "How do you approach test automation?").
+4. One tool or method check - short and direct, naming at most one area (e.g. "Which marketing automation tools do you use regularly?", "Which testing frameworks do you use?").
+5. One experience or scope check - short and direct (e.g. "Have you worked on both B2B and B2C campaigns?", "How large were the teams you led?").
+6. "Where are you based, and are you open to on-site work?" (lead with location and work setup; keep close to this wording).
+7. "What are your salary expectations?" (ask this VERBATIM).
+Keep questions 1, 2, and 7 word-for-word as written; make 3, 4, 5 short, plain, single-topic questions and keep 6 close to its wording. No two questions may test the same thing.
 
 STYLE - SHORT AND SIMPLE (important)
 - Questions: one short, direct question in plain English, about 6 to 14 words. Ask it straight - do NOT prefix it with a resume recap ("Your resume highlights...", "You have listed...", "Your resume states...", "You mentioned..."). If you must name a specific skill or fact, do it in a couple of words, then ask.
@@ -415,18 +415,18 @@ OCCUPATION AWARENESS
 - First, silently classify the candidate's occupation, industry, specialisation, seniority, work environment, and whether the role is regulated or high-risk, so wording fits their real field and never borrows software/marketing/office language for an unrelated job.
 - For a student or entry-level candidate with little or no formal employment, replace "most recent role" with a project, volunteering experience, school activity, or internship, and draw on education, academic projects, clubs, extracurriculars, and coursework. Never imply that school or unpaid work was formal paid employment.
 
-THE 7 MANAGER QUESTIONS (this order and purpose; adapt wording to the candidate)
-1. "Tell me about yourself."
-2. Walk me through your most recent role, internship, project, or activity.
-3. Professional-development direction (where the candidate wants to grow).
-4. A strong, supported achievement or result from the resume.
-5. A challenge, problem, failure, or difficult situation.
-6. Collaboration, stakeholder management, teamwork, communication, or leadership.
-7. A second role-specific management, decision-making, or motivation question.
-No two questions may test the same thing with different wording.
+THE 7 MANAGER QUESTIONS (this order and purpose)
+1. "Tell me about yourself." (ask this VERBATIM).
+2. "Walk me through your most recent role." (keep close to this wording; for a student or entry-level candidate, their most recent project, placement, or internship).
+3. A professional-development question - short and plain (e.g. "How do you see your professional development going forward?").
+4. A strong, supported achievement or result - anchor to ONE real metric stated crisply, then ask (e.g. "You grew revenue from 35% to 55% - how?"); if the resume has no metric, ask about a project they are proud of.
+5. A challenge, problem, failure, or difficult situation - short and plain (e.g. "Tell me about a time you had to align two teams.").
+6. Collaboration, stakeholder management, teamwork, communication, or leadership - short and plain.
+7. A second management, decision-making, process, or motivation question - short and plain.
+Keep questions 1 and 2 close to the canonical wording; make 3-7 short, single-ask questions. No two questions may test the same thing.
 
 TONE (deeper and evidence-based than a screening call)
-- Questions: deeper and evidence-based. Anchor to a specific resume fact or metric when it sharpens the question - state the fact crisply, then ask (for example: "You reduced reporting time by 65% - how did you do that?", "Walk me through your most recent role.", "Tell me about a project you're most proud of.", "How do you handle stakeholders who challenge your work?"). Keep it to one clear ask; do NOT pad with a long recap ("Your resume highlights...", "You have listed...", "Your resume states...").
+- Questions: deeper and evidence-based, but still SHORT - about 6 to 16 words, ONE clear ask. Anchor to a specific resume fact or metric when it sharpens the question - state ONE fact in a few words, then ask (for example: "You reduced reporting time by 65% - how did you do that?", "Walk me through your most recent role.", "Tell me about a project you're most proud of.", "How do you handle stakeholders who challenge your work?"). NEVER stack two or three facts or "and ... and" clauses into one long multi-line question, and do NOT pad with a recap ("Your resume highlights...", "As a leader of ...", "You have listed...", "Your resume states...").
 - Coaching tips: EXACTLY 3, each a substantive imperative of about 7 to 16 words. Structure them as: (1) lead with the business problem or context before the solution, (2) name the exact tools and decisions the candidate personally owned, (3) close with the supported result or lesson learned.
 
 PER-QUESTION OUTPUT
@@ -494,11 +494,11 @@ THE 7 TECHNICAL QUESTIONS (this order and purpose; adapt wording to the candidat
 Produce all SEVEN as distinct questions - exactly one for each area above. Never merge two areas into one question, and never stop before the seventh, even when the resume is short. No two questions may test the same thing with different wording.
 
 STYLE - SHORT AND SIMPLE
-- Questions: one short, direct, role-specific question in plain English, about 6 to 14 words. It MUST match the candidate's profession - for example: a Data Analyst gets data-modelling and data-quality questions; a Software Engineer gets testing, code-quality and system-design questions; a Marketing Manager gets campaign-measurement and lead-quality questions; a Registered Nurse gets patient-assessment and prioritisation questions; a Student gets tools-used and learning-quickly questions. Ask it straight - do NOT prefix it with a resume recap ("Your resume highlights...", "You have listed...", "Your resume states...").
-- Coaching tips: approximately 6 to 14 words each.
+- Questions: one short, direct, role-specific question in plain English, about 6 to 14 words. Name a concrete tool, skill, or method from the resume in the question where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?", "What tools do you use daily in your work?"), rather than an abstract "how do you stay current with technology" phrasing. It MUST match the candidate's profession - for example: a Data Analyst gets data-modelling and data-quality questions; a Software Engineer gets testing, code-quality and system-design questions; a Marketing Manager gets campaign-measurement and lead-quality questions; a Registered Nurse gets patient-assessment and prioritisation questions; a Student gets tools-used and learning-quickly questions. Ask it straight - do NOT prefix it with a resume recap ("Your resume highlights...", "You have listed...", "Your resume states...").
+- Coaching tips: SHORT (about 6 to 14 words each), directive, and naming SPECIFIC resume facts - actual tool names, a metric, a project, or an employer - like a coach pointing at the resume. Never give generic advice that could fit any candidate.
 
 PER-QUESTION OUTPUT (tips only - never a complete answer)
-- Each question includes EXACTLY 2 coaching tips: (1) anchor the answer to the specific skill, tool, project, or process named in the candidate's resume; (2) tell the candidate to explain the problem, the tool or method they chose, and the supported outcome.
+- Each question includes EXACTLY 2 coaching tips, each short and specific: Tip 1 names the exact tools or stack to lead with (e.g. "Lead with HubSpot, Google Analytics 4, Meta Ads - your current stack"). Tip 2 points to ONE concrete resume anchor - a dashboard built, a metric like a 42% lead lift, a project, or an employer (e.g. "The 42% qualified lead lift at BrightPath ties to keyword strategy"). Never write a generic tip that would fit any candidate ("reference specific learning methods", "explain your process for data validation").
 - Do NOT provide a sample answer for any question: OMIT the sample entirely (tips-only mode). Never write a complete spoken answer for a technical question.
 
 CANDIDATE QUESTIONS
@@ -1115,22 +1115,39 @@ experience: """${(resume.experience || "").slice(0, 2500)}"""`;
           ];
           const salaryClosing =
             SALARY_CLOSINGS[Math.floor(Math.random() * SALARY_CLOSINGS.length)];
+          // Restate the 7-question blueprint in the user turn (initial only) so it
+          // agrees with SCREENING_SYSTEM_PROMPT - models weight the task turn most,
+          // and without it the questions drift off-structure. For "get more" the
+          // blueprint is omitted (it would force the model back to the original 7).
+          const screeningBlueprint = more
+            ? ""
+            : `
+The 7 questions, in THIS order (keep 1, 2, 6, 7 close to the canonical wording below; make 3, 4, 5 short, plain, single-topic questions in the candidate's real field):
+1) "Tell me about yourself." (VERBATIM - do NOT personalise, no "your N years in ...")
+2) "Why are you looking for a new role?" (VERBATIM)
+3) A core skill/competency check - short and plain (e.g. "How do you manage a marketing budget?", "How do you approach test automation?").
+4) A tool/method check - short and plain (e.g. "Which marketing automation tools do you use regularly?", "Which testing frameworks do you use?").
+5) An experience/scope check - short and plain (e.g. "Have you worked on both B2B and B2C campaigns?", "How large were the teams you led?").
+6) "Where are you based, and are you open to on-site work?" (lead with location and work setup).
+7) "What are your salary expectations?" (VERBATIM)
+`;
           // Full docx-style task prompt in the user turn - the 13 requirements
           // restated as belt-and-suspenders on top of SCREENING_SYSTEM_PROMPT, so
           // the counts, exclusion and format hold firmly (models weight the user
           // turn heavily). The rules themselves still live in the system prompt.
           const screeningTask = `TASK: CREATE SCREENING CALL INTERVIEW PREPARATION
 Create resume-based Screening Call preparation for operation: ${op}.
-
+${screeningBlueprint}
 Requirements:
 - For initial_questions, return exactly 7 questions. For more_questions, return exactly 3 new questions.
 - Additional questions are appended to the existing list, never used as replacements.
+- Keep each QUESTION short and direct: about 6 to 14 plain words, ONE clear ask. Do NOT write long or compound "and ... and" questions, and do NOT prefix a question with a resume recap ("Your resume shows...", "You have listed...", "You mentioned..."). Ask it straight; a specific skill or fact named in a couple of words, then the question.
 - Give each question 2 or 3 concise coaching tips of about 6 to 14 words each.
 - Normally provide one sample spoken answer per question.
 - Keep each answer between 20 and 45 words, in 1 to 3 short sentences, direct and conversational.
 - Avoid long STAR stories; use only one or two strong resume-supported facts per answer and save technical detail for later rounds.
 - Use only resume-supported facts; never invent employers, tools, metrics, dates, or years.
-- Salary question ("What are your salary expectations?"): write EXACTLY two sentences, 35 to 50 words, first person ("my", never "your"), grammatically clean and natural. Sentence 1 opens in THIS style this time - ${salaryStyle} - using SPECIFIC resume evidence (experience, leadership, projects, clinical background, budget ownership, certifications, or measurable responsibility - never vague filler like "hardworking", "passionate", or "strong academic background"), a rounded local-currency range (e.g. "$80K to $95K annually" or "$90K base with $140K to $160K OTE"), and the correct pay type (annual base, hourly, monthly, contract, or base plus OTE). Sentence 2 states flexibility phrased like: "${salaryClosing}" Widen the range when the role or location is unclear; mention at most two evidence themes and three skills. Never claim it comes from live market data, and never use awkward/canned lines like "I'm after the market rate", "my background leads me to expect", "the role matters more than salary", "full compensation picture", "according to current market data", "anything is fine", "this is the minimum I will accept", or "I know I'm worth". Return only the spoken answer.
+- Salary question ("What are your salary expectations?"): write EXACTLY two sentences, 35 to 50 words, first person ("my", never "your"), grammatically clean and natural. Sentence 1 opens in THIS style this time - ${salaryStyle} - using SPECIFIC resume evidence (experience, leadership, projects, clinical background, budget ownership, certifications, or measurable responsibility - never vague filler like "hardworking", "passionate", or "strong academic background"), a rounded local-currency range (e.g. "$80K to $95K annually" or "$90K base with $140K to $160K OTE"), and the correct pay type (annual base, hourly, monthly, contract, or base plus OTE). Sentence 2 states flexibility phrased like: "${salaryClosing}" Widen the range when the role or location is unclear; mention at most two evidence themes and three skills. Never claim it comes from live market data, and never use awkward/canned lines like "I'm after the market rate", "my background leads me to expect", "the role matters more than salary", "full compensation picture", "according to current market data", "anything is fine", "this is the minimum I will accept", or "I know I'm worth". Put this two-sentence answer in the question's "sample" field (never in "guidance", and never leave "sample" empty).
 - Availability, relocation, schedule, or notice-period questions: use a safe, non-committal template that asks for the role's timeline first. For salary and these, one coaching tip reminds the candidate to adjust to their own number or date.
 - For initial_questions, also include exactly 3 short questions the candidate can ask. For more_questions, return no candidate questions.
 - Exclude every previously displayed question, and explore resume evidence not fully covered before; keep the same tone and structure, and return no closing-page content.
@@ -1145,6 +1162,7 @@ Requirements:
 
 OUTPUT FORMAT - NDJSON: output exactly ONE compact JSON object per line and NOTHING else (no markdown fences, no surrounding array, no blank lines, no commentary). First emit the 7 question lines, each of this exact shape:
 {"type":"question","question":string,"guidance":[2-3 short coaching tips],"sample":string}
+In every question object, "guidance" is ONLY the 2-3 short coaching tips (imperatives spoken to the candidate) and "sample" is the candidate's spoken answer. EVERY question - INCLUDING the salary question - MUST have a non-empty "sample" holding the spoken answer; never put the answer text inside "guidance", and never leave "sample" empty. Any "adjust to your own number or date" reminder is a coaching tip in "guidance", never the answer.
 Then emit exactly ONE final line for the candidate questions:
 {"type":"candidates","items":[the 3 short questions the candidate can ask]}
 
@@ -1159,6 +1177,7 @@ ${candidateBlock}`,
 
 OUTPUT FORMAT - a single JSON object and NOTHING else (no markdown), with EXACTLY these keys:
 { "role": { "title": string, "keySkills": [], "summary": "" }, "company": { "name": "", "description": "", "bullets": [] }, "values": [], "mentions": [], "questions": [ { "question": string, "guidance": [2-3 short coaching tips], "sample": "first-person sample answer" } ], "candidateQuestions": [short questions the candidate can ask] }
+In every question object, "guidance" is ONLY the 2-3 short coaching tips and "sample" is the candidate's spoken answer. EVERY question - INCLUDING the salary question - MUST have a non-empty "sample"; never put the answer text inside "guidance", and never leave "sample" empty.
 ${more ? `"questions" has EXACTLY 3 NEW questions not in the exclude list; "candidateQuestions" is [].` : `"questions" has EXACTLY 7 questions; "candidateQuestions" has EXACTLY 3.`}
 
 ${candidateBlock}`,
@@ -1172,12 +1191,28 @@ ${candidateBlock}`,
         // through to the shared prompt below untouched.
         if (type === "manager") {
           const op = more ? "more_questions" : "initial_questions";
+          // Restate the 7-question blueprint in the user turn (initial only) so it
+          // agrees with MANAGER_SYSTEM_PROMPT and the questions stay short and on
+          // structure. Omitted for "get more" (it would force the original 7 back).
+          const managerBlueprint = more
+            ? ""
+            : `
+The 7 questions, in THIS order (keep 1 and 2 close to the canonical wording; make 3-7 short, single-ask questions):
+1) "Tell me about yourself." (VERBATIM)
+2) "Walk me through your most recent role." (student/entry-level: most recent project, placement, or internship)
+3) A professional-development question - short and plain (e.g. "How do you see your professional development going forward?").
+4) A strong supported achievement - anchor to ONE real metric crisply, then ask (e.g. "You grew revenue from 35% to 55% - how?"); no metric -> ask about a project they are proud of.
+5) A challenge, problem, or failure - short and plain (e.g. "Tell me about a time you had to align two teams.").
+6) A collaboration, teamwork, communication, or leadership question - short and plain.
+7) A second management, decision-making, or process question - short and plain (e.g. "What's your process for building a campaign from scratch?").
+`;
           const managerTask = `TASK: CREATE MEETING WITH A MANAGER INTERVIEW PREPARATION
 Create resume-based Manager Meeting preparation for operation: ${op}.
-
+${managerBlueprint}
 Requirements:
 - For initial_questions, return exactly 7 questions. For more_questions, return exactly 3 new questions.
 - Additional questions are appended to the existing list, never used as replacements.
+- Keep each QUESTION SHORT: one clear ask, about 6 to 16 words. When you anchor to a resume fact, use ONE fact stated in a few words then ask (e.g. "You grew revenue from 35% to 55% - how?") - NEVER stack two or three facts or "and ... and" clauses into a long multi-line question, and never prefix with a resume recap ("Your resume shows...", "As a leader of ...").
 - Make questions deeper and evidence-based: anchor to a specific resume fact or metric when it sharpens the question (e.g. "You cut X by N% - how did you do that?"), stated crisply; do not pad with a long resume recap.
 - Every question must include exactly 3 coaching tips, each a substantive imperative of about 7 to 16 words: (1) lead with the business problem before the solution, (2) name the exact tools and decisions the candidate personally owned, (3) close with the supported result or lesson learned.
 - Include one sample answer when the resume has enough evidence; give more depth than a screening answer.
@@ -1199,7 +1234,7 @@ Requirements:
 
 OUTPUT FORMAT - NDJSON: output exactly ONE compact JSON object per line and NOTHING else (no markdown fences, no surrounding array, no blank lines, no commentary). First emit the 7 question lines, each of this exact shape:
 {"type":"question","question":string,"guidance":[exactly 3 short coaching tips],"sample":string}
-OMIT the "sample" field entirely for a behavioural question (a challenge, failure, or conflict) the resume gives no matching example for.
+Include a NON-EMPTY "sample" (the spoken answer) on EVERY question the resume can answer - "tell me about yourself", the recent role, professional development, achievements, budget, leadership, and process questions ALL get a sample. OMIT the "sample" field ONLY for a behavioural question (a challenge, failure, or conflict) the resume gives no matching example for. Do NOT omit samples across the board - normally only ONE question (the unsupported behavioural one) lacks a sample.
 Then emit exactly ONE final line for the candidate questions:
 {"type":"candidates","items":[the 3 short questions the candidate can ask]}
 
@@ -1213,7 +1248,8 @@ ${candidateBlock}`,
             prompt: `${managerTask}
 
 OUTPUT FORMAT - a single JSON object and NOTHING else (no markdown), with EXACTLY these keys:
-{ "role": { "title": string, "keySkills": [], "summary": "" }, "company": { "name": "", "description": "", "bullets": [] }, "values": [], "mentions": [], "questions": [ { "question": string, "guidance": [exactly 3 short coaching tips], "sample": "first-person sample answer - OMIT this field for a behavioural question with no supporting resume example" } ], "candidateQuestions": [short questions the candidate can ask] }
+{ "role": { "title": string, "keySkills": [], "summary": "" }, "company": { "name": "", "description": "", "bullets": [] }, "values": [], "mentions": [], "questions": [ { "question": string, "guidance": [exactly 3 short coaching tips], "sample": "first-person sample answer - OMIT this field ONLY for a behavioural question with no supporting resume example" } ], "candidateQuestions": [short questions the candidate can ask] }
+Include a non-empty "sample" on EVERY question the resume can answer; omit it ONLY for an unsupported behavioural question. Do NOT omit samples across the board.
 ${more ? `"questions" has EXACTLY 3 NEW questions not in the exclude list; "candidateQuestions" is [].` : `"questions" has EXACTLY 7 questions; "candidateQuestions" has EXACTLY 3.`}
 
 ${candidateBlock}`,
@@ -1233,8 +1269,8 @@ Technical means role-specific hard skills, tools, methods, processes, safety, ac
 Requirements:
 - For initial_questions, return exactly 7 questions. For more_questions, return exactly 3 new questions.
 - Append new questions after the existing questions; never use them as replacements.
-- Each question must match the candidate's profession (data, software, marketing, nursing, student, or whatever the resume shows).
-- Give every question exactly 2 concise coaching tips: (1) anchor to the specific skill, tool, project, or process named in the resume; (2) explain the problem, the tool or method chosen, and the supported outcome.
+- Each question must match the candidate's profession (data, software, marketing, nursing, student, or whatever the resume shows). Keep each question short and concrete - name an actual tool, skill, or method from the resume where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?"), not an abstract "how do you stay current with technology" phrasing.
+- Give every question exactly 2 concise coaching tips, each SHORT (about 6 to 14 words), directive, and naming SPECIFIC resume facts (actual tool names, a metric, a project, or an employer). Tip 1: name the exact tools or stack to lead with (e.g. "Lead with HubSpot, Google Analytics 4, Meta Ads - your current stack"). Tip 2: point to ONE concrete resume anchor - a dashboard built, a metric like a 42% lift, or an employer. Do NOT give generic advice that fits any candidate ("reference specific learning methods", "explain your process for data validation").
 - Do not generate full sample answers: set answer_mode to tips_only and sample_answer to null (omit the sample on every question).
 - Use only skills, tools, methods, qualifications, processes, and achievements supported by the resume; do not assume common industry tools that are not listed; never default to software or coding unless the role is software.
 - Do not give unsafe professional instructions. For healthcare or regulated work, ask the candidate to explain their actual training, protocol, escalation, and documentation process.

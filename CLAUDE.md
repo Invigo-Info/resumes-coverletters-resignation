@@ -28,6 +28,27 @@ Key areas:
 
 ## Changelog
 
+### 2026-08-03 — Interview-prep questions matched to competitor style
+
+Tuned the resume-only Screening / Manager / Technical prompts so the generated
+questions read like the reference competitor's: short, plain, single-ask, and
+canonical where the question is fixed.
+
+- Screening: 7-question blueprint + short-question cap restated in the task turn
+  (models weight it most); Q1/Q2/Q6/Q7 pinned to canonical wording; Q3-Q5 short
+  single-topic checks. Salary answer now always lands in `sample` (never leaks
+  into `guidance`, never empty).
+- Manager: blueprint + short-question cap in the task turn; evidence-anchored
+  questions stay crisp ("You grew revenue from 35% to 55% - how?") instead of a
+  multi-clause recap; fixed an intermittent bug where every question came back
+  guidance-only (sample now required except for an unsupported behavioural Q).
+- Technical: questions name a concrete resume tool/skill (HubSpot, GA4, the
+  $750K budget) instead of abstract phrasing; the 2 coaching tips are now short
+  and name real facts (tools, metric, employer) instead of generic advice.
+- All three live-verified against sample resumes (question word counts, sample
+  presence, tip specificity) before shipping. Output shapes unchanged - client
+  renders the same.
+
 ### 2026-08-01 — Interview-prep prompts, resume upload, saved-resume picker
 
 Resume-only "Just practicing" now has a dedicated, self-contained system prompt
