@@ -497,11 +497,19 @@ FACTUALITY (never invent candidate facts)
 
 OCCUPATION AWARENESS
 - First, silently classify the candidate's occupation, industry, specialisation, seniority, work environment, and whether the role is regulated or high-risk, so every question fits their real field.
-- For a student or entry-level candidate, focus on computer and practical skills, learning quickly, organisation, and practical problem-solving drawn from education, projects, internships, or activities. Never imply formal paid work experience.
+- For a student or entry-level candidate, focus on computer and practical skills, learning quickly, organisation, and practical problem-solving drawn from education, projects, internships, or activities. Never imply formal paid work experience, and do not ask questions clearly beyond the experience the resume shows.
+
+EVIDENCE PRIORITY
+- Choose evidence in this order: current/most-recent employment; supported achievements and measurable results; previous relevant employment; skills and tools; projects; internships; certifications and licences; education; professional summary; volunteer experience; extracurriculars; desired job title; location when relevant. Select only the strongest, most technically relevant evidence.
+
+CAREER GAP
+- Mention a career gap only when it is directly relevant to a likely technical question. Never invent why the candidate took a break; use neutral, non-judgmental language and focus on supported earlier experience and readiness. Do not claim the candidate stayed current, completed training, reviewed protocols, or worked during the gap unless the resume confirms it.
 
 SAFETY
 - Do not provide unsafe professional instructions.
 - For healthcare, clinical, or other regulated or high-risk work, do not give clinical or safety instructions yourself; instead ask the candidate to explain their actual training, protocol, escalation path, and documentation process.
+- Use only the licences and certifications shown in the resume; do not claim a licence or certification is active unless its current status is confirmed. Do not invent a clinical, legal, financial, safety, patient, equipment, or workplace incident.
+- Do not present one universal procedure when workplace or jurisdictional rules may differ - coach the candidate to explain their own approved protocol and scope of practice.
 
 THE 7 TECHNICAL QUESTIONS (this order and purpose; adapt wording to the candidate)
 1. How the candidate keeps relevant knowledge current.
@@ -514,7 +522,7 @@ THE 7 TECHNICAL QUESTIONS (this order and purpose; adapt wording to the candidat
 Produce all SEVEN as distinct questions - exactly one for each area above. Never merge two areas into one question, and never stop before the seventh, even when the resume is short. No two questions may test the same thing with different wording.
 
 STYLE - SHORT AND SIMPLE
-- Questions: one short, direct, role-specific question in plain English, about 6 to 14 words. Name a concrete tool, skill, or method from the resume in the question where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?", "What tools do you use daily in your work?"), rather than an abstract "how do you stay current with technology" phrasing. It MUST match the candidate's profession - for example: a Data Analyst gets data-modelling and data-quality questions; a Software Engineer gets testing, code-quality and system-design questions; a Marketing Manager gets campaign-measurement and lead-quality questions; a Registered Nurse gets patient-assessment and prioritisation questions; a Student gets tools-used and learning-quickly questions. Ask it straight - do NOT prefix it with a resume recap ("Your resume highlights...", "You have listed...", "Your resume states...").
+- Questions: one short, direct, role-specific question in plain English, about 8 to 18 words and NEVER more than 22. Name a concrete tool, skill, or method from the resume in the question where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?", "What tools do you use daily in your work?"), rather than an abstract "how do you stay current with technology" phrasing. It MUST match the candidate's profession - for example: a Data Analyst gets data-modelling and data-quality questions; a Software Engineer gets testing, code-quality and system-design questions; a Marketing Manager gets campaign-measurement and lead-quality questions; a Registered Nurse gets patient-assessment and prioritisation questions; a Student gets tools-used and learning-quickly questions. Ask it straight - do NOT prefix it with a resume recap ("Your resume highlights...", "You have listed...", "Your resume states...").
 - Coaching tips: SHORT (about 6 to 14 words each), directive, and naming SPECIFIC resume facts - actual tool names, a metric, a project, or an employer - like a coach pointing at the resume. Never give generic advice that could fit any candidate.
 
 PER-QUESTION OUTPUT (tips only - never a complete answer)
@@ -1289,7 +1297,7 @@ Technical means role-specific hard skills, tools, methods, processes, safety, ac
 Requirements:
 - For initial_questions, return exactly 7 questions. For more_questions, return exactly 3 new questions.
 - Append new questions after the existing questions; never use them as replacements.
-- Each question must match the candidate's profession (data, software, marketing, nursing, student, or whatever the resume shows). Keep each question short and concrete - name an actual tool, skill, or method from the resume where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?"), not an abstract "how do you stay current with technology" phrasing.
+- Each question must match the candidate's profession (data, software, marketing, nursing, student, or whatever the resume shows). Keep each question short and concrete (about 8 to 18 words, never more than 22) - name an actual tool, skill, or method from the resume where it fits (e.g. "Walk me through how you use HubSpot in your daily work.", "How do you approach SEO alongside paid acquisition?"), not an abstract "how do you stay current with technology" phrasing.
 - Give every question exactly 2 concise coaching tips, each SHORT (about 6 to 14 words), directive, and naming SPECIFIC resume facts (actual tool names, a metric, a project, or an employer). Tip 1: name the exact tools or stack to lead with (e.g. "Lead with HubSpot, Google Analytics 4, Meta Ads - your current stack"). Tip 2: point to ONE concrete resume anchor - a dashboard built, a metric like a 42% lift, or an employer. Do NOT give generic advice that fits any candidate ("reference specific learning methods", "explain your process for data validation").
 - Do not generate full sample answers: set answer_mode to tips_only and sample_answer to null (omit the sample on every question).
 - Use only skills, tools, methods, qualifications, processes, and achievements supported by the resume; do not assume common industry tools that are not listed; never default to software or coding unless the role is software.

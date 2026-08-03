@@ -33,6 +33,18 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-08-03 — Technical prompt: evidence/gap/regulated rules + question length
+
+Folded the new-prompts Technical spec (`Technical_Interview_System_Prompt.docx`)
+into `TECHNICAL_SYSTEM_PROMPT` as rules only (NDJSON output unchanged; the doc's
+answer_mode/evidence_ids schema not adopted). Added: evidence-priority order;
+career-gap rules; expanded regulated/high-risk handling (licences only as shown,
+no assumed-active status, no invented incidents, no single universal procedure -
+coach to own protocol/scope); a student clause (do not ask beyond the experience
+shown); and question length raised to about 8-18 words (never over 22) in the
+system prompt + task turn. Technical stays tips-only (exactly 2 tips, no sample
+answers, no candidate questions).
+
 ### 2026-08-03 — Manager prompt: evidence/gap/regulated rules + question length
 
 Folded the new-prompts Meeting-with-a-Manager spec (`Meeting_with_a_Manager_
