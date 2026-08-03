@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CoverLetterBuilder } from "@/components/cover-letter/cover-letter-builder";
+import { CoverLetterBuilder } from "@/features/cover-letter/components/cover-letter-builder";
 import { isCoverLetterSlug, COVER_LETTER_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**

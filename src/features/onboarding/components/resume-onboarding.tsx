@@ -23,7 +23,7 @@ import { GoogleConsentDialog } from "@/features/onboarding/components/cloud-sour
 import { LinkedInLinkDialog } from "@/features/onboarding/components/linkedin-link-dialog";
 import { cn } from "@/utilities/utils";
 import { useResumeLimit } from "@/permissions/resume-limit";
-import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
+import { useResumeStore, type ResumeState } from "@/features/resume-builder/store/resume-store";
 import { parseResume } from "@/services/ai/parseResume";
 import { MAX_UPLOAD_HINT, validateUploadFile } from "@/validation/upload-validation";
 import {

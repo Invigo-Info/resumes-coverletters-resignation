@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
-import { StepShell } from "@/components/cover-letter/step-shell";
-import { StepHeading } from "@/components/cover-letter/widgets";
-import { useCoverLetterStore, type CLStep } from "@/lib/store/cover-letter-store";
-import { experienceLabel } from "@/lib/cover-letter/suggestions";
+import { StepShell } from "@/features/cover-letter/components/step-shell";
+import { StepHeading } from "@/features/cover-letter/components/widgets";
+import { useCoverLetterStore, type CLStep } from "@/features/cover-letter/store/cover-letter-store";
+import { experienceLabel } from "@/features/cover-letter/lib/suggestions";
 
 /**
  * Review screen summarizing the parsed cover-letter inputs (education, recent

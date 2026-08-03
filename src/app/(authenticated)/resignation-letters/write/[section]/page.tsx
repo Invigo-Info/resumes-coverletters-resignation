@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ResignationLetterBuilder } from "@/components/resignation-letter/resignation-letter-builder";
+import { ResignationLetterBuilder } from "@/features/resignation-letter/components/resignation-letter-builder";
 import { isResignationSlug, RESIGNATION_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**

@@ -4,21 +4,21 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, PenLine, Palette, Download, Loader2, Laugh, CircleCheck } from "lucide-react";
-import { ResignationLetterPreview } from "@/components/resignation-letter/resignation-letter-preview";
-import { DesignToolbar } from "@/components/resignation-letter/design-toolbar";
-import { WriteMode, type Section as WriteSection } from "@/components/resignation-letter/write-mode";
-import { useResignationLetterStore, letterCompletion } from "@/lib/store/resignation-letter-store";
+import { ResignationLetterPreview } from "@/features/resignation-letter/components/resignation-letter-preview";
+import { DesignToolbar } from "@/features/resignation-letter/components/design-toolbar";
+import { WriteMode, type Section as WriteSection } from "@/features/resignation-letter/components/write-mode";
+import { useResignationLetterStore, letterCompletion } from "@/features/resignation-letter/store/resignation-letter-store";
 import {
   useResignationLetterAutosave,
   useResignationLetterSaveStatus,
-} from "@/lib/store/resignation-letter-documents-store";
-import { generateResignationLetter } from "@/lib/resignation-letter/ai";
-import { bodyToHtml } from "@/lib/resignation-letter/format";
+} from "@/features/resignation-letter/store/resignation-letter-documents-store";
+import { generateResignationLetter } from "@/features/resignation-letter/lib/ai";
+import { bodyToHtml } from "@/features/resignation-letter/lib/format";
 import {
   canDownloadResignationLetter,
   recordResignationLetterDownload,
 } from "@/permissions/resume-download-gate";
-import { downloadResignationLetter } from "@/lib/resignation-letter/download";
+import { downloadResignationLetter } from "@/features/resignation-letter/lib/download";
 import { cn } from "@/utilities/utils";
 
 type Mode = "write" | "design";

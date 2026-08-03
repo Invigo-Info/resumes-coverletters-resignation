@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { usePaywall } from "@/features/cover-letter/lib/paywall";
 
 /**
  * Marks the account premium once checkout completes. Rendered on the payment

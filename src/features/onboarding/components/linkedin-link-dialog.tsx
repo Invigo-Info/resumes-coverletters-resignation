@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore } from "@/features/resume-builder/store/resume-store";
 import { parseResumeText } from "@/services/ai/parseResume";
 import { cn } from "@/utilities/utils";
 

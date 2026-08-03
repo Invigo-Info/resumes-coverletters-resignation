@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LivePreview } from "@/components/editor/live-preview";
-import { previewStateFromDoc } from "@/lib/store/resume-store";
-import type { ResumeDocData } from "@/lib/store/documents-store";
+import { LivePreview } from "@/features/resume-builder/components/live-preview";
+import { previewStateFromDoc } from "@/features/resume-builder/store/resume-store";
+import type { ResumeDocData } from "@/features/resume-builder/store/documents-store";
 
 // The live preview renders at a page-like width; the thumbnail scales that whole
 // page down to the card. A4-ish ratio so the crop reads as a sheet of paper.

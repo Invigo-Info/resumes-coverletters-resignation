@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { safeLocalStorage } from "@/lib/store/safe-storage";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { safeLocalStorage } from "@/utilities/safe-storage";
+import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 
 export { FREE_RESUME_LIMIT };

@@ -2,7 +2,7 @@ import {
   type AdditionalSection,
   type ResumeState,
   type SectionKey,
-} from "@/lib/store/resume-store";
+} from "@/features/resume-builder/store/resume-store";
 import { extractDocxText } from "@/utilities/docx-text";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

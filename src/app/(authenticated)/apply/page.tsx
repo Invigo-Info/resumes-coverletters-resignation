@@ -15,14 +15,14 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
-import { CompanyLogo } from "@/components/jobs/company-logo";
-import { ImproveKeywordsFlow } from "@/components/jobs/improve-keywords-flow";
-import { buildKeywordMatch } from "@/lib/jobs/keyword-match";
-import type { ScoreResume } from "@/lib/jobs/scoreboard";
-import { useApplyStore } from "@/lib/store/apply-store";
-import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
-import { useResumeStore } from "@/lib/store/resume-store";
-import { useTailorStore } from "@/lib/store/tailor-store";
+import { CompanyLogo } from "@/features/jobs/components/company-logo";
+import { ImproveKeywordsFlow } from "@/features/jobs/components/improve-keywords-flow";
+import { buildKeywordMatch } from "@/features/jobs/lib/keyword-match";
+import type { ScoreResume } from "@/features/jobs/lib/scoreboard";
+import { useApplyStore } from "@/features/jobs/store/apply-store";
+import { useCoverLetterStore } from "@/features/cover-letter/store/cover-letter-store";
+import { useResumeStore } from "@/features/resume-builder/store/resume-store";
+import { useTailorStore } from "@/features/jobs/store/tailor-store";
 
 /** Strip HTML tags to plain text. */
 const stripHtml = (html: string) =>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { EditorShell } from "@/components/editor/editor-shell";
+import { EditorShell } from "@/features/resume-builder/components/editor-shell";
 import { resumeKeyFromSlug, RESUME_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**

@@ -26,9 +26,9 @@ import {
   GoogleConsentDialog,
   LinkedInImportDialog,
 } from "@/features/onboarding/components/cloud-source-dialogs";
-import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
-import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
-import { useDocumentsStore } from "@/lib/store/documents-store";
+import { useCoverLetterStore } from "@/features/cover-letter/store/cover-letter-store";
+import { parseResumeForCoverLetter } from "@/features/cover-letter/lib/parse";
+import { useDocumentsStore } from "@/features/resume-builder/store/documents-store";
 import { mockResumes } from "@/utilities/mock-data";
 import {
   isDropboxConfigured,

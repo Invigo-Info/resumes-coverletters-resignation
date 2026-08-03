@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { DashboardCoverLetters } from "@/components/cover-letter/dashboard-cover-letters";
+import { DashboardCoverLetters } from "@/features/cover-letter/components/dashboard-cover-letters";
 
 // Cover letters dashboard: the user's saved drafts (or an empty state).
 export default function CoverLettersPage() {

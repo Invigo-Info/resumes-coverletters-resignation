@@ -1,8 +1,8 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { InterviewPrepView } from "@/components/interview-prep/interview-prep";
-import { SavedPrepLink } from "@/components/interview-prep/saved-prep-link";
+import { InterviewPrepView } from "@/features/interview-prep/components/interview-prep";
+import { SavedPrepLink } from "@/features/interview-prep/components/saved-prep-link";
 
 // Interview prep: pick an interview type for the active apply job, then show a
 // generated, job-specific preparation sheet.

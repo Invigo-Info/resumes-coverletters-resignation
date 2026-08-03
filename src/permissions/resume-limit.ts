@@ -1,7 +1,7 @@
 "use client";
 
-import { useDocumentsStore } from "@/lib/store/documents-store";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { useDocumentsStore } from "@/features/resume-builder/store/documents-store";
+import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 
 export { FREE_RESUME_LIMIT };

@@ -1,0 +1,225 @@
+"use client";
+
+import { useEffect } from "react";
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "@/utilities/safe-storage";
+import {
+  useResignationLetterStore,
+  newResignationLetterId,
+  type ResignationLetterState,
+} from "./resignation-letter-store";
+import { pushServerDocument, deleteServerDocument } from "@/features/resume-builder/store/documents-sync";
+
+/** The resignation-letter fields persisted in a saved draft (no UI state). */
+export type ResignationLetterDocData = Pick<
+  ResignationLetterState,
+  | "fullName"
+  | "employer"
+  | "salutation"
+  | "salutationTouched"
+  | "position"
+  | "submissionDate"
+  | "lastWorkingDay"
+  | "reason"
+  | "otherReasonText"
+  | "reasonText"
+  | "reasonTextTouched"
+  | "gratitude"
+  | "gratitudeText"
+  | "gratitudeTextTouched"
+  | "assistance"
+  | "assistanceText"
+  | "assistanceTextTouched"
+  | "contacts"
+  | "letter"
+  | "bodyTouched"
+  | "design"
+>;
+
+/** A saved resignation-letter draft as listed on the dashboard. */
+export interface ResignationLetterRecord {
+  id: string;
+  title: string;
+  updatedAt: number; // epoch ms
+  data: ResignationLetterDocData;
+}
+
+interface ResignationLetterDocumentsState {
+  letters: ResignationLetterRecord[];
+  upsertLetter: (record: ResignationLetterRecord) => void;
+  removeLetter: (id: string) => void;
+  getLetter: (id: string) => ResignationLetterRecord | undefined;
+}
+
+export const useResignationLetterDocumentsStore =
+  /**
+   * The dashboard's list of saved resignation-letter drafts, persisted to
+   * localStorage and mirrored to the server so drafts follow the user's account.
+   */
+  create<ResignationLetterDocumentsState>()(
+    persist(
+      (set, get) => ({
+        letters: [],
+        upsertLetter: (record) => {
+          // Mirror the write to the server (best-effort) before updating local state.
+          pushServerDocument("resignationLetters", record);
+          set((s) => {
+            const i = s.letters.findIndex((r) => r.id === record.id);
+            if (i >= 0) {
+              const next = [...s.letters];
+              next[i] = record;
+              return { letters: next };
+            }
+            return { letters: [record, ...s.letters] };
+          });
+        },
+        removeLetter: (id) => {
+          deleteServerDocument("resignationLetters", id);
+          set((s) => ({ letters: s.letters.filter((r) => r.id !== id) }));
+        },
+        getLetter: (id) => get().letters.find((r) => r.id === id),
+      }),
+      {
+        name: "resume-co:resignation-letter-documents",
+        storage: createJSONStorage(() => safeLocalStorage),
+      }
+    )
+  );
+
+/* ------------------------------------------------------------------ */
+/* Save status (drives the "Saving... / Saved" indicator)             */
+/* ------------------------------------------------------------------ */
+
+export type ResignationSaveStatus = "idle" | "saving" | "saved";
+
+/** Live autosave status so the editor can show real "Saving... / Saved" feedback. */
+export const useResignationLetterSaveStatus = create<{
+  status: ResignationSaveStatus;
+  setStatus: (status: ResignationSaveStatus) => void;
+}>((set) => ({
+  status: "idle",
+  setStatus: (status) => set({ status }),
+}));
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+// Strip HTML tags to test whether the seeded/edited paragraphs have real text.
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
+
+/** Human title for a draft: "Full name at Company" (falls back gracefully). */
+export function resignationLetterTitle(s: ResignationLetterState): string {
+  const name = s.fullName.trim();
+  const company = s.employer.companyName.trim();
+  if (name && company) return `${name} at ${company}`;
+  if (name) return name;
+  if (company) return `Resignation letter, ${company}`;
+  return "Untitled resignation letter";
+}
+
+/**
+ * Has the user entered anything worth saving as a draft? The builder prefills a
+ * placeholder name/email/dates, so those don't count - we only save once the
+ * user supplies recipient, role, reason, gratitude or a generated body.
+ */
+function hasContent(s: ResignationLetterState): boolean {
+  return Boolean(
+    s.employer.managerName.trim() ||
+      s.employer.companyName.trim() ||
+      s.position.trim() ||
+      s.reason ||
+      s.gratitude.length ||
+      stripHtml(s.reasonText) ||
+      stripHtml(s.gratitudeText) ||
+      stripHtml(s.letter.body)
+  );
+}
+
+/** Build a savable draft record from the live resignation-letter state. */
+function snapshot(s: ResignationLetterState): ResignationLetterRecord {
+  return {
+    id: s.id,
+    title: resignationLetterTitle(s),
+    updatedAt: Date.now(),
+    data: {
+      fullName: s.fullName,
+      employer: s.employer,
+      salutation: s.salutation,
+      salutationTouched: s.salutationTouched,
+      position: s.position,
+      submissionDate: s.submissionDate,
+      lastWorkingDay: s.lastWorkingDay,
+      reason: s.reason,
+      otherReasonText: s.otherReasonText,
+      reasonText: s.reasonText,
+      reasonTextTouched: s.reasonTextTouched,
+      gratitude: s.gratitude,
+      gratitudeText: s.gratitudeText,
+      gratitudeTextTouched: s.gratitudeTextTouched,
+      assistance: s.assistance,
+      assistanceText: s.assistanceText,
+      assistanceTextTouched: s.assistanceTextTouched,
+      contacts: s.contacts,
+      letter: s.letter,
+      bodyTouched: s.bodyTouched,
+      design: s.design,
+    },
+  };
+}
+
+/**
+ * Snapshot the active resignation letter into the dashboard's drafts list if it
+ * has real content (assigning an id the first time). Safe to call repeatedly -
+ * upserts by id. Returns the record id, or null when there's nothing to save.
+ */
+export function saveActiveResignationLetter(): string | null {
+  const s = useResignationLetterStore.getState();
+  if (!hasContent(s)) return null;
+  let id = s.id;
+  if (!id) {
+    id = newResignationLetterId();
+    useResignationLetterStore.setState({ id });
+  }
+  useResignationLetterDocumentsStore
+    .getState()
+    .upsertLetter({ ...snapshot(useResignationLetterStore.getState()), id });
+  return id;
+}
+
+/**
+ * Auto-save the active resignation letter into the dashboard's drafts list.
+ * Mount once in the builder/preview; it debounces store changes, upserts the
+ * record, and publishes a live "saving -> saved" status for the Saved indicator.
+ */
+export function useResignationLetterAutosave() {
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let mounted = true;
+    const { setStatus } = useResignationLetterSaveStatus.getState();
+
+    const save = () => {
+      const id = saveActiveResignationLetter();
+      if (mounted) setStatus(id ? "saved" : "idle");
+    };
+
+    const schedule = (initial: boolean) => {
+      if (timer) clearTimeout(timer);
+      // An edit is now in flight: show "Saving..." (but not for the mount capture,
+      // which just re-persists already-saved state).
+      if (!initial && hasContent(useResignationLetterStore.getState())) {
+        setStatus("saving");
+      }
+      timer = setTimeout(save, 700);
+    };
+
+    const unsub = useResignationLetterStore.subscribe(() => schedule(false));
+    schedule(true); // capture the current state on mount too
+    return () => {
+      mounted = false;
+      if (timer) clearTimeout(timer);
+      unsub();
+    };
+  }, []);
+}

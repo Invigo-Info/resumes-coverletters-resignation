@@ -8,23 +8,23 @@ import { toast } from "sonner";
 import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
-import { usePaywall } from "@/lib/cover-letter/paywall";
+import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { useResumeLimit } from "@/permissions/resume-limit";
 import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
-import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
+import { useResumeStore, newResumeId } from "@/features/resume-builder/store/resume-store";
 import {
   useDocumentsStore,
   saveActiveResume,
   type ResumeRecord,
   type ResumeDocData,
-} from "@/lib/store/documents-store";
+} from "@/features/resume-builder/store/documents-store";
 import {
   fetchServerDocuments,
   pushServerDocument,
-} from "@/lib/store/documents-sync";
+} from "@/features/resume-builder/store/documents-sync";
 import { getTemplate } from "@/config/templates";
 import { downloadResume } from "@/services/storage/download-pdf";
-import { LivePreview } from "@/components/editor/live-preview";
+import { LivePreview } from "@/features/resume-builder/components/live-preview";
 import { ResumeThumbnail } from "./resume-thumbnail";
 import type { ResumeDoc } from "@/utilities/mock-data";
 

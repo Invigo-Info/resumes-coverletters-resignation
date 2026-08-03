@@ -4,7 +4,7 @@ import {
   industryFor,
   type JobPosting,
   type ResumeProfile,
-} from "@/lib/jobs/job-search";
+} from "@/features/jobs/lib/job-search";
 
 /** Normalized query built from the request's filter params. */
 interface JobQuery {

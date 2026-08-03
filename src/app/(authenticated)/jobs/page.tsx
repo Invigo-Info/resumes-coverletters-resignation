@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { JobSearch } from "@/components/jobs/job-search";
+import { JobSearch } from "@/features/jobs/components/job-search";
 
 // Jobs dashboard: resume-matched job recommendations + saved jobs.
 export default function JobsPage() {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UploadCloud } from "lucide-react";
-import { LivePreview } from "@/components/editor/live-preview";
+import { LivePreview } from "@/features/resume-builder/components/live-preview";
 
 /** Skeleton line groups that mimic a resume's sections while it's parsed. */
 const GROUPS: string[][] = [

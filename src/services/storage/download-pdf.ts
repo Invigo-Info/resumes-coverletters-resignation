@@ -1,4 +1,4 @@
-import { useResumeStore } from "@/lib/store/resume-store";
+import { useResumeStore } from "@/features/resume-builder/store/resume-store";
 import { exportElementToPdf } from "@/services/storage/pdf-export";
 
 /** The currently visible resume-preview element (write/design/improve/mobile). */

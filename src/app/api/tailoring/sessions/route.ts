@@ -6,7 +6,7 @@ import {
   upsertTailoringSession,
   removeTailoringSession,
   type PersistedTailoringSession,
-} from "@/lib/tailoring/sessions";
+} from "@/features/jobs/tailoring/sessions";
 import { tailoringSessionBodySchema } from "@/validation/schemas";
 
 /**

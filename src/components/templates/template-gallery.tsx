@@ -25,9 +25,9 @@ import {
   previewStateFromDoc,
   designForTemplate,
   type ResumeState,
-} from "@/lib/store/resume-store";
+} from "@/features/resume-builder/store/resume-store";
 import { MOCK_RESUME } from "@/services/ai/parseResume";
-import { ScaledResumePreview } from "@/components/editor/scaled-resume-preview";
+import { ScaledResumePreview } from "@/features/resume-builder/components/scaled-resume-preview";
 import {
   templates,
   templateTabs,

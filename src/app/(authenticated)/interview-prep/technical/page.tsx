@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { InterviewPrepView } from "@/components/interview-prep/interview-prep";
+import { InterviewPrepView } from "@/features/interview-prep/components/interview-prep";
 
 // Dedicated Technical interview page: skips the type picker, generates the
 // technical prep for the active apply job, and streams the questions + short

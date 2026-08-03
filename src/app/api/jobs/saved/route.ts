@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/features/authentication/auth";
-import { getSavedJobs, addSavedJob, removeSavedJob } from "@/lib/jobs/saved";
+import { getSavedJobs, addSavedJob, removeSavedJob } from "@/features/jobs/lib/saved";
 import { savedJobBodySchema } from "@/validation/schemas";
-import type { JobPosting } from "@/lib/jobs/job-search";
+import type { JobPosting } from "@/features/jobs/lib/job-search";
 
 /**
  * Account-level saved jobs. The owner email is derived from the verified session

@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { ResignationDashboardBody } from "@/components/resignation-letter/dashboard-body";
+import { ResignationDashboardBody } from "@/features/resignation-letter/components/dashboard-body";
 
 // Resignation letters dashboard: lists the user's saved resignation-letter drafts.
 export default function ResignationLettersPage() {

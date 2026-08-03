@@ -20,26 +20,26 @@ import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { downloadResume } from "@/services/storage/download-pdf";
-import { LivePreview } from "@/components/editor/live-preview";
-import { ScoreRing } from "@/components/jobs/match-scoreboard";
-import { CompanyLogo } from "@/components/jobs/company-logo";
-import { TailorArt } from "@/components/jobs/improve-keywords-flow";
-import { useResumeStore } from "@/lib/store/resume-store";
-import { useDocumentsStore } from "@/lib/store/documents-store";
-import { useTailorStore } from "@/lib/store/tailor-store";
+import { LivePreview } from "@/features/resume-builder/components/live-preview";
+import { ScoreRing } from "@/features/jobs/components/match-scoreboard";
+import { CompanyLogo } from "@/features/jobs/components/company-logo";
+import { TailorArt } from "@/features/jobs/components/improve-keywords-flow";
+import { useResumeStore } from "@/features/resume-builder/store/resume-store";
+import { useDocumentsStore } from "@/features/resume-builder/store/documents-store";
+import { useTailorStore } from "@/features/jobs/store/tailor-store";
 import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import {
   buildTailorPlan,
   type TailorPlanItem,
   type SuggestionKind,
-} from "@/lib/jobs/tailor-plan";
+} from "@/features/jobs/lib/tailor-plan";
 import {
   useTailoringSessionStore,
   suggestionValue,
   type SessionSuggestion,
   type SuggestionSection,
-} from "@/lib/store/tailoring-session-store";
-import { fetchTailoringSession } from "@/lib/tailoring/tailoring-sync";
+} from "@/features/jobs/store/tailoring-session-store";
+import { fetchTailoringSession } from "@/features/jobs/tailoring/tailoring-sync";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */

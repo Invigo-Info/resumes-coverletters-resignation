@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { SavedInterviewPrepList } from "@/components/interview-prep/saved-interview-prep-list";
+import { SavedInterviewPrepList } from "@/features/interview-prep/components/saved-interview-prep-list";
 
 // Saved interview-prep sheets: the account's stored prep, ready to reopen.
 export default function SavedInterviewPrepPage() {

@@ -5,7 +5,7 @@ import {
   addDismissedJob,
   removeDismissedJob,
   clearDismissedJobs,
-} from "@/lib/jobs/dismissed";
+} from "@/features/jobs/lib/dismissed";
 import { dismissedJobBodySchema } from "@/validation/schemas";
 
 /**

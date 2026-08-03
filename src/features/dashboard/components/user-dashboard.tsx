@@ -23,26 +23,26 @@ import {
 import {
   fetchServerDocuments,
   type ServerDocument,
-} from "@/lib/store/documents-sync";
-import { fetchSavedJobs } from "@/lib/store/jobs-sync";
+} from "@/features/resume-builder/store/documents-sync";
+import { fetchSavedJobs } from "@/features/jobs/store/jobs-sync";
 import {
   useDocumentsStore,
   type ResumeDocData,
-} from "@/lib/store/documents-store";
+} from "@/features/resume-builder/store/documents-store";
 import {
   useCoverLetterDocumentsStore,
   type CoverLetterDocData,
-} from "@/lib/store/cover-letter-documents-store";
+} from "@/features/cover-letter/store/cover-letter-documents-store";
 import {
   useResignationLetterDocumentsStore,
   type ResignationLetterDocData,
-} from "@/lib/store/resignation-letter-documents-store";
-import { useInterviewPrepDocumentsStore } from "@/lib/store/interview-prep-documents-store";
-import { useJobsStore } from "@/lib/store/jobs-store";
+} from "@/features/resignation-letter/store/resignation-letter-documents-store";
+import { useInterviewPrepDocumentsStore } from "@/features/interview-prep/store/interview-prep-documents-store";
+import { useJobsStore } from "@/features/jobs/store/jobs-store";
 import { cn } from "@/utilities/utils";
-import { useResumeStore } from "@/lib/store/resume-store";
-import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
-import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
+import { useResumeStore } from "@/features/resume-builder/store/resume-store";
+import { useCoverLetterStore } from "@/features/cover-letter/store/cover-letter-store";
+import { useResignationLetterStore } from "@/features/resignation-letter/store/resignation-letter-store";
 import type { LucideIcon } from "lucide-react";
 
 /** One saved thing across any category, normalised for the dashboard. */

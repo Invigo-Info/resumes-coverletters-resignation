@@ -5,19 +5,19 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Home, PenLine, Palette, Download, Loader2, PartyPopper } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { CoverLetterPreview } from "@/components/cover-letter/cover-letter-preview";
-import { CoverLetterDesignPanel } from "@/components/cover-letter/design-panel";
-import { WriteMode, type Section as WriteSection } from "@/components/cover-letter/write-mode";
+import { CoverLetterPreview } from "@/features/cover-letter/components/cover-letter-preview";
+import { CoverLetterDesignPanel } from "@/features/cover-letter/components/design-panel";
+import { WriteMode, type Section as WriteSection } from "@/features/cover-letter/components/write-mode";
 import { HelpPill } from "@/components/layout/help-pill";
-import { useCoverLetterStore, letterCompletion } from "@/lib/store/cover-letter-store";
+import { useCoverLetterStore, letterCompletion } from "@/features/cover-letter/store/cover-letter-store";
 import {
   canDownloadCoverLetter,
   recordCoverLetterDownload,
 } from "@/permissions/resume-download-gate";
-import { downloadCoverLetter } from "@/lib/cover-letter/download";
-import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
-import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
-import { bodyToHtml } from "@/lib/cover-letter/format";
+import { downloadCoverLetter } from "@/features/cover-letter/lib/download";
+import { useCoverLetterAutosave } from "@/features/cover-letter/store/cover-letter-documents-store";
+import { generateCoverLetter, hasPlaceholder } from "@/features/cover-letter/lib/ai";
+import { bodyToHtml } from "@/features/cover-letter/lib/format";
 import { cn } from "@/utilities/utils";
 
 type Mode = "write" | "design";

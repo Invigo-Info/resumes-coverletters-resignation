@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { ReopenSavedPrep } from "@/components/interview-prep/reopen-saved-prep";
+import { ReopenSavedPrep } from "@/features/interview-prep/components/reopen-saved-prep";
 
 // Re-open a saved interview-prep sheet by id, rendering its stored content.
 export default async function SavedInterviewPrepDetailPage({

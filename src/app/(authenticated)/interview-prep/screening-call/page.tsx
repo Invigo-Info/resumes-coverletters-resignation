@@ -1,7 +1,7 @@
 import { TopNav } from "@/features/dashboard/components/top-nav";
 import { SiteFooter } from "@/features/dashboard/components/site-footer";
 import { HelpPill } from "@/components/layout/help-pill";
-import { InterviewPrepView } from "@/components/interview-prep/interview-prep";
+import { InterviewPrepView } from "@/features/interview-prep/components/interview-prep";
 
 // Dedicated Screening call page: skips the type picker, generates the screening
 // prep for the active apply job, and streams the sections + answers into view.

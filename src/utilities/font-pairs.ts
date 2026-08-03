@@ -1,4 +1,4 @@
-import type { FontId } from "@/lib/store/resume-store";
+import type { FontId } from "@/features/resume-builder/store/resume-store";
 import type { ResumeTemplate } from "@/config/templates";
 
 /**
