@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getEntitlement } from "@/lib/entitlements";
-import { isDbEnabled } from "@/lib/db";
-import { isStripeConfigured } from "@/lib/stripe/server";
+import { isDbEnabled } from "@/services/database/db";
+import { isStripeConfigured } from "@/services/payments/server";
 
 /**
  * GET /api/entitlement - the signed-in user's premium status, from the server.

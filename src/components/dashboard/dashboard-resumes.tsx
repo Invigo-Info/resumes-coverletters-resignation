@@ -23,7 +23,7 @@ import {
   pushServerDocument,
 } from "@/lib/store/documents-sync";
 import { getTemplate } from "@/lib/templates";
-import { downloadResume } from "@/lib/download-pdf";
+import { downloadResume } from "@/services/storage/download-pdf";
 import { LivePreview } from "@/components/editor/live-preview";
 import { ResumeThumbnail } from "./resume-thumbnail";
 import type { ResumeDoc } from "@/lib/mock-data";

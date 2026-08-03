@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { getStripe } from "@/lib/stripe/server";
+import { getStripe } from "@/services/payments/server";
 import {
   upsertEntitlement,
   setEntitlementByCustomer,
 } from "@/lib/entitlements";
-import { sendReceiptEmail } from "@/lib/email";
+import { sendReceiptEmail } from "@/services/email/email";
 
 // Stripe SDK + raw-body signature verification need the Node.js runtime.
 export const runtime = "nodejs";

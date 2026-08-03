@@ -1,4 +1,4 @@
-import { getSql, isDbEnabled } from "./db";
+import { getSql, isDbEnabled } from "@/services/database/db";
 
 /**
  * Server-side subscription entitlement - the source of truth for "premium",

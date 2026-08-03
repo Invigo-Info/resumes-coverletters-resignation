@@ -22,7 +22,7 @@ import {
   improveSummary,
   toneAt,
   type ToneId,
-} from "@/lib/ai/mock";
+} from "@/services/ai/mock";
 import { EditWithAiMenu, SummaryStatusBadge } from "./ai-edit";
 import { EditableSectionHeading } from "./field";
 import { RichTextEditor, type RichTextEditorHandle } from "../rich-text-editor";

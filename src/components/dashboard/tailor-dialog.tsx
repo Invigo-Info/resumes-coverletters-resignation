@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Loader2, Copy, Check, FileUp, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { tailorResume, type TailorResult } from "@/lib/ai/mock";
-import { extractJobPostingText } from "@/lib/ai/job-posting";
+import { tailorResume, type TailorResult } from "@/services/ai/mock";
+import { extractJobPostingText } from "@/services/ai/job-posting";
 import { cn } from "@/lib/utils";
 
 /** Human explanation for each failure mode of the job-posting upload. */

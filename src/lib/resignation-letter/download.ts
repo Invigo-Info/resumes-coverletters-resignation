@@ -1,5 +1,5 @@
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";
-import { exportElementToPdf } from "@/lib/pdf-export";
+import { exportElementToPdf } from "@/services/storage/pdf-export";
 
 /**
  * Find the on-screen resignation-letter preview node to export. Multiple copies

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Plus, Minus, Camera, Info, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore } from "@/lib/store/resume-store";
-import { downscaleImage } from "@/lib/downscale-image";
+import { downscaleImage } from "@/services/storage/downscale-image";
 import { nameError, sanitizeName } from "@/lib/validate-name";
 import {
   hidesPhoto,

@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useResumeStore } from "@/lib/store/resume-store";
-import { parseResumeText } from "@/lib/ai/parseResume";
+import { parseResumeText } from "@/services/ai/parseResume";
 import { cn } from "@/lib/utils";
 
 /** Accepts a linkedin.com/in/<handle> URL (optional country subdomain / trailing bits). */

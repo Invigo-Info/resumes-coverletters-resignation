@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { getSql, isDbEnabled } from "@/lib/db";
+import { getSql, isDbEnabled } from "@/services/database/db";
 
 /**
  * Per-user tailoring-session store. Backed by a file (`.data/tailoring-sessions.json`,

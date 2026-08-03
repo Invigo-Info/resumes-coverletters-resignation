@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
-import { downloadResume } from "@/lib/download-pdf";
+import { downloadResume } from "@/services/storage/download-pdf";
 import { LivePreview } from "@/components/editor/live-preview";
 import { ScoreRing } from "@/components/jobs/match-scoreboard";
 import { CompanyLogo } from "@/components/jobs/company-logo";

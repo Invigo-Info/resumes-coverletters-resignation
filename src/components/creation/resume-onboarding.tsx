@@ -24,13 +24,13 @@ import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
 import { cn } from "@/lib/utils";
 import { useResumeLimit } from "@/lib/resume-limit";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
-import { parseResume } from "@/lib/ai/parseResume";
+import { parseResume } from "@/services/ai/parseResume";
 import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
 import {
   isDropboxConfigured,
   chooseFromDropbox,
   fetchDropboxFile,
-} from "@/lib/dropbox";
+} from "@/services/storage/dropbox";
 
 /** True when the in-progress draft holds anything worth returning to. */
 function hasSavedProgress(s: ResumeState): boolean {

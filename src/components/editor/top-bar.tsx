@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
 import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
-import { downloadResume } from "@/lib/download-pdf";
+import { downloadResume } from "@/services/storage/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 

@@ -1,5 +1,5 @@
 import { useResumeStore } from "@/lib/store/resume-store";
-import { exportElementToPdf } from "@/lib/pdf-export";
+import { exportElementToPdf } from "@/services/storage/pdf-export";
 
 /** The currently visible resume-preview element (write/design/improve/mobile). */
 function visiblePreview(): HTMLElement | null {

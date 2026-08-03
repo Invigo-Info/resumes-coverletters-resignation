@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useResumeStore, type ContactInfo } from "@/lib/store/resume-store";
-import { parseResume } from "@/lib/ai/parseResume";
+import { parseResume } from "@/services/ai/parseResume";
 import { cn } from "@/lib/utils";
 
 /** The three steps of exporting a LinkedIn profile, in LinkedIn's own wording. */

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createUser } from "@/lib/users";
+import { createUser } from "@/services/database/users";
 import { limit, clientIp } from "@/lib/rate-limit";
 import { registerBodySchema } from "@/lib/schemas";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail } from "@/services/email/email";
 
 // Cap signups per IP to blunt automated account-creation spam.
 const REGISTER_LIMIT = Number(process.env.REGISTER_RATE_LIMIT ?? 10);

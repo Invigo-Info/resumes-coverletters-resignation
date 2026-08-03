@@ -28,7 +28,7 @@ import {
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { Confetti } from "@/components/brand/confetti";
 import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
-import { downloadResume } from "@/lib/download-pdf";
+import { downloadResume } from "@/services/storage/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import { cn } from "@/lib/utils";
 

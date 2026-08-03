@@ -3,10 +3,10 @@ import { CircleCheck } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { UnlockPremium } from "@/components/payment/unlock-premium";
-import { getStripe } from "@/lib/stripe/server";
+import { getStripe } from "@/services/payments/server";
 import { auth } from "@/auth";
 import { upsertEntitlement } from "@/lib/entitlements";
-import { isDbEnabled } from "@/lib/db";
+import { isDbEnabled } from "@/services/database/db";
 
 /**
  * Post-checkout confirmation page. Reads the Stripe session_id from the URL,

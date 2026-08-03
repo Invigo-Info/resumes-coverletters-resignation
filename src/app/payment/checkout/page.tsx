@@ -9,7 +9,7 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe
 import { Lock, CircleCheck, Loader2, ShieldAlert } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
-import { getPlan } from "@/lib/stripe/plans";
+import { getPlan } from "@/services/payments/plans";
 
 // Initialize Stripe.js once at module load; null when the publishable key is absent
 // so the page can render a "not configured" state instead of crashing.

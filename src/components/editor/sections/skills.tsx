@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore, type SkillEntry } from "@/lib/store/resume-store";
-import { generateSkills } from "@/lib/ai/mock";
+import { generateSkills } from "@/services/ai/mock";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditableSectionHeading } from "./field";

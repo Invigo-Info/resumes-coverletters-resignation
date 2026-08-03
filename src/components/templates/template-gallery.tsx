@@ -26,7 +26,7 @@ import {
   designForTemplate,
   type ResumeState,
 } from "@/lib/store/resume-store";
-import { MOCK_RESUME } from "@/lib/ai/parseResume";
+import { MOCK_RESUME } from "@/services/ai/parseResume";
 import { ScaledResumePreview } from "@/components/editor/scaled-resume-preview";
 import {
   templates,

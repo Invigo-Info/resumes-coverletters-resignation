@@ -34,7 +34,7 @@ import {
   isDropboxConfigured,
   chooseFromDropbox,
   fetchDropboxFile,
-} from "@/lib/dropbox";
+} from "@/services/storage/dropbox";
 import { toast } from "sonner";
 
 /**

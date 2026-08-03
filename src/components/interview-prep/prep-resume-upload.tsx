@@ -23,13 +23,13 @@ import {
   type ResumeRecord,
 } from "@/lib/store/documents-store";
 import { useApplyStore } from "@/lib/store/apply-store";
-import { parseResume } from "@/lib/ai/parseResume";
+import { parseResume } from "@/services/ai/parseResume";
 import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
 import {
   isDropboxConfigured,
   chooseFromDropbox,
   fetchDropboxFile,
-} from "@/lib/dropbox";
+} from "@/services/storage/dropbox";
 
 /**
  * The interview-prep "Start with your resume" step. The candidate chooses which

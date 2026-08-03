@@ -1,5 +1,5 @@
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
-import { exportElementToPdf } from "@/lib/pdf-export";
+import { exportElementToPdf } from "@/services/storage/pdf-export";
 
 /**
  * Find the on-screen cover-letter preview node to export. Multiple previews can

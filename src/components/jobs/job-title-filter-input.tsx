@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { suggestOptions } from "@/lib/ai/mock";
+import { suggestOptions } from "@/services/ai/mock";
 
 /** Lowercase + strip diacritics for matching (mirrors AutocompleteInput). */
 const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");

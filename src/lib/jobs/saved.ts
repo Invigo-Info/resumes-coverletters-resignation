@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { getSql, isDbEnabled } from "@/lib/db";
+import { getSql, isDbEnabled } from "@/services/database/db";
 import type { JobPosting } from "./job-search";
 
 /**

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
-import { PLANS, type PlanId } from "@/lib/stripe/plans";
+import { PLANS, type PlanId } from "@/services/payments/plans";
 import { cn } from "@/lib/utils";
 
 // Icons paired positionally with a plan's feature list (extra features fall back to a check).

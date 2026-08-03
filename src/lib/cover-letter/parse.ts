@@ -3,7 +3,7 @@
 import type { CLFlow, CoverLetterState } from "@/lib/store/cover-letter-store";
 import type { ResumeState } from "@/lib/store/resume-store";
 import { parseResumeAi } from "@/lib/cover-letter/ai";
-import { parseResume } from "@/lib/ai/parseResume";
+import { parseResume } from "@/services/ai/parseResume";
 import { useDocumentsStore } from "@/lib/store/documents-store";
 import { mockResumes } from "@/lib/mock-data";
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { updateUserName, deleteUser } from "@/lib/users";
-import { getStripe } from "@/lib/stripe/server";
+import { updateUserName, deleteUser } from "@/services/database/users";
+import { getStripe } from "@/services/payments/server";
 
 /** Update the signed-in user's display name. */
 export async function PATCH(request: Request) {

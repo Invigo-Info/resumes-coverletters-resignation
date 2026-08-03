@@ -11,7 +11,7 @@ import {
   resumeKeyFromSlug,
   resumeSlugFromKey,
 } from "@/lib/section-routes";
-import { downloadResume } from "@/lib/download-pdf";
+import { downloadResume } from "@/services/storage/download-pdf";
 import { HelpPill } from "@/components/layout/help-pill";
 import { TopBar, type EditorTab } from "./top-bar";
 import { SectionNav } from "./section-nav";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getStripe } from "@/lib/stripe/server";
-import { getPlan } from "@/lib/stripe/plans";
+import { getStripe } from "@/services/payments/server";
+import { getPlan } from "@/services/payments/plans";
 import { auth } from "@/auth";
 
 /**

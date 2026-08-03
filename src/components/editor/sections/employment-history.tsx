@@ -17,8 +17,8 @@ import {
   useResumeStore,
   type EmploymentEntry,
 } from "@/lib/store/resume-store";
-import { improveBullets, rewriteBullets } from "@/lib/ai/mock";
-import { isNearDuplicate } from "@/lib/ai/validate";
+import { improveBullets, rewriteBullets } from "@/services/ai/mock";
+import { isNearDuplicate } from "@/services/ai/validate";
 import { EditWithAiMenu, BulletStatusBadge, allowsBulletMerge } from "./ai-edit";
 import { Field, FieldWrap, EditableSectionHeading } from "./field";
 import { EntryCard, AddMoreButton } from "./entry-card";

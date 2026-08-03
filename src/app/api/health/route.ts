@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isDbEnabled } from "@/lib/db";
+import { isDbEnabled } from "@/services/database/db";
 import { isSharedRateLimit } from "@/lib/rate-limit";
 
 /** Never cache the health check - it must reflect the instance right now. */
