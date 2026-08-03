@@ -42,12 +42,15 @@ travel in a short task turn). Reference docs live in
   profession-matched, safety-aware). Shared `MORE_QUESTIONS_RULES` for "get more".
 - Screening salary answer now gives an approximate, resume-tailored market range
   (role + seniority + location, local currency) as a confident two-sentence spoken
-  answer (35-50 words): sentence 1 opens in a rotated style (experience/background/
-  leadership/qualification/role-scope/direct-range-first) with the range + pay type,
-  sentence 2 a rotated flexibility close. Names the pay type (base/hourly/monthly/
-  contract/OTE), widens the range when role or location is unclear, bans canned
-  lines ("I'm after the market rate", "according to current market data", etc.), and
-  never claims live market data. Availability/relocation/notice keep the safe
+  answer (35-50 words), first person ("my" not "your"): sentence 1 opens in a rotated
+  style (experience/background/leadership/qualification/experience-drawn/
+  direct-range-first) with the range + pay type, sentence 2 a rotated flexibility
+  close. Uses only SPECIFIC resume evidence (no vague filler like "hardworking"),
+  names the pay type (base/hourly/monthly/contract/OTE, incl. "$90K base with
+  $140K-$160K OTE"), widens the range when role or location is unclear, bans canned
+  lines ("I'm after the market rate", "full compensation picture", "according to
+  current market data", etc.), and never claims live market data. Availability/
+  relocation/notice keep the safe
   template. Candidate `location` reaches the AI. Reference:
   `docs/interview-prep-with-only-resume-just-practice/simple-salary-question-prompt.md`.
 - Streaming: temperature 0.7 (natural phrasing) with explicit "all seven"

@@ -361,18 +361,19 @@ PER-QUESTION OUTPUT
   - The sample is spoken word-for-word to the interviewer: include ONLY what the candidate would say out loud. Never put a coaching note or meta-instruction inside the sample (no "personalise this", "adjust as needed", "insert your number", "use your own range"). Any such reminder belongs in a coaching tip, never in the sample.
 
 PERSONAL-PREFERENCE QUESTIONS
-- Salary ("What are your salary expectations?"): act as a senior recruiter and compensation specialist. Using ONLY the resume, write a confident, natural spoken answer of EXACTLY TWO sentences and 35 to 50 words (this overrides the general sample length for this question only). First silently identify the candidate's likely target role, location, industry, career level, relevant experience, strongest qualifications, and the appropriate compensation type; then estimate ONE broad, rounded range in the local currency as informed resume-based guidance.
-  - Sentence 1: open with the candidate's strongest resume-supported reason for the range, include one or two strong resume facts, state the rounded range, and name the correct pay type (annual base salary, hourly base pay, monthly, contract rate, or OTE).
+- Salary ("What are your salary expectations?"): act as a senior recruiter, compensation specialist, and expert English writer. Using ONLY the resume, write a confident, polished, natural and grammatically correct spoken answer of EXACTLY TWO sentences and 35 to 50 words (this overrides the general sample length for this question only). First silently identify the candidate's likely target role, location, industry, career level, relevant experience, strongest qualifications, and the appropriate compensation type; then estimate ONE broad, rounded range in the local currency as informed resume-based guidance.
+  - Write in the FIRST PERSON throughout: say "my", never "your", when referring to the candidate.
+  - Sentence 1: open with the candidate's strongest resume-supported reason for the range, include one or two strong resume facts, state the rounded range, and name the correct pay type (annual base salary, hourly base pay, monthly, contract/daily rate, or base plus OTE).
   - Sentence 2: communicate flexibility based on the role's scope, responsibilities, the employer's range, benefits, or the overall compensation package.
-  - VARY the OPENING to fit the profile - do NOT start every answer the same way, do NOT automatically begin with "Considering my", and do NOT open with a list of skills. Use ONE of: experience-first, background-first, leadership-first, qualification-first, role-scope-first, or direct-range-first.
-  - Choose the target role and location from the resume in priority order (stated target title or summary target, else current/most-recent role; stated target location, else current, else most-recent job, else country only). Never invent a location; when it is missing or unclear, widen the range.
-  - Use natural, negotiation-friendly figures (e.g. "$80K to $95K" or "$40 to $48 an hour"), never overly precise numbers like $82,417. Do NOT confuse base salary with total compensation, bonus, commission, equity, shift differentials, or OTE.
-  - Widen the range when the role, location, experience, or career direction is unclear: clear role/location/experience about 15-25%; career-changer or partial match about 20-35%; missing location or unclear role about 25-40%; sales, executive or contract roles wider still.
-  - Close with flexibility, and VARY the wording (do not reuse one line): e.g. "flexible depending on the role's scope and overall compensation package" / "open to discussing where my experience fits within the employer's range" / "flexible depending on the responsibilities and the complete package".
-  - Mention no more than two evidence themes and no more than three individual skills. Sound confident and conversational; avoid long explanations, weak wording, aggressive demands, or unsupported claims.
-  - Present it as informed, resume-based guidance. Never claim it comes from live market data, a salary survey, an employer database, or current market research. Never invent a role, location, dates, experience, skills, qualifications, achievements, current salary, desired salary, or an employer salary band, and never claim the candidate already earns or demands a specific figure.
-  - Do NOT use phrases like: "I'm after the market rate", "according to current market data", "anything is fine", "salary does not matter", "this is the minimum I will accept", or "I know I'm worth".
-  - The sample is spoken word-for-word: return only the final spoken answer - no headings, bullets, reasoning, confidence labels, or extra commentary.
+  - Use SPECIFIC resume evidence - relevant experience, leadership, technical projects, clinical background, budget ownership, certifications, or measurable responsibility. Do NOT use vague filler such as "my eagerness to contribute", "my strong academic background", "I am hardworking", or "I am passionate". Mention no more than two evidence themes and no more than three individual skills.
+  - VARY the OPENING to fit the candidate's strongest evidence - do NOT start every answer the same way, do NOT automatically begin with "Considering my", and do NOT open with a list of skills. Use ONE natural opener such as: "Based on my [N] years of...", "With my background in...", "Given my experience leading...", "Drawing on my experience...", "With my degree and hands-on experience...", or "I'm targeting...".
+  - Choose the target role in priority order: explicit desired title; else the target stated in the professional summary; else the current or most-recent role; else the dominant recent career path. Choose the location from the resume (stated target, else current, else most-recent job, else country only). Never invent a role or location; when either is missing or unclear, widen the range.
+  - Use natural, negotiation-friendly figures (e.g. "$80K to $95K annually", "$35 to $42 an hour", or "$90K base with $140K to $160K OTE"), never overly precise numbers like $82,417. Do NOT confuse base salary with bonus, commission, equity, benefits, shift differentials, total compensation, or OTE.
+  - Widen the range when the role, location, career level, or relevant experience is unclear: clear role/location/experience about 15-25%; career-changer or partial match about 20-35%; missing location or unclear role about 25-40%; sales, executive or contract roles wider still.
+  - Close with flexibility, and VARY the wording (do not reuse one line): e.g. "I'm flexible depending on the role's scope and overall compensation package" / "I'm open to discussing where my experience fits within the employer's range" / "There's flexibility depending on the responsibilities, benefits, and complete package".
+  - Present it as informed, resume-based guidance. Never claim it comes from live market data, a salary survey, an employer database, a job posting, or current market research. Never invent a role, location, dates, experience, skills, qualifications, achievements, current salary, desired salary, or an employer salary band, and never claim the candidate already earns or demands a specific figure.
+  - Do NOT use awkward or canned phrases such as: "I'm after the market rate", "my background leads me to expect", "the role matters more than salary", "full compensation picture", "according to current market data", "anything is fine", "salary does not matter", "this is the minimum I will accept", or "I know I'm worth".
+  - Final check before returning: exactly two sentences and 35 to 50 words; "my" not "your"; the pay type suits the profession; every candidate-specific detail appears in the resume; the wording is grammatically correct and natural. Return only the final spoken answer - no headings, bullets, reasoning, confidence labels, or extra commentary.
 - Availability, relocation, notice period, schedule: do NOT invent the candidate's preference. Give a safe, non-committal template that asks for the role's timeline first, e.g. "My availability depends on the hiring timeline and my current commitments. I can confirm a specific date once I understand the expected start schedule."
 - One coaching tip on the salary (and any preference) question must remind the candidate to adjust the range or detail to their own research and target before using it. Keep such reminders in the TIP only - the sample answer stays clean spoken text and never contains the reminder.
 
@@ -1095,22 +1096,22 @@ experience: """${(resume.experience || "").slice(0, 2500)}"""`;
           // matter how many examples the prompt lists. (Normal server route, so
           // Math.random is available and appropriate here.)
           const SALARY_STYLES = [
-            "Experience-first: open with the most relevant experience, THEN the range and pay type.",
-            "Background-first: open with the candidate's field or background, THEN the range and pay type.",
-            "Leadership-first: open with leadership or the scope owned, THEN the range and pay type.",
-            "Qualification-first: open with education, certifications or projects, THEN the range and pay type.",
-            "Role-scope-first: open with the level or scope of the target role, THEN the range and pay type.",
-            "Direct-range-first: open by stating the target range and pay type directly.",
+            "Experience-first: open with the most relevant experience ('Based on my N years of...'), THEN the range and pay type.",
+            "Background-first: open with the candidate's field or background ('With my background in...'), THEN the range and pay type.",
+            "Leadership-first: open with leadership or the scope owned ('Given my experience leading...'), THEN the range and pay type.",
+            "Experience-drawn: open with 'Drawing on my experience...', THEN the range and pay type.",
+            "Qualification-first: open with education/certifications/projects ('With my degree and hands-on experience...'), THEN the range and pay type.",
+            "Direct-range-first: open by stating the target directly ('I'm targeting...').",
           ];
           const salaryStyle =
             SALARY_STYLES[Math.floor(Math.random() * SALARY_STYLES.length)];
           // Rotate the CLOSING flexibility line too, so the range answer does not
           // end the same way every time (pairs with the opening rotation above).
           const SALARY_CLOSINGS = [
-            "flexible depending on the role's scope and overall compensation package.",
-            "open to discussing where my experience fits within the employer's range.",
-            "flexible depending on the responsibilities and the complete package.",
-            "open to the right role and the full benefits and compensation picture.",
+            "I'm flexible depending on the role's scope and overall compensation package.",
+            "I'm open to discussing where my experience fits within the employer's range.",
+            "There's flexibility depending on the responsibilities, benefits, and complete package.",
+            "I'm flexible depending on the position's scope and the complete package.",
           ];
           const salaryClosing =
             SALARY_CLOSINGS[Math.floor(Math.random() * SALARY_CLOSINGS.length)];
@@ -1129,7 +1130,7 @@ Requirements:
 - Keep each answer between 20 and 45 words, in 1 to 3 short sentences, direct and conversational.
 - Avoid long STAR stories; use only one or two strong resume-supported facts per answer and save technical detail for later rounds.
 - Use only resume-supported facts; never invent employers, tools, metrics, dates, or years.
-- Salary question ("What are your salary expectations?"): write EXACTLY two sentences, 35 to 50 words (this question only). Sentence 1 opens in THIS style this time - ${salaryStyle} - with one or two resume facts, a rounded local-currency range (e.g. "$80K to $95K"), and the pay type (annual base, hourly, monthly, contract, or OTE). Sentence 2 states flexibility phrased like: "${salaryClosing}" Widen the range when the role or location is unclear. Mention at most two evidence themes and three skills. Never claim it comes from live market data, and never use "I'm after the market rate", "according to current market data", "anything is fine", "this is the minimum I will accept", or "I know I'm worth".
+- Salary question ("What are your salary expectations?"): write EXACTLY two sentences, 35 to 50 words, first person ("my", never "your"), grammatically clean and natural. Sentence 1 opens in THIS style this time - ${salaryStyle} - using SPECIFIC resume evidence (experience, leadership, projects, clinical background, budget ownership, certifications, or measurable responsibility - never vague filler like "hardworking", "passionate", or "strong academic background"), a rounded local-currency range (e.g. "$80K to $95K annually" or "$90K base with $140K to $160K OTE"), and the correct pay type (annual base, hourly, monthly, contract, or base plus OTE). Sentence 2 states flexibility phrased like: "${salaryClosing}" Widen the range when the role or location is unclear; mention at most two evidence themes and three skills. Never claim it comes from live market data, and never use awkward/canned lines like "I'm after the market rate", "my background leads me to expect", "the role matters more than salary", "full compensation picture", "according to current market data", "anything is fine", "this is the minimum I will accept", or "I know I'm worth". Return only the spoken answer.
 - Availability, relocation, schedule, or notice-period questions: use a safe, non-committal template that asks for the role's timeline first. For salary and these, one coaching tip reminds the candidate to adjust to their own number or date.
 - For initial_questions, also include exactly 3 short questions the candidate can ask. For more_questions, return no candidate questions.
 - Exclude every previously displayed question, and explore resume evidence not fully covered before; keep the same tone and structure, and return no closing-page content.
