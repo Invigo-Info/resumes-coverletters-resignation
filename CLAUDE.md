@@ -13,20 +13,42 @@ company facts). Nothing about the candidate is invented — no employers, metric
 tools, years, licences, or eligibility. Personal/eligibility facts (citizenship,
 clearance, licence, salary) are surfaced as fill-in templates, never assumed.
 
-Key areas:
+Key areas (full purpose-grouped layout: `docs/architecture.md`):
 - `src/app/api/ai/route.ts` — one Gemini-backed endpoint, task-dispatched
   (summary, bullets, skills, resume extraction, interview prep). Interview prep
   has a resume-only path and a company-specific (job + JD) path.
-- `src/lib/interview/interview-prep.ts` — interview-prep client logic (blocking
-  fetch, NDJSON streaming, heuristic fallback).
-- `src/components/interview-prep/` — the interview-prep UI.
-- `src/lib/store/` — Zustand stores (resume, documents, apply).
+- `src/features/*` — each feature owns its `components/`, `lib/`, and `store/`
+  (resume-builder, cover-letter, resignation-letter, jobs, interview-prep,
+  dashboard, authentication, onboarding, billing, user-profile, marketing).
+  E.g. `src/features/interview-prep/{components,lib/interview-prep.ts,store}`.
+- `src/services/*` — ai, database, payments, email, storage (side-effecting IO).
+- `src/{validation,permissions,config,utilities}` — cross-cutting library code.
+- `src/components/{common,forms,layout}` — shared, feature-agnostic UI.
+- Routes live under `src/app/(public|authenticated)/` route groups (the
+  parentheses do NOT change URLs); `api/` and the root layout stay at the app root.
 
 ## Verify before pushing
 
 `npx tsc --noEmit` and `python ../scripts/check_no_emoji.py <changed files>`.
 
 ## Changelog
+
+### 2026-08-03 — Architecture restructure to a purpose-grouped layout
+
+Moved the codebase onto the structure in `docs/architecture.md` with **no
+behaviour, URL, or API change** - verified by `tsc --noEmit` and a clean
+production build after every phase (on the `restructure` branch):
+
+- `lib` split into `services/{ai,payments,database,email,storage}`, `validation`,
+  `permissions`, `config`, `utilities`; `src/lib` removed.
+- `app` routes wrapped in URL-safe route groups `(public)` / `(authenticated)`;
+  `api/`, the root layout, `robots`, `sitemap` stay at the app root.
+- `features/*` extracted (resume-builder, cover-letter, resignation-letter, jobs,
+  interview-prep, dashboard, authentication, onboarding, billing, user-profile,
+  marketing) - each owns its `components/`, `lib/`, and `store/`.
+- Shared UI -> `components/{common,forms,layout}`.
+- Root scaffolding added: `database/`, `tests/`, `docs/*.md`, `SECURITY.md`,
+  `CHANGELOG.md`. Held LinkedIn work kept out (local `_held-linkedin-backup`).
 
 ### 2026-08-03 — Interview-prep questions matched to competitor style
 

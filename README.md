@@ -68,7 +68,20 @@ python ../scripts/check_no_emoji.py <changed files># no emoji in UI/output
 
 CI runs token, contrast, component-spec, and test gates on push/PR.
 
+## Project structure
+
+Code is grouped by **purpose** (see `docs/architecture.md` for the full map):
+
+- `src/app/(public|authenticated)/` - routes as URL-safe route groups; `api/` and
+  the root layout stay at the app root.
+- `src/features/*` - each feature owns its `components/`, `lib/`, and `store/`.
+- `src/services/*` - `ai`, `database`, `payments`, `email`, `storage`.
+- `src/{validation,permissions,config,utilities}` - cross-cutting library code.
+- `src/components/{common,forms,layout}` - shared, feature-agnostic UI.
+- `database/`, `tests/`, `docs/` - schema/migrations, tests, and documentation.
+
 ## Project docs
 
-See `CLAUDE.md` for the project overview and changelog, and `AGENTS.md` for the
-"this is a customized Next.js" note.
+See `CLAUDE.md` for the project overview and changelog, `docs/architecture.md`
+for the folder architecture, and `AGENTS.md` for the "this is a customized
+Next.js" note.
