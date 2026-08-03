@@ -423,6 +423,18 @@ OCCUPATION AWARENESS
 - First, silently classify the candidate's occupation, industry, specialisation, seniority, work environment, and whether the role is regulated or high-risk, so wording fits their real field and never borrows software/marketing/office language for an unrelated job.
 - For a student or entry-level candidate with little or no formal employment, replace "most recent role" with a project, volunteering experience, school activity, or internship, and draw on education, academic projects, clubs, extracurriculars, and coursework. Never imply that school or unpaid work was formal paid employment.
 
+EVIDENCE PRIORITY
+- Choose evidence in this order: current/most-recent employment; supported achievements and measurable results; previous relevant employment; skills and tools; projects; internships; certifications and licences; education; professional summary; volunteer experience; extracurriculars; desired job title; location when relevant. Select only the strongest, most interview-relevant evidence.
+
+CAREER GAP
+- Mention a career gap only when it is relevant to a likely question. Never invent why the candidate took a break; use neutral, non-judgmental language and focus on earlier relevant experience and readiness. Do not claim the candidate stayed current, completed training, reviewed protocols, or worked during the gap unless the resume confirms it.
+
+REGULATED / HIGH-RISK ROLES
+- For healthcare, legal, financial, safety-sensitive, or other regulated work, use only the licences and certifications shown in the resume, and do not claim a licence is active unless its status is confirmed. Do not invent a clinical, safety, legal, financial, patient, or workplace incident, and never give unsafe professional instructions; instead coach the candidate to explain their actual training, protocols, safety checks, escalation, documentation, and scope of practice.
+
+PERSONAL-PREFERENCE QUESTIONS
+- Manager questions normally do NOT ask about salary, availability, relocation, work setup, notice period, or start date. If one is unavoidable, never invent the candidate's preference - use a safe, non-committal spoken template and keep a coaching tip reminding them to personalise it.
+
 THE 7 MANAGER QUESTIONS (this order and purpose)
 1. "Tell me about yourself." (ask this VERBATIM).
 2. "Walk me through your most recent role." (keep close to this wording; for a student or entry-level candidate, their most recent project, placement, or internship).
@@ -434,21 +446,21 @@ THE 7 MANAGER QUESTIONS (this order and purpose)
 Keep questions 1 and 2 close to the canonical wording; make 3-7 short, single-ask questions. No two questions may test the same thing.
 
 TONE (deeper and evidence-based than a screening call)
-- Questions: deeper and evidence-based, but still SHORT - about 6 to 16 words, ONE clear ask. Anchor to a specific resume fact or metric when it sharpens the question - state ONE fact in a few words, then ask (for example: "You reduced reporting time by 65% - how did you do that?", "Walk me through your most recent role.", "Tell me about a project you're most proud of.", "How do you handle stakeholders who challenge your work?"). NEVER stack two or three facts or "and ... and" clauses into one long multi-line question, and do NOT pad with a recap ("Your resume highlights...", "As a leader of ...", "You have listed...", "Your resume states...").
+- Questions: deeper and evidence-based, but still SHORT - about 8 to 18 words, ONE clear ask, and NEVER more than 22 words. Anchor to a specific resume fact or metric when it sharpens the question - state ONE fact in a few words, then ask (for example: "You reduced reporting time by 65% - how did you do that?", "Walk me through your most recent role.", "Tell me about a project you're most proud of.", "How do you handle stakeholders who challenge your work?"). NEVER stack two or three facts or "and ... and" clauses into one long multi-line question, and do NOT pad with a recap ("Your resume highlights...", "As a leader of ...", "You have listed...", "Your resume states...").
 - Coaching tips: EXACTLY 3, each a substantive imperative of about 7 to 16 words. Structure them as: (1) lead with the business problem or context before the solution, (2) name the exact tools and decisions the candidate personally owned, (3) close with the supported result or lesson learned.
 
 PER-QUESTION OUTPUT
 - Each question includes EXACTLY 3 coaching tips.
 - Include one spoken sample answer WHEN the resume has enough evidence to answer it honestly:
   - 30 to 70 words, in 2 to 4 short sentences. Give more depth than a screening answer.
-  - First person and specific: clearly show what the candidate personally did with concrete actions, tools, and outcomes; prefer "I" over a vague "we".
+  - First person and specific: clearly show what the candidate personally did with concrete actions, tools, and outcomes; prefer "I" over a vague "we". Do not sound like a cover letter or use exaggerated/promotional language; do not overload one answer with tools or metrics.
   - Include supported metrics from the resume when useful; never invent a number.
   - For a behavioural question, use a brief Situation-Action-Result structure when the evidence exists.
   - Everyday words, natural when spoken; never say "according to my resume"; do not mention the answer was generated. The sample is spoken word-for-word to the interviewer - never put a coaching note or meta-instruction inside it.
 - Never create a fictional project, conflict, failure, incident, or achievement to answer a question. When the resume does NOT support a behavioural story (a challenge, failure, conflict, or difficult situation with no matching example): do NOT invent one - return guidance-only. OMIT the sample answer entirely, and use the 3 coaching tips to explain how the candidate should choose a real example and structure it with Situation-Action-Result.
 
 CANDIDATE QUESTIONS
-- On initial_questions only, also return exactly 3 short questions the candidate can ask the interviewer, focused on: success in the role, the team's biggest challenge, and the team or manager's working style.
+- On initial_questions only, also return exactly 3 short questions the candidate can ask the interviewer, focused on: success in the role, the team's biggest challenge, and the team or manager's working style. Keep each to about 8-15 words (never more than 18).
 - Return no candidate questions on more_questions.
 
 OUTPUT
@@ -1220,7 +1232,7 @@ ${managerBlueprint}
 Requirements:
 - For initial_questions, return exactly 7 questions. For more_questions, return exactly 3 new questions.
 - Additional questions are appended to the existing list, never used as replacements.
-- Keep each QUESTION SHORT: one clear ask, about 6 to 16 words. When you anchor to a resume fact, use ONE fact stated in a few words then ask (e.g. "You grew revenue from 35% to 55% - how?") - NEVER stack two or three facts or "and ... and" clauses into a long multi-line question, and never prefix with a resume recap ("Your resume shows...", "As a leader of ...").
+- Keep each QUESTION SHORT: one clear ask, about 8 to 18 words and NEVER more than 22. When you anchor to a resume fact, use ONE fact stated in a few words then ask (e.g. "You grew revenue from 35% to 55% - how?") - NEVER stack two or three facts or "and ... and" clauses into a long multi-line question, and never prefix with a resume recap ("Your resume shows...", "As a leader of ...").
 - Make questions deeper and evidence-based: anchor to a specific resume fact or metric when it sharpens the question (e.g. "You cut X by N% - how did you do that?"), stated crisply; do not pad with a long resume recap.
 - Every question must include exactly 3 coaching tips, each a substantive imperative of about 7 to 16 words: (1) lead with the business problem before the solution, (2) name the exact tools and decisions the candidate personally owned, (3) close with the supported result or lesson learned.
 - Include one sample answer when the resume has enough evidence; give more depth than a screening answer.

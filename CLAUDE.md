@@ -33,6 +33,18 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-08-03 — Manager prompt: evidence/gap/regulated rules + question length
+
+Folded the new-prompts Meeting-with-a-Manager spec (`Meeting_with_a_Manager_
+System_Prompt.docx`) into `MANAGER_SYSTEM_PROMPT` as rules only (NDJSON output
+unchanged - the doc's plain-text format was not adopted). Added: evidence-priority
+order; career-gap rules; regulated/high-risk role handling (licences only as
+shown, no invented incidents, coach-to-explain-own-protocol); a personal-
+preference note (manager normally does not ask salary/availability; safe template
+if unavoidable); sample-answer tone (not a cover letter, no promotional language,
+no metric overload); question length raised to about 8-18 words (never over 22,
+system prompt + task turn); and candidate questions kept to 8-15 words (max 18).
+
 ### 2026-08-03 — Screening Call prompt: scoped salary + evidence/gap rules
 
 Folded the new-prompts Screening Call spec (`Screening_Call_System_Prompt_with_
