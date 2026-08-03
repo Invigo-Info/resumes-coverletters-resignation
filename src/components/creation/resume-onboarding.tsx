@@ -21,11 +21,11 @@ import {
 } from "@/components/brand/source-icons";
 import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
 import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
-import { cn } from "@/lib/utils";
-import { useResumeLimit } from "@/lib/resume-limit";
+import { cn } from "@/utilities/utils";
+import { useResumeLimit } from "@/permissions/resume-limit";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
 import { parseResume } from "@/services/ai/parseResume";
-import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
+import { MAX_UPLOAD_HINT, validateUploadFile } from "@/validation/upload-validation";
 import {
   isDropboxConfigured,
   chooseFromDropbox,

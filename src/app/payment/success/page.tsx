@@ -5,7 +5,7 @@ import { PrimaryButton } from "@/components/brand/brand-buttons";
 import { UnlockPremium } from "@/components/payment/unlock-premium";
 import { getStripe } from "@/services/payments/server";
 import { auth } from "@/auth";
-import { upsertEntitlement } from "@/lib/entitlements";
+import { upsertEntitlement } from "@/permissions/entitlements";
 import { isDbEnabled } from "@/services/database/db";
 
 /**

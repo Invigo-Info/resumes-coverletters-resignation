@@ -6,7 +6,7 @@ import {
   CoverLetterMiniPreview,
   type CoverLetterPreviewData,
 } from "@/components/cover-letter/cover-letter-preview";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import {
   Dialog,
   DialogContent,

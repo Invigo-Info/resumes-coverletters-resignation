@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { EditorShell } from "@/components/editor/editor-shell";
-import { resumeKeyFromSlug, RESUME_FIRST_SLUG } from "@/lib/section-routes";
+import { resumeKeyFromSlug, RESUME_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * Resume editor for one write step. The [section] slug selects which part of the

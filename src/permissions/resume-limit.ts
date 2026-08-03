@@ -2,7 +2,7 @@
 
 import { useDocumentsStore } from "@/lib/store/documents-store";
 import { usePaywall } from "@/lib/cover-letter/paywall";
-import { FREE_RESUME_LIMIT } from "@/lib/limits";
+import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 
 export { FREE_RESUME_LIMIT };
 

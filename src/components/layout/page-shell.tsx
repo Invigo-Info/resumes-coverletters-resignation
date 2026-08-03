@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 interface PageShellProps {
   children: React.ReactNode;

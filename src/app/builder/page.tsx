@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { RESUME_FIRST_SLUG } from "@/lib/section-routes";
+import { RESUME_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * Legacy entry point. The resume editor now lives at /resumes/write/<section>

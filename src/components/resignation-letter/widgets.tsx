@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Sparkles, PencilLine, Smile, Briefcase, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Shared "Improve with AI" menu actions (label + icon + the instruction sent to

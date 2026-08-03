@@ -2,7 +2,7 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { verifyCredentials } from "@/services/database/users";
-import { peek, limit, reset } from "@/lib/rate-limit";
+import { peek, limit, reset } from "@/permissions/rate-limit";
 
 // Brute-force throttle for email/password sign-in: after this many FAILED
 // attempts for one email within the window, further attempts are refused until

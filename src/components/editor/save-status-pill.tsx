@@ -2,7 +2,7 @@
 
 import { CircleCheck, Loader2 } from "lucide-react";
 import { useSaveStatusStore } from "@/lib/store/documents-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * The "Saving… / Saved" pill shown at the bottom-left of the resume preview.

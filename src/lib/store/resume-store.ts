@@ -3,9 +3,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./safe-storage";
-import { getTemplate, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
-import { fontPairsForTemplate, styleStem } from "@/lib/font-pairs";
-import { getResumeTheme, DEFAULT_THEME_ID } from "@/lib/resume-themes";
+import { getTemplate, DEFAULT_TEMPLATE_ID } from "@/config/templates";
+import { fontPairsForTemplate, styleStem } from "@/utilities/font-pairs";
+import { getResumeTheme, DEFAULT_THEME_ID } from "@/config/resume-themes";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */

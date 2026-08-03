@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getSavedJobs, addSavedJob, removeSavedJob } from "@/lib/jobs/saved";
-import { savedJobBodySchema } from "@/lib/schemas";
+import { savedJobBodySchema } from "@/validation/schemas";
 import type { JobPosting } from "@/lib/jobs/job-search";
 
 /**

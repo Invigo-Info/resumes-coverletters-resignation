@@ -28,7 +28,7 @@ import {
 import {
   COVER_LETTER_WRITE_BASE,
   isCoverLetterSlug,
-} from "@/lib/section-routes";
+} from "@/utilities/section-routes";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 
 /** Maps the active step key to its corresponding step component (the wizard body). */

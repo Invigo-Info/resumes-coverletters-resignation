@@ -13,7 +13,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Sections that offer AI content generation (a "Write/Improve with AI" draft,

@@ -9,7 +9,7 @@
  */
 
 import { dedupeSuggestions, hasFakeMetric } from "./validate";
-import type { ComputedExperience } from "@/lib/experience";
+import type { ComputedExperience } from "@/utilities/experience";
 
 /** Selectable summary tones (id + label + swatch) for the summary generator. */
 export const SUMMARY_TONES = [

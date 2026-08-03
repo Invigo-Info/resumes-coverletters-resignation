@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Guess a likely company domain from its display name, e.g.

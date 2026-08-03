@@ -17,9 +17,9 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { useResumeStore, getProgress } from "@/lib/store/resume-store";
-import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
+import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";

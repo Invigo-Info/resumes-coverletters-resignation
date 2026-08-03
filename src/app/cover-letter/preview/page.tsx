@@ -13,12 +13,12 @@ import { useCoverLetterStore, letterCompletion } from "@/lib/store/cover-letter-
 import {
   canDownloadCoverLetter,
   recordCoverLetterDownload,
-} from "@/lib/resume-download-gate";
+} from "@/permissions/resume-download-gate";
 import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import { useCoverLetterAutosave } from "@/lib/store/cover-letter-documents-store";
 import { generateCoverLetter, hasPlaceholder } from "@/lib/cover-letter/ai";
 import { bodyToHtml } from "@/lib/cover-letter/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 type Mode = "write" | "design";
 

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CompanyLogo } from "./company-logo";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import type { JobPosting } from "@/lib/jobs/job-search";
 
 /** One selectable path in the apply gateway. */

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Floating dark "Back" pill, fixed to the bottom-left (mirrors the HelpPill).

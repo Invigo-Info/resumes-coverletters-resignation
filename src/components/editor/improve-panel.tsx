@@ -27,10 +27,10 @@ import {
 } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { Confetti } from "@/components/brand/confetti";
-import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
+import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 // Maps each improvement-suggestion key to the icon shown beside it in the
 // "Add more details" list. Unknown keys fall back to a Plus icon.

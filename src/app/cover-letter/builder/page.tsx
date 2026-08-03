@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { COVER_LETTER_FIRST_SLUG } from "@/lib/section-routes";
+import { COVER_LETTER_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * Legacy entry point. The cover-letter wizard now lives at

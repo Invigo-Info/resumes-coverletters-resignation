@@ -14,7 +14,7 @@ import {
   experienceLabel,
 } from "@/lib/cover-letter/suggestions";
 import { rankChips } from "@/lib/cover-letter/ai";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Reorder a static chip pool so the picks most relevant to the user's desired

@@ -3,7 +3,7 @@ import {
   type ResumeState,
   type SectionKey,
 } from "@/lib/store/resume-store";
-import { extractDocxText } from "@/lib/docx-text";
+import { extractDocxText } from "@/utilities/docx-text";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

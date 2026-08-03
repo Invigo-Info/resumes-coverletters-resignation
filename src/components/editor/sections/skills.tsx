@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** A resume reads as thin below this many skills, and full at the upper bound. */
 const GOOD_SKILLS = 5;

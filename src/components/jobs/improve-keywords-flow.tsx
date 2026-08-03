@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { X, Check, MessageSquareText, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { CompanyLogo } from "./company-logo";
 
 /* ------------------------------------------------------------------ */

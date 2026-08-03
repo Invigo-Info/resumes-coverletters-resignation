@@ -14,8 +14,8 @@ import {
   sanitizePhone,
   detectCountry,
   isLinkedInProfile,
-} from "@/lib/contact-validate";
-import { LOCATION_SUGGESTIONS } from "@/lib/suggestions";
+} from "@/validation/contact-validate";
+import { LOCATION_SUGGESTIONS } from "@/utilities/suggestions";
 import { Field, FieldWrap, EditableSectionHeading } from "./field";
 import { AutocompleteInput } from "./autocomplete-input";
 

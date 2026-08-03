@@ -6,7 +6,7 @@ import { Sparkles, X, Loader2, Copy, Check, FileUp, FileText } from "lucide-reac
 import { toast } from "sonner";
 import { tailorResume, type TailorResult } from "@/services/ai/mock";
 import { extractJobPostingText } from "@/services/ai/job-posting";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Human explanation for each failure mode of the job-posting upload. */
 const UPLOAD_ERRORS: Record<string, string> = {

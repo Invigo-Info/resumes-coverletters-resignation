@@ -6,8 +6,8 @@ import {
   type CoverLetterState,
 } from "@/lib/store/cover-letter-store";
 import { bodyToHtml } from "@/lib/cover-letter/format";
-import { spaceBlocks } from "@/lib/html-spacing";
-import { cn } from "@/lib/utils";
+import { spaceBlocks } from "@/utilities/html-spacing";
+import { cn } from "@/utilities/utils";
 
 const FONT_STACK: Record<CLFontId, string> = {
   georgia: "Georgia, 'Times New Roman', serif",

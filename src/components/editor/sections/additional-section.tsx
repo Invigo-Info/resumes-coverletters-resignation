@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import {
   useResumeStore,
   type AdditionalSection as TAdditionalSection,
@@ -30,19 +30,19 @@ import { RichTextEditor } from "../rich-text-editor";
 import { AutocompleteInput } from "./autocomplete-input";
 import { MonthYearPicker, isEndBeforeStart } from "./month-year-picker";
 import { ADDITIONAL_CONFIG, type FieldDef } from "./additional-config";
-import { titleCase } from "@/lib/title-case";
+import { titleCase } from "@/validation/title-case";
 import {
   emailError,
   phoneError,
   sanitizePhone,
   formatPhone,
-} from "@/lib/contact-validate";
-import { urlError } from "@/lib/url";
+} from "@/validation/contact-validate";
+import { urlError } from "@/validation/url";
 import {
   JOB_TITLES,
   LOCATION_SUGGESTIONS,
   INSTITUTIONS,
-} from "@/lib/suggestions";
+} from "@/utilities/suggestions";
 
 /** Maps a field's `suggest` kind to its static autocomplete list. */
 const SUGGEST_LISTS = {

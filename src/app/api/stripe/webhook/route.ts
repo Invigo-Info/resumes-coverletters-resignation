@@ -4,7 +4,7 @@ import { getStripe } from "@/services/payments/server";
 import {
   upsertEntitlement,
   setEntitlementByCustomer,
-} from "@/lib/entitlements";
+} from "@/permissions/entitlements";
 import { sendReceiptEmail } from "@/services/email/email";
 
 // Stripe SDK + raw-body signature verification need the Node.js runtime.

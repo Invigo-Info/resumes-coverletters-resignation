@@ -11,7 +11,7 @@ import {
 } from "./resume-store";
 import { pushServerDocument, deleteServerDocument } from "./documents-sync";
 import { usePaywall } from "@/lib/cover-letter/paywall";
-import { FREE_RESUME_LIMIT } from "@/lib/limits";
+import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 
 /** The resume fields persisted in a saved draft (no transient UI state). */
 export type ResumeDocData = Pick<

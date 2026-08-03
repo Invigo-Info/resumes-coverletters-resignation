@@ -8,7 +8,7 @@ import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { bodyToHtml } from "@/lib/cover-letter/format";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { CLField } from "./widgets";
 import { CoverLetterPreview } from "./cover-letter-preview";
 

@@ -8,12 +8,12 @@ import {
   type AdditionalSection,
   type DesignOptions,
 } from "@/lib/store/resume-store";
-import { spaceBlocks } from "@/lib/html-spacing";
-import { displayUrl, normalizeUrl } from "@/lib/url";
-import { resolveResumeTheme } from "@/lib/resume-themes";
-import { FONT_STACK } from "@/lib/font-pairs";
-import { getTemplate, type HeadingVariant } from "@/lib/templates";
-import { cn } from "@/lib/utils";
+import { spaceBlocks } from "@/utilities/html-spacing";
+import { displayUrl, normalizeUrl } from "@/validation/url";
+import { resolveResumeTheme } from "@/config/resume-themes";
+import { FONT_STACK } from "@/utilities/font-pairs";
+import { getTemplate, type HeadingVariant } from "@/config/templates";
+import { cn } from "@/utilities/utils";
 
 /** Format a start/end pair as "start - end", omitting empty sides; "" if both blank. */
 function dateRange(start: string, end: string) {

@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import {
   useResumeStore,
   previewStateFromDoc,
@@ -35,7 +35,7 @@ import {
   DEFAULT_TEMPLATE_ID,
   type ResumeTemplate,
   type TemplateCategory,
-} from "@/lib/templates";
+} from "@/config/templates";
 
 /**
  * A live thumbnail of ONE template style, rendering the canned sample resume in

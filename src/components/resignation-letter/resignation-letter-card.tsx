@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Pill-style action button used for the card's Download/Edit/Copy/Delete row. */
 function ActionButton({

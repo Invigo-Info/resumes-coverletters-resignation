@@ -29,7 +29,7 @@ import {
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { parseResumeForCoverLetter } from "@/lib/cover-letter/parse";
 import { useDocumentsStore } from "@/lib/store/documents-store";
-import { mockResumes } from "@/lib/mock-data";
+import { mockResumes } from "@/utilities/mock-data";
 import {
   isDropboxConfigured,
   chooseFromDropbox,

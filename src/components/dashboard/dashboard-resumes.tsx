@@ -9,8 +9,8 @@ import { ResumeCard } from "./resume-card";
 import { EmptyState } from "./empty-state";
 import { GhostButton } from "@/components/brand/brand-buttons";
 import { usePaywall } from "@/lib/cover-letter/paywall";
-import { useResumeLimit } from "@/lib/resume-limit";
-import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
+import { useResumeLimit } from "@/permissions/resume-limit";
+import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import { useResumeStore, newResumeId } from "@/lib/store/resume-store";
 import {
   useDocumentsStore,
@@ -22,11 +22,11 @@ import {
   fetchServerDocuments,
   pushServerDocument,
 } from "@/lib/store/documents-sync";
-import { getTemplate } from "@/lib/templates";
+import { getTemplate } from "@/config/templates";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { LivePreview } from "@/components/editor/live-preview";
 import { ResumeThumbnail } from "./resume-thumbnail";
-import type { ResumeDoc } from "@/lib/mock-data";
+import type { ResumeDoc } from "@/utilities/mock-data";
 
 /** Collect the resume's real experience bullets, so the AI tailoring flow can
  *  reframe them instead of inventing achievements. */

@@ -1,5 +1,5 @@
 import { MessageSquareText } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 interface LogoMarkProps {
   /** Show the "resumewriter.ai" wordmark next to the icon. */

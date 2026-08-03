@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { parseResumeText } from "@/services/ai/parseResume";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Accepts a linkedin.com/in/<handle> URL (optional country subdomain / trailing bits). */
 const PROFILE_RE = /^https?:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\/[^/\s?#]+/i;

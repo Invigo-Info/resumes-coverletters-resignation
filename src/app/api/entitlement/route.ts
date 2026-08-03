@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getEntitlement } from "@/lib/entitlements";
+import { getEntitlement } from "@/permissions/entitlements";
 import { isDbEnabled } from "@/services/database/db";
 import { isStripeConfigured } from "@/services/payments/server";
 

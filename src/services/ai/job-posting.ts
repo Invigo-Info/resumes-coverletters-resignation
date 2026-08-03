@@ -1,6 +1,6 @@
 "use client";
 
-import { extractDocxText } from "@/lib/docx-text";
+import { extractDocxText } from "@/utilities/docx-text";
 
 /**
  * Read an uploaded job posting into plain text so it can be pasted into the

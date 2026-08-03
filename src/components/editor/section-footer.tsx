@@ -8,7 +8,7 @@ import {
   type SectionKey,
 } from "@/lib/store/resume-store";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { SECTION_META } from "./section-nav";
 
 /**

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/config/site";
 
 /**
  * XML sitemap listing the publicly indexable routes only (home + auth entry +

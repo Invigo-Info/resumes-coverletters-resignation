@@ -39,7 +39,7 @@ import {
 } from "@/lib/store/resignation-letter-documents-store";
 import { useInterviewPrepDocumentsStore } from "@/lib/store/interview-prep-documents-store";
 import { useJobsStore } from "@/lib/store/jobs-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useCoverLetterStore } from "@/lib/store/cover-letter-store";
 import { useResignationLetterStore } from "@/lib/store/resignation-letter-store";

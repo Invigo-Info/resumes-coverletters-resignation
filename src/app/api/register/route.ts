@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createUser } from "@/services/database/users";
-import { limit, clientIp } from "@/lib/rate-limit";
-import { registerBodySchema } from "@/lib/schemas";
+import { limit, clientIp } from "@/permissions/rate-limit";
+import { registerBodySchema } from "@/validation/schemas";
 import { sendWelcomeEmail } from "@/services/email/email";
 
 // Cap signups per IP to blunt automated account-creation spam.

@@ -4,12 +4,12 @@ import {
   FILE_TOO_LARGE_MESSAGE,
   isAllowedUploadType,
   UNSUPPORTED_FILE_MESSAGE,
-} from "@/lib/upload-validation";
-import { aiBodySchema, type Task } from "@/lib/schemas";
-import { limit, clientIp } from "@/lib/rate-limit";
+} from "@/validation/upload-validation";
+import { aiBodySchema, type Task } from "@/validation/schemas";
+import { limit, clientIp } from "@/permissions/rate-limit";
 import { auth } from "@/auth";
-import type { ComputedExperience } from "@/lib/experience";
-import { validateSummary, repairInstruction } from "@/lib/summary-validate";
+import type { ComputedExperience } from "@/utilities/experience";
+import { validateSummary, repairInstruction } from "@/validation/summary-validate";
 
 /**
  * Factuality + anti-puffery rules shared by the summary prompts. Kept truthful

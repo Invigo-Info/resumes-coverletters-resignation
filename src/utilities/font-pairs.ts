@@ -1,5 +1,5 @@
 import type { FontId } from "@/lib/store/resume-store";
-import type { ResumeTemplate } from "@/lib/templates";
+import type { ResumeTemplate } from "@/config/templates";
 
 /**
  * Style-specific font options for the Design panel.

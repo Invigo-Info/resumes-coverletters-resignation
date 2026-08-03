@@ -15,7 +15,7 @@ import {
 } from "@/components/brand/source-icons";
 import { GoogleConsentDialog } from "@/components/creation/cloud-source-dialogs";
 import { LinkedInLinkDialog } from "@/components/creation/linkedin-link-dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { useResumeStore } from "@/lib/store/resume-store";
 import {
   saveActiveResume,
@@ -24,7 +24,7 @@ import {
 } from "@/lib/store/documents-store";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { parseResume } from "@/services/ai/parseResume";
-import { MAX_UPLOAD_HINT, validateUploadFile } from "@/lib/upload-validation";
+import { MAX_UPLOAD_HINT, validateUploadFile } from "@/validation/upload-validation";
 import {
   isDropboxConfigured,
   chooseFromDropbox,

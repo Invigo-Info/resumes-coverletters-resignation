@@ -3,7 +3,7 @@
 import { useResumeStore, type SectionKey } from "@/lib/store/resume-store";
 import { SECTION_META } from "./section-nav";
 import { ADDITIONAL_CONFIG } from "./sections/additional-config";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { Plus } from "lucide-react";
 
 /** Horizontal, scrollable section switcher shown on screens without the side nav. */

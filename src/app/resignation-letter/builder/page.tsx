@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { RESIGNATION_FIRST_SLUG } from "@/lib/section-routes";
+import { RESIGNATION_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * Legacy entry point. The resignation-letter wizard now lives at

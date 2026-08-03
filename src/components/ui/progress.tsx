@@ -2,7 +2,7 @@
 
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/utilities/utils"
 
 /** Progress bar root (Base UI); renders a track with a filled indicator. */
 function Progress({

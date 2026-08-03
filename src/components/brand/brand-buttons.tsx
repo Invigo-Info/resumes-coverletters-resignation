@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 

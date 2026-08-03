@@ -22,7 +22,7 @@ import {
 } from "@/lib/store/documents-sync";
 import { formatLetterDate, htmlToText, previewOpeningLine } from "@/lib/resignation-letter/format";
 import type { ResignationLetterDoc } from "@/lib/resignation-letter/mock-data";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Format a timestamp as a human "Updated D Mon YYYY" label for the card. */
 function formatUpdated(ts: number): string {

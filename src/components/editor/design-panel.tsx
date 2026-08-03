@@ -18,15 +18,15 @@ import {
   Rows4,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import {
   useResumeStore,
   type SpacingId,
   type ColumnsId,
 } from "@/lib/store/resume-store";
-import { templates, getTemplate, isAtsFriendly } from "@/lib/templates";
-import { fontPairsForTemplate, styleStem, FONT_LABELS, FONT_STACK } from "@/lib/font-pairs";
-import { RESUME_THEMES, resolveResumeTheme } from "@/lib/resume-themes";
+import { templates, getTemplate, isAtsFriendly } from "@/config/templates";
+import { fontPairsForTemplate, styleStem, FONT_LABELS, FONT_STACK } from "@/utilities/font-pairs";
+import { RESUME_THEMES, resolveResumeTheme } from "@/config/resume-themes";
 
 // Density presets controlling per-entry spacing in the resume preview.
 const SPACINGS: { id: SpacingId; label: string; icon: LucideIcon }[] = [

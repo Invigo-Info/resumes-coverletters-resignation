@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isDbEnabled } from "@/services/database/db";
-import { isSharedRateLimit } from "@/lib/rate-limit";
+import { isSharedRateLimit } from "@/permissions/rate-limit";
 
 /** Never cache the health check - it must reflect the instance right now. */
 export const dynamic = "force-dynamic";

@@ -25,8 +25,8 @@ import { EntryCard, AddMoreButton } from "./entry-card";
 import { RichTextEditor } from "../rich-text-editor";
 import { AutocompleteInput } from "./autocomplete-input";
 import { MonthYearPicker, isEndBeforeStart } from "./month-year-picker";
-import { JOB_TITLES, LOCATION_SUGGESTIONS } from "@/lib/suggestions";
-import { titleCase } from "@/lib/title-case";
+import { JOB_TITLES, LOCATION_SUGGESTIONS } from "@/utilities/suggestions";
+import { titleCase } from "@/validation/title-case";
 import {
   Dialog,
   DialogContent,

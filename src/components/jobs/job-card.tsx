@@ -1,7 +1,7 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import type { JobPosting } from "@/lib/jobs/job-search";
 import { CompanyLogo } from "./company-logo";
 import { ScoreRing } from "./match-scoreboard";

@@ -9,7 +9,7 @@
  * (only flags high-confidence problems) so it never rewrites correct output.
  */
 
-import type { ComputedExperience } from "./experience";
+import type { ComputedExperience } from "@/utilities/experience";
 
 /** Puffery / unsupported-claim phrases that must not appear (spec banned list). */
 const BANNED_PHRASES: string[] = [

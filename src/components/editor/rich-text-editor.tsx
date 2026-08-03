@@ -11,7 +11,7 @@ import {
   ListOrdered,
   Link as LinkIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * Index of the bullet/paragraph the caret sits in, counting list items and

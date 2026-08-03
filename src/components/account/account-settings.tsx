@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Send, Loader2, UserRoundX, SlidersHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { Input } from "@/components/ui/input";
 import { PrimaryButton } from "@/components/brand/brand-buttons";
 import {

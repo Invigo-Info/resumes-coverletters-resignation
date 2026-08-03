@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { CoverLetterBuilder } from "@/components/cover-letter/cover-letter-builder";
-import { isCoverLetterSlug, COVER_LETTER_FIRST_SLUG } from "@/lib/section-routes";
+import { isCoverLetterSlug, COVER_LETTER_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * One step of the cover-letter wizard. The [section] slug selects the step;

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ChevronDown, GripVertical, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Drag-and-drop wiring for a reorderable card. Omit to make the card static. */
 export interface DragProps {

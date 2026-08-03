@@ -17,9 +17,9 @@ import { bodyToHtml } from "@/lib/resignation-letter/format";
 import {
   canDownloadResignationLetter,
   recordResignationLetterDownload,
-} from "@/lib/resume-download-gate";
+} from "@/permissions/resume-download-gate";
 import { downloadResignationLetter } from "@/lib/resignation-letter/download";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 type Mode = "write" | "design";
 

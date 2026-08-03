@@ -5,7 +5,7 @@ import type { ResumeState } from "@/lib/store/resume-store";
 import { parseResumeAi } from "@/lib/cover-letter/ai";
 import { parseResume } from "@/services/ai/parseResume";
 import { useDocumentsStore } from "@/lib/store/documents-store";
-import { mockResumes } from "@/lib/mock-data";
+import { mockResumes } from "@/utilities/mock-data";
 
 /**
  * Persona fallbacks used when no live AI parse is available (missing key,

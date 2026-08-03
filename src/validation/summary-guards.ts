@@ -6,7 +6,7 @@
  * conflict with a safe alternative instead. Deterministic, so no round-trip.
  */
 
-import type { ComputedExperience } from "./experience";
+import type { ComputedExperience } from "@/utilities/experience";
 
 export interface YearsConflict {
   /** Years the instruction asked for. */

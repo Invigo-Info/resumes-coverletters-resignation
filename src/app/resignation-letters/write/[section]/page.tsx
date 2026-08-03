@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ResignationLetterBuilder } from "@/components/resignation-letter/resignation-letter-builder";
-import { isResignationSlug, RESIGNATION_FIRST_SLUG } from "@/lib/section-routes";
+import { isResignationSlug, RESIGNATION_FIRST_SLUG } from "@/utilities/section-routes";
 
 /**
  * One step of the resignation-letter wizard. The [section] slug picks the step;

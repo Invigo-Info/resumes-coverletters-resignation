@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore, type ResumeState } from "@/lib/store/resume-store";
-import { computeExperience } from "@/lib/experience";
-import { detectYearsConflict, stripYearsRequest } from "@/lib/summary-guards";
+import { computeExperience } from "@/utilities/experience";
+import { detectYearsConflict, stripYearsRequest } from "@/validation/summary-guards";
 import {
   generateSummary,
   improveSummary,

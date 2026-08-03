@@ -24,7 +24,7 @@ import { toISODate } from "@/lib/resignation-letter/format";
 import {
   RESIGNATION_WRITE_BASE,
   isResignationSlug,
-} from "@/lib/section-routes";
+} from "@/utilities/section-routes";
 import { useResignationLetterAutosave } from "@/lib/store/resignation-letter-documents-store";
 
 /** Maps the active step key to its corresponding step component (the wizard body). */

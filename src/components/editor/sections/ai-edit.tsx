@@ -11,7 +11,7 @@ import {
   ArrowUp,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Strip HTML tags to plain text (used for word-count length checks). */
 const strip = (html: string) => html.replace(/<[^>]*>/g, "").trim();

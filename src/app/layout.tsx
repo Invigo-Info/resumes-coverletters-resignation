@@ -28,7 +28,7 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/config/site";
 
 const inter = Inter({
   variable: "--font-sans",

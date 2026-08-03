@@ -2,8 +2,8 @@
 
 import { useResignationLetterStore, type RLFontId, type RLFontSize } from "@/lib/store/resignation-letter-store";
 import { formatLetterDate, previewOpeningLine, htmlToText } from "@/lib/resignation-letter/format";
-import { spaceBlocks } from "@/lib/html-spacing";
-import { cn } from "@/lib/utils";
+import { spaceBlocks } from "@/utilities/html-spacing";
+import { cn } from "@/utilities/utils";
 
 // Maps each selectable font id to its CSS family stack.
 const FONT_STACK: Record<RLFontId, string> = {

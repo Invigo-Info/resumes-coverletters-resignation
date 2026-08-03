@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Send, Plus, Settings, CircleHelp, LogOut, LayoutDashboard } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { useResumeLimit } from "@/lib/resume-limit";
-import { cn } from "@/lib/utils";
+import { useResumeLimit } from "@/permissions/resume-limit";
+import { cn } from "@/utilities/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { analyticsEnabled, capturePageview } from "@/lib/analytics";
+import { analyticsEnabled, capturePageview } from "@/utilities/analytics";
 
 /**
  * Sends a PostHog pageview whenever the route changes. Renders nothing and does

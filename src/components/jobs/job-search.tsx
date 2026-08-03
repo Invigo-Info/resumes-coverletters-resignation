@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ChevronDown, ArrowUpDown, FileText, Undo2, Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,

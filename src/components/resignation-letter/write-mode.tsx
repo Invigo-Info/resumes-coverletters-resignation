@@ -21,7 +21,7 @@ import { bodyToHtml, htmlToText } from "@/lib/resignation-letter/format";
 import { improveLetterBody } from "@/lib/resignation-letter/ai";
 import { ResignationLetterPreview } from "./resignation-letter-preview";
 import { RLField, IMPROVE_AI_ACTIONS } from "./widgets";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 // The three editable sections of the write-mode editor.
 export type Section = "personal" | "employer" | "content";

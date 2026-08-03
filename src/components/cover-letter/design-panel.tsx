@@ -19,7 +19,7 @@ import {
 import {
   canDownloadCoverLetter,
   recordCoverLetterDownload,
-} from "@/lib/resume-download-gate";
+} from "@/permissions/resume-download-gate";
 import { downloadCoverLetter } from "@/lib/cover-letter/download";
 import {
   useCoverLetterStore,
@@ -28,7 +28,7 @@ import {
 } from "@/lib/store/cover-letter-store";
 import Image from "next/image";
 import { coverLetterTemplates } from "@/lib/cover-letter/templates";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 // After a successful subscription the user returns to the cover-letters dashboard.
 const COVER_LETTER_DASHBOARD = "/cover-letters";

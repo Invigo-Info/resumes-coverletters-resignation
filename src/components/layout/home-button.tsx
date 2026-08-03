@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { House } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * White rounded-square Home button (house icon) used at the top-left of every

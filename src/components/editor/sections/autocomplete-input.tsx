@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { suggestOptions } from "@/services/ai/mock";
 
 type Match = { text: string; ai: boolean };

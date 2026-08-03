@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { CompanyLogo } from "@/components/jobs/company-logo";
 import { PrepResumeUpload } from "@/components/interview-prep/prep-resume-upload";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { useApplyStore } from "@/lib/store/apply-store";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useDocumentsStore } from "@/lib/store/documents-store";

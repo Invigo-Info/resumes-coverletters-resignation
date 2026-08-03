@@ -6,7 +6,7 @@ import {
   type RLFontId,
   type RLFontSize,
 } from "@/lib/store/resignation-letter-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 // Selectable text-size options for the toolbar.
 const SIZES: RLFontSize[] = ["S", "M", "L"];

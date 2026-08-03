@@ -19,7 +19,7 @@ import {
   RL_STEP_LABEL,
   type RLStep,
 } from "@/lib/store/resignation-letter-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /**
  * The header progress reaction icon for a given percent. A stable module-level

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Calendar, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatLetterDate } from "@/lib/resignation-letter/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 // Month/day labels for the calendar header, quick-pick grid, and weekday row.
 const MONTHS_FULL = [

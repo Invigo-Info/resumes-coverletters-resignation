@@ -7,8 +7,8 @@ import {
   isDocType,
   type StoredDocument,
 } from "@/services/database/documents";
-import { getEntitlement } from "@/lib/entitlements";
-import { FREE_RESUME_LIMIT } from "@/lib/limits";
+import { getEntitlement } from "@/permissions/entitlements";
+import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 
 /** All documents for the signed-in user (resumes, cover/resignation letters). */
 export async function GET() {

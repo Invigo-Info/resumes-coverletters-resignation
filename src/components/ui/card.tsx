@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/utilities/utils"
 
 /** Rounded surface container; sets card spacing and ring styling. */
 function Card({

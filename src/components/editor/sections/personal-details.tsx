@@ -6,7 +6,7 @@ import { Plus, Minus, Camera, Info, SlidersHorizontal, Trash2 } from "lucide-rea
 import { toast } from "sonner";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { downscaleImage } from "@/services/storage/downscale-image";
-import { nameError, sanitizeName } from "@/lib/validate-name";
+import { nameError, sanitizeName } from "@/validation/validate-name";
 import {
   hidesPhoto,
   PHOTO_ACCEPT,
@@ -14,12 +14,12 @@ import {
   PHOTO_MAX_BYTES,
   PHOTO_MIN_EDGE,
   PHOTO_HIDDEN_REASON,
-} from "@/lib/photo-policy";
+} from "@/validation/photo-policy";
 import { Field, FieldWrap, SectionHeading } from "./field";
 import { BirthDatePicker } from "./birth-date-picker";
 import { AutocompleteInput } from "./autocomplete-input";
 import { ConfigurePhotoDialog } from "./configure-photo-dialog";
-import { JOB_TITLES } from "@/lib/suggestions";
+import { JOB_TITLES } from "@/utilities/suggestions";
 
 /** Read a File's pixel dimensions (0x0 if the browser cannot decode it). */
 function imageSize(file: File): Promise<{ w: number; h: number }> {

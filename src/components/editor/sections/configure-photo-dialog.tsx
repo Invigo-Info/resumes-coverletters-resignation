@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 
 /** Exported avatar size (square canvas), and the crop-circle share of the frame. */
 const OUT = 512;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, X, ThumbsUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { ringColor, type KeywordMatch } from "@/lib/jobs/keyword-match";
 
 /**

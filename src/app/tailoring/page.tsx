@@ -15,7 +15,7 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
@@ -27,7 +27,7 @@ import { TailorArt } from "@/components/jobs/improve-keywords-flow";
 import { useResumeStore } from "@/lib/store/resume-store";
 import { useDocumentsStore } from "@/lib/store/documents-store";
 import { useTailorStore } from "@/lib/store/tailor-store";
-import { canDownloadResume, recordResumeDownload } from "@/lib/resume-download-gate";
+import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
 import {
   buildTailorPlan,
   type TailorPlanItem,

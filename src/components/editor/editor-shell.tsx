@@ -10,7 +10,7 @@ import {
   RESUME_WRITE_BASE,
   resumeKeyFromSlug,
   resumeSlugFromKey,
-} from "@/lib/section-routes";
+} from "@/utilities/section-routes";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { HelpPill } from "@/components/layout/help-pill";
 import { TopBar, type EditorTab } from "./top-bar";

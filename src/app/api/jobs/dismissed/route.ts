@@ -6,7 +6,7 @@ import {
   removeDismissedJob,
   clearDismissedJobs,
 } from "@/lib/jobs/dismissed";
-import { dismissedJobBodySchema } from "@/lib/schemas";
+import { dismissedJobBodySchema } from "@/validation/schemas";
 
 /**
  * Account-level dismissed ("Not interested") jobs. Owner email is derived from

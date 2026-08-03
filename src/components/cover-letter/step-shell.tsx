@@ -6,7 +6,7 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { GhostButton, PrimaryButton } from "@/components/brand/brand-buttons";
 import { HomeButton } from "@/components/layout/home-button";
 import { HelpPill } from "@/components/layout/help-pill";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import type { CLPhase } from "@/lib/store/cover-letter-store";
 
 // The three high-level wizard phases shown in the top-right step indicator.

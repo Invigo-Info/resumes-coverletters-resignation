@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/config/site";
 
 /**
  * robots.txt. Public marketing/legal pages are crawlable; every per-account app

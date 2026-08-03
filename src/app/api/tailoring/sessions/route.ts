@@ -7,7 +7,7 @@ import {
   removeTailoringSession,
   type PersistedTailoringSession,
 } from "@/lib/tailoring/sessions";
-import { tailoringSessionBodySchema } from "@/lib/schemas";
+import { tailoringSessionBodySchema } from "@/validation/schemas";
 
 /**
  * Account-level tailoring sessions. The owner email is derived from the verified

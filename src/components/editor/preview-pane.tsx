@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { LivePreview } from "./live-preview";
 import { SaveStatusPill } from "./save-status-pill";
 

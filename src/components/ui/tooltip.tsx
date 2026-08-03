@@ -2,7 +2,7 @@
 
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/utilities/utils"
 
 /** Shares tooltip timing config (open delay) across descendants. */
 function TooltipProvider({

@@ -4,9 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Download, Loader2, Pencil, Sparkles, Trash2 } from "lucide-react";
-import type { ResumeDoc } from "@/lib/mock-data";
+import type { ResumeDoc } from "@/utilities/mock-data";
 import { usePaywall } from "@/lib/cover-letter/paywall";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utilities/utils";
 import { TailorDialog } from "./tailor-dialog";
 import { ShareDialog, buildShareUrl } from "@/components/share/share-dialog";
 import {
