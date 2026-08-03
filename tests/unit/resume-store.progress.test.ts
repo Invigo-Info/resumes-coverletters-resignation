@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import type { ResumeState } from "./resume-store";
+import type { ResumeState } from "@/features/resume-builder/store/resume-store";
 import {
   getProgress,
   getProgressItems,
   getImproveSuggestions,
   BASE_PROGRESS,
-} from "./resume-store";
+} from "@/features/resume-builder/store/resume-store";
 
 /**
  * The progress functions read only a subset of ResumeState (personal, contact,

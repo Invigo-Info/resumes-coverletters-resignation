@@ -36,7 +36,7 @@ import {
   getDismissedJobs,
   removeDismissedJob,
   clearDismissedJobs,
-} from "./dismissed";
+} from "@/features/jobs/lib/dismissed";
 
 const A = "alice@example.com";
 const B = "bob@example.com";

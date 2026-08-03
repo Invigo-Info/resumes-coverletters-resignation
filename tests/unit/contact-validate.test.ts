@@ -7,7 +7,7 @@ import {
   formatPhone,
   phoneError,
   isLinkedInProfile,
-} from "./contact-validate";
+} from "@/validation/contact-validate";
 
 describe("emailError", () => {
   it("accepts empty (email is optional)", () => {

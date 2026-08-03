@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hidesPhoto } from "./photo-policy";
+import { hidesPhoto } from "@/validation/photo-policy";
 
 describe("hidesPhoto", () => {
   it("hides for the US, UK, and Ireland", () => {

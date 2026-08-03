@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { PersistedTailoringSession } from "./sessions";
+import type { PersistedTailoringSession } from "@/features/jobs/tailoring/sessions";
 
 /**
  * Per-user tailoring-session isolation - the same authorization invariant proven
@@ -38,7 +38,7 @@ import {
   getTailoringSessions,
   getTailoringSession,
   removeTailoringSession,
-} from "./sessions";
+} from "@/features/jobs/tailoring/sessions";
 
 const A = "alice@example.com";
 const B = "bob@example.com";

@@ -32,7 +32,7 @@ vi.mock("fs", () => ({
   },
 }));
 
-import { upsertDocument, getUserDocuments, removeDocument } from "./documents";
+import { upsertDocument, getUserDocuments, removeDocument } from "@/services/database/documents";
 
 const A = "alice@example.com";
 const B = "bob@example.com";

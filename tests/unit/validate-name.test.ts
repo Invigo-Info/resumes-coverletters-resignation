@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nameError, sanitizeName } from "./validate-name";
+import { nameError, sanitizeName } from "@/validation/validate-name";
 
 describe("nameError", () => {
   it("requires a value", () => {

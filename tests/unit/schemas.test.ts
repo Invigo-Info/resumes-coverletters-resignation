@@ -5,7 +5,7 @@ import {
   registerBodySchema,
   passwordSchema,
   savedJobBodySchema,
-} from "./schemas";
+} from "@/validation/schemas";
 
 describe("aiBodySchema", () => {
   it("accepts a known task with a payload object", () => {

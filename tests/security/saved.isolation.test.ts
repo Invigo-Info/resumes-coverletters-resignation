@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { JobPosting } from "./job-search";
+import type { JobPosting } from "@/features/jobs/lib/job-search";
 
 /**
  * Per-user saved-jobs isolation - the same authorization invariant proven for
@@ -33,7 +33,7 @@ vi.mock("fs", () => ({
   },
 }));
 
-import { addSavedJob, getSavedJobs, removeSavedJob } from "./saved";
+import { addSavedJob, getSavedJobs, removeSavedJob } from "@/features/jobs/lib/saved";
 
 const A = "alice@example.com";
 const B = "bob@example.com";

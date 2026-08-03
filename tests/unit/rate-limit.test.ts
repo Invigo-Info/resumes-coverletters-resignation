@@ -9,7 +9,7 @@ import {
   reset,
   isSharedRateLimit,
   _resetRateLimitStore,
-} from "./rate-limit";
+} from "@/permissions/rate-limit";
 
 beforeEach(() => _resetRateLimitStore());
 

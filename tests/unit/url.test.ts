@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeUrl, displayUrl, urlError } from "./url";
+import { normalizeUrl, displayUrl, urlError } from "@/validation/url";
 
 describe("normalizeUrl", () => {
   it("returns empty for empty input", () => {

@@ -6,7 +6,7 @@ import {
   MAX_UPLOAD_BYTES,
   FILE_TOO_LARGE_MESSAGE,
   NO_FILE_MESSAGE,
-} from "./upload-validation";
+} from "@/validation/upload-validation";
 
 /** Minimal File-shaped stub - the validator only reads `.size`. */
 const fileOfSize = (size: number) => ({ size } as File);

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { siteUrl } from "./site";
+import { siteUrl } from "@/config/site";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 
