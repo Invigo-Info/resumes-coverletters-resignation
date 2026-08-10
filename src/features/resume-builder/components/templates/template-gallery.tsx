@@ -110,7 +110,7 @@ export function TemplateGallery() {
                 "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
                 "outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                 isActive
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground shadow-card hover:text-foreground"
               )}
             >
@@ -219,7 +219,7 @@ function TemplateCard({
           onClick={onPreview}
           aria-label={`Preview the ${t.name} template`}
           className={cn(
-            "absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-card ring-1 ring-border",
+            "absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-card ring-1 ring-border",
             "opacity-0 transition-opacity hover:bg-secondary group-hover:opacity-100 focus-visible:opacity-100",
             "outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
           )}

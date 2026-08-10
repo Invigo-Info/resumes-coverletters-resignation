@@ -118,7 +118,7 @@ function ViewToggle({
 function SortMenu({ value, onChange }: { value: SortMode; onChange: (v: SortMode) => void }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground outline-none transition-colors hover:border-foreground/20">
+      <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground outline-none transition-colors hover:border-foreground/20">
         <ArrowUpDown className="size-4 text-muted-foreground" />
         {SORT_LABEL[value]}
       </DropdownMenuTrigger>
@@ -791,20 +791,20 @@ function RecommendedView({
                   <button
                     type="button"
                     onClick={onResetFilters}
-                    className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                    className="inline-flex h-10 items-center rounded-[10px] bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                   >
                     Reset filters
                   </button>
                   <Link
                     href="/builder"
-                    className="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/20"
+                    className="inline-flex h-10 items-center rounded-[10px] border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/20"
                   >
                     Improve resume
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
+              <div className="mt-4 divide-y divide-border overflow-hidden rounded-[10px] border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
                 {list.map((job) => (
                   <JobCard
                     key={job.id}
@@ -922,7 +922,7 @@ function SavedView({
               ))}
 
               {savedJobs.length > 0 && (
-                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
+                <div className="divide-y divide-border overflow-hidden rounded-[10px] border border-border bg-card lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
                   {savedJobs.map((job) => (
                     <JobCard
                       key={job.id}

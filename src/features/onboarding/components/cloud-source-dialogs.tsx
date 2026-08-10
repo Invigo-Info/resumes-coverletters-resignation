@@ -11,7 +11,7 @@ import {
 import { LinkedInIcon } from "@/components/common/brand/source-icons";
 
 const cancelBtn =
-  "flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70";
+  "flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70";
 const primaryBtn =
   "flex-1 rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50";
 
@@ -111,7 +111,7 @@ export function LinkedInImportDialog({
               if (e.key === "Enter" && valid) onImport(url.trim());
             }}
             placeholder="https://www.linkedin.com/in/username/"
-            className="h-12 w-full rounded-xl border border-input bg-card px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/20"
+            className="h-12 w-full rounded-[10px] border border-input bg-card px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/20"
           />
           {url.trim() && !valid && (
             <p className="mt-1.5 text-xs text-destructive">

@@ -85,7 +85,7 @@ function PaymentCard({ plan, next }: { plan: string; next: string }) {
     );
   } else if (loadError) {
     body = (
-      <p className="rounded-lg bg-red-50 px-3 py-3 text-sm font-medium text-red-600">{loadError}</p>
+      <p className="rounded-lg bg-destructive/10 px-3 py-3 text-sm font-medium text-destructive">{loadError}</p>
     );
   } else if (!clientSecret) {
     body = (

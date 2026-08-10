@@ -135,7 +135,7 @@ export function LinkedInLinkDialog({
             aria-invalid={!!error}
             aria-describedby={error ? "linkedin-url-error" : undefined}
             className={cn(
-              "h-12 w-full rounded-xl border bg-card px-4 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 disabled:opacity-60",
+              "h-12 w-full rounded-[10px] border bg-card px-4 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 disabled:opacity-60",
               error ? "border-destructive focus:ring-destructive/30" : "border-border focus:border-primary"
             )}
           />
@@ -151,7 +151,7 @@ export function LinkedInLinkDialog({
             type="button"
             onClick={() => onOpenChange(false)}
             disabled={busy}
-            className="h-12 rounded-full bg-muted px-6 text-sm font-bold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
+            className="h-12 rounded-[10px] bg-muted px-6 text-sm font-bold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
           >
             Cancel
           </button>

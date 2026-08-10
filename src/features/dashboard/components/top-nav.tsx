@@ -54,10 +54,10 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
                 key={tab.label}
                 href={tab.href}
                 className={cn(
-                  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-full px-4 py-1.5 text-sm transition-colors",
                   isActive
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary/10 font-semibold text-primary"
+                    : "font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
                 )}
               >
                 {tab.label}

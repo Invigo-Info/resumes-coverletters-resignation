@@ -30,7 +30,7 @@ export function MobileSectionBar({ onAdd }: { onAdd: () => void }) {
           className={cn(
             "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
             key === active
-              ? "bg-foreground text-background"
+              ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:text-foreground"
           )}
         >
@@ -39,7 +39,7 @@ export function MobileSectionBar({ onAdd }: { onAdd: () => void }) {
       ))}
       <button
         onClick={onAdd}
-        className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+        className="flex shrink-0 items-center gap-1 rounded-[10px] bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         <Plus className="size-3.5" />
         Add

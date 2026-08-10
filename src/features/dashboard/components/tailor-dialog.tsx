@@ -215,14 +215,14 @@ export function TailorDialog({
                   }}
                   rows={6}
                   placeholder="Paste the job posting here…"
-                  className="w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                  className="w-full rounded-[10px] border border-input bg-card px-3 py-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
                 />
               </div>
 
               <button
                 onClick={() => run()}
                 disabled={busy || !jd.trim()}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-ai px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-ai px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -278,7 +278,7 @@ export function TailorDialog({
                       {result.keywords.map((k) => (
                         <span
                           key={k}
-                          className="rounded-full bg-card px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
+                          className="rounded-[10px] bg-card px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
                         >
                           {k}
                         </span>

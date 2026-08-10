@@ -254,14 +254,14 @@ export function EducationForm() {
             <button
               type="button"
               onClick={() => setConfirmOpen(false)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleDeleteSection}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

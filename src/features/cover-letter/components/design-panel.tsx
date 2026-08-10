@@ -277,7 +277,7 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
         <button
           onClick={onEdit}
-          className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+          className="inline-flex items-center gap-1.5 rounded-[10px] bg-muted px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
         >
           <ChevronLeft className="size-4" />
           Edit your letter

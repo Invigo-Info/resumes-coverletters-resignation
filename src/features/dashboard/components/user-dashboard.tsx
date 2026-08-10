@@ -143,7 +143,7 @@ function ItemRow({
         <button
           type="button"
           onClick={() => onOpen(item)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <Pencil className="size-4" aria-hidden />
           <span className="hidden sm:inline">Edit</span>
@@ -151,7 +151,7 @@ function ItemRow({
         <button
           type="button"
           onClick={() => onDelete(item)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 hover:border-destructive/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 hover:border-destructive/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <Trash2 className="size-4" aria-hidden />
           <span className="hidden sm:inline">Delete</span>
@@ -497,14 +497,14 @@ export function UserDashboard() {
             <button
               type="button"
               onClick={() => setDeleteTarget(null)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={confirmDelete}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

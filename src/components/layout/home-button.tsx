@@ -5,7 +5,7 @@ import { House } from "lucide-react";
 import { cn } from "@/utilities/utils";
 
 /**
- * White rounded-square Home button (house icon) used at the top-left of every
+ * Blue rounded-square Home button (house icon) used at the top-left of every
  * builder inner page - resume, cover letter and resignation letter flows.
  * Returns the user to the dashboard home (now the site root "/").
  */
@@ -23,7 +23,7 @@ export function HomeButton({
       href={href}
       aria-label="Go to home"
       className={cn(
-        "grid size-12 shrink-0 place-items-center rounded-2xl bg-card text-foreground shadow-card ring-1 ring-border transition-colors hover:bg-muted",
+        "grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
         className
       )}
     >

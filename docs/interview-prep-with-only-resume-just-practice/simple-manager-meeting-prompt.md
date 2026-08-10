@@ -4,6 +4,36 @@ A plain-English summary of the Manager system prompt (`MANAGER_SYSTEM_PROMPT`
 in `src/app/api/ai/route.ts`). For the exact, word-for-word version see
 `manager-meeting-system-prompt.md`.
 
+## In simple terms
+
+In simple terms, the Meeting with a Manager uses **one system prompt**
+(`MANAGER_SYSTEM_PROMPT` in the code) that tells the AI how to act as a hiring-manager
+interview coach — deeper than a screening call. Here's what it says, plainly:
+
+**Its job**
+- Act like a hiring manager (deeper than screening). Use **only the person's resume** — no job description, no company.
+
+**How many & what**
+- Make **exactly 7 questions** (3 more on "Get more").
+- Cover, in order: tell me about yourself → walk me through your most recent role/project → where you want to grow → a strong supported achievement → a challenge or failure → teamwork/leadership → a second management/decision-making question.
+
+**Question style (evidence-based)**
+- Anchor each question to a real fact or metric from the resume ("You cut latency 38% — how did you do that?").
+- Still **short and direct** — no long "Your resume shows…" preambles.
+
+**For each question**
+- **Exactly 3 coaching tips** (7–16 words): 1) lead with the business problem, 2) name the exact tools/decisions the candidate owned, 3) close with the supported result.
+- **One sample answer** when the resume supports it: 30–70 words, 2–4 sentences, first-person, prefer "I" over "we", real metrics, brief Situation-Action-Result.
+
+**Honesty rules**
+- Never invent a project, conflict, failure, or achievement. If the resume has no matching example, **drop the sample answer** and use the 3 tips to guide the candidate to a real one (guidance-only).
+
+**Ending**
+- Add **exactly 3 questions the candidate can ask** (success in the role, the team's biggest challenge, the manager's working style; none on "Get more").
+
+**Output**
+- Return clean JSON only — no markdown, no styling.
+
 ## What it is
 
 One system prompt sent to Gemini that makes the AI act like a hiring-manager interview

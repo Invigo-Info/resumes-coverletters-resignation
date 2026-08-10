@@ -119,7 +119,7 @@ function PaymentPageInner() {
                 <div className="flex items-center gap-2">
                   <span className="font-heading text-xl font-bold text-primary">{trial.name}</span>
                   {trial.badge && (
-                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-emerald-700">
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-primary">
                       {trial.badge}
                     </span>
                   )}

@@ -64,7 +64,7 @@ function BinocularsScene() {
 export function SavedEmptyState() {
   return (
     <div className="flex flex-col items-center px-4 py-16 text-center">
-      <div className="rounded-2xl bg-[#EEF2FF] p-2">
+      <div className="rounded-2xl bg-primary/5 p-2">
         <BinocularsScene />
       </div>
       <p className="mt-8 max-w-md text-lg font-semibold text-foreground">

@@ -146,7 +146,7 @@ export function LinkedInImportDialog({
           type="button"
           onClick={() => onOpenChange(false)}
           disabled={busy}
-          className="mt-4 h-12 w-full rounded-full bg-muted text-sm font-bold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
+          className="mt-4 h-12 w-full rounded-[10px] bg-muted text-sm font-bold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-50"
         >
           Cancel
         </button>

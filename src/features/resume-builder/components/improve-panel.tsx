@@ -147,7 +147,7 @@ export function ImprovePanel({
           </button>
           <button
             onClick={() => setShareOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-2 rounded-[10px] bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-border transition-colors hover:bg-muted"
           >
             <Share2 className="size-4" />
             Share

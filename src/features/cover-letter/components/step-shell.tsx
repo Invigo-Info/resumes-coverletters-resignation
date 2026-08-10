@@ -33,7 +33,7 @@ function ReactionIcon({ percent, className }: { percent: number; className?: str
 function StepIndicator({ phase }: { phase: CLPhase }) {
   const activeIdx = PHASES.findIndex((p) => p.key === phase);
   return (
-    <div className="flex items-center gap-1.5 rounded-full bg-card px-2 py-1.5 text-sm shadow-card ring-1 ring-border">
+    <div className="flex items-center gap-1.5 rounded-[10px] bg-card px-2 py-1.5 text-sm shadow-card ring-1 ring-border">
       {PHASES.map((p, i) => {
         const isActive = i === activeIdx;
         const isDone = i < activeIdx;
@@ -50,7 +50,7 @@ function StepIndicator({ phase }: { phase: CLPhase }) {
                 className={cn(
                   "grid size-5 place-items-center rounded-full text-xs font-bold",
                   isActive || isDone
-                    ? "bg-foreground text-background"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
                 )}
               >

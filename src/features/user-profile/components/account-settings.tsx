@@ -258,7 +258,7 @@ export function AccountSettings() {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-muted px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+                className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-muted px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
               >
                 <SlidersHorizontal className="size-4 text-muted-foreground" />
                 Configure
@@ -419,7 +419,7 @@ export function AccountSettings() {
               onClick={deleteAccount}
               disabled={!confirmChecked || deleting}
               className={cn(
-                "inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-semibold transition-colors",
+                "inline-flex h-12 items-center justify-center gap-2 rounded-[10px] px-5 text-base font-semibold transition-colors",
                 confirmChecked && !deleting
                   ? "bg-destructive text-white hover:bg-destructive/90"
                   : "cursor-not-allowed bg-muted text-muted-foreground"
@@ -432,7 +432,7 @@ export function AccountSettings() {
               type="button"
               onClick={() => setConfirm(false)}
               disabled={deleting}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-secondary px-5 text-base font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+              className="inline-flex h-12 items-center justify-center rounded-[10px] bg-secondary px-5 text-base font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
             >
               Cancel
             </button>

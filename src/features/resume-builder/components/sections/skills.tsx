@@ -92,7 +92,7 @@ function SuggestionGroup({
             type="button"
             onClick={() => onAdd(name)}
             aria-label={`Add ${name}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="inline-flex items-center gap-1.5 rounded-[10px] bg-muted px-4 py-2.5 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Plus className="size-4 text-muted-foreground" />
             {name}
@@ -161,7 +161,7 @@ function SelectedChip({
       }}
       aria-label={`${skill.name}. Use the left and right arrow keys to reorder.`}
       className={cn(
-        "group relative inline-flex cursor-grab items-center rounded-full border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
+        "group relative inline-flex cursor-grab items-center rounded-[10px] border border-primary/70 bg-card px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-all active:cursor-grabbing",
         "hover:border-primary hover:bg-primary/5",
         "focus-visible:ring-3 focus-visible:ring-ring/40",
         dragging && "opacity-40",
@@ -379,7 +379,7 @@ export function SkillsForm() {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/40 px-4 py-2.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-dashed border-muted-foreground/40 px-4 py-2.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Plus className="size-4" />
             Add your own skill
@@ -513,14 +513,14 @@ export function SkillsForm() {
             <button
               type="button"
               onClick={() => setConfirmOpen(false)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleDeleteSection}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

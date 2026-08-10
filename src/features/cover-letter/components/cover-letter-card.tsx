@@ -31,7 +31,7 @@ function ActionButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors",
+        "inline-flex items-center gap-1.5 rounded-[10px] bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors",
         "hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]",
         disabled && "cursor-not-allowed text-muted-foreground opacity-60 hover:bg-secondary",
         className
@@ -133,7 +133,7 @@ export function CoverLetterCard({
             <button
               type="button"
               onClick={() => setConfirmOpen(false)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
@@ -143,7 +143,7 @@ export function CoverLetterCard({
                 setConfirmOpen(false);
                 onDelete?.();
               }}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

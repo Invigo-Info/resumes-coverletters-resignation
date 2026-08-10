@@ -45,7 +45,7 @@ export function NotInterestedMenu({
           className={
             variant === "icon"
               ? "grid size-8 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground"
-              : "inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground outline-none transition-colors hover:bg-secondary"
+              : "inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-4 text-sm font-medium text-foreground outline-none transition-colors hover:bg-secondary"
           }
         >
           <X className="size-4" />

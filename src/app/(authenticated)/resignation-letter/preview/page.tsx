@@ -130,9 +130,9 @@ function ResignationLetterPreviewContent() {
         <Link
           href="/"
           aria-label="Home"
-          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-card shadow-card ring-1 ring-border transition-colors hover:bg-muted"
+          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-card transition-colors hover:bg-primary/90"
         >
-          <Home className="size-4 text-foreground" />
+          <Home className="size-4" />
         </Link>
 
         {/* Write / Design toggle */}
@@ -151,7 +151,7 @@ function ResignationLetterPreviewContent() {
               }}
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
-                mode === t.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                mode === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t.icon}
@@ -161,7 +161,7 @@ function ResignationLetterPreviewContent() {
         </div>
 
         {/* Progress - reflects how much of the letter's content is filled */}
-        <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex">
+        <div className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:mx-auto sm:flex">
           <Laugh className="size-4 text-primary" aria-hidden />
           <div className="h-2 w-32 overflow-hidden rounded-full bg-muted">
             <div
@@ -178,7 +178,7 @@ function ResignationLetterPreviewContent() {
         <button
           onClick={handleDownload}
           disabled={generating || downloading}
-          className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+          className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60 sm:ml-0"
         >
           {downloading ? (
             <Loader2 className="size-4 animate-spin" />
@@ -222,7 +222,7 @@ function ResignationLetterPreviewContent() {
               setWriteSection("content");
               setMode("write");
             }}
-            className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background shadow-card-lg transition-colors hover:bg-foreground/90"
+            className="inline-flex h-12 items-center gap-2 rounded-[10px] bg-foreground px-5 text-sm font-semibold text-background shadow-card-lg transition-colors hover:bg-foreground/90"
           >
             <PenLine className="size-4" />
             Edit your letter

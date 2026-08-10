@@ -115,7 +115,7 @@ export function RLDatePicker({
         onClick={() => setOpen((v) => !v)}
         aria-invalid={!!error}
         className={cn(
-          "flex h-12 w-full items-center justify-between rounded-xl border bg-card px-4 text-left text-sm transition-colors",
+          "flex h-12 w-full items-center justify-between rounded-[10px] border bg-card px-4 text-left text-sm transition-colors",
           error
             ? "border-red-400 focus:border-red-500"
             : "border-input hover:border-primary/40 focus:border-primary",

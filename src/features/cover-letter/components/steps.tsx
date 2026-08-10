@@ -117,7 +117,7 @@ export function JobDetailsStep() {
             onChange={(e) => patch({ jobDescription: e.target.value })}
             rows={6}
             placeholder="Paste the job description here…"
-            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
+            className="w-full rounded-[10px] border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
       </div>

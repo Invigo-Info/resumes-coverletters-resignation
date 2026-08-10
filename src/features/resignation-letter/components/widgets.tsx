@@ -76,7 +76,7 @@ export function RLField({
         autoFocus={autoFocus}
         aria-invalid={!!error}
         className={cn(
-          "h-12 w-full rounded-xl border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:ring-3",
+          "h-12 w-full rounded-[10px] border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:ring-3",
           error
             ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
             : "border-border focus:border-primary focus:ring-ring/30"

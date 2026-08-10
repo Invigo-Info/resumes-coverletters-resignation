@@ -104,7 +104,7 @@ export function MonthYearPicker({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex h-12 w-full items-center justify-between gap-1 rounded-xl border border-input bg-card px-3 text-left text-sm transition-colors hover:border-primary/40",
+          "flex h-12 w-full items-center justify-between gap-1 rounded-[10px] border border-input bg-card px-3 text-left text-sm transition-colors hover:border-primary/40",
           !value && "text-muted-foreground"
         )}
       >

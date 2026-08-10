@@ -76,27 +76,24 @@ const LOADING_COPY = [
   "Preparing your questions",
 ];
 
-// Fixed colour sequence for the question cards, keyed by POSITION - not by the
-// question's content (a hard rule in every interview spec, and matched across all
-// reference screenshots): Purple, Cyan, Blue-purple, Green, Purple, Grey, Teal.
-// Stops stay in the 600-800 range so white body text keeps >= 4.5:1. Beyond the
-// seventh card ("Get more questions") the sequence repeats.
+// Question cards use a soft LIGHT-BLUE background with dark text (the blue+white
+// identity). Kept as an array so a position could vary later; today every card
+// shares one light-blue tint. Dark body text on this tint stays well above 4.5:1.
 const Q_GRADIENTS = [
-  "from-[#7E22CE] to-[#A21CAF]", // 1 Purple
-  "from-[#0E7490] to-[#155E75]", // 2 Cyan
-  "from-[#4F46E5] to-[#6D28D9]", // 3 Blue-purple
-  "from-[#047857] to-[#065F46]", // 4 Green
-  "from-[#7C3AED] to-[#6D28D9]", // 5 Purple
-  "from-[#475569] to-[#334155]", // 6 Grey
-  "from-[#0F766E] to-[#0D9488]", // 7 Teal
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
 ];
 
-// Muted gradients for the "questions you get to ask" cards (green / grey / teal,
-// mirroring the reference screenshots).
+// The "questions you get to ask" cards use the same light-blue tint.
 const CQ_GRADIENTS = [
-  "from-[#047857] to-[#065F46]",
-  "from-[#475569] to-[#334155]",
-  "from-[#0F766E] to-[#0D9488]",
+  "from-white to-white",
+  "from-white to-white",
+  "from-white to-white",
 ];
 
 /** Large, centred section heading shown between cards (matches the reference). */
@@ -129,7 +126,7 @@ function GradientCard({
 /** One labelled fact in the company card (Founded / HQ / Employees). */
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-background px-3 py-2">
+    <div className="rounded-[10px] border border-border bg-background px-3 py-2">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
@@ -207,7 +204,7 @@ function sectionSkeleton(key: string | null): React.ReactNode {
       return (
         <GradientCard
           title="Worth mentioning in your answers"
-          gradient="from-[#4338CA] to-[#4F46E5]"
+          gradient="from-[#7c3aed] to-[#6d28d9]"
         >
           <SkeletonRows count={4} onDark />
         </GradientCard>
@@ -226,9 +223,9 @@ function sectionSkeleton(key: string | null): React.ReactNode {
       return (
         <div className="pt-10">
           <SectionHeading>Questions to think through before you go</SectionHeading>
-          <div className={`mt-4 rounded-2xl bg-linear-to-br p-5 shadow-card ${Q_GRADIENTS[0]}`}>
-            <span className="block h-4 w-1/2 animate-pulse rounded-full bg-white/30" />
-            <SkeletonRows count={3} onDark />
+          <div className={`mt-4 rounded-2xl bg-linear-to-br p-5 shadow-card ring-1 ring-primary/10 ${Q_GRADIENTS[0]}`}>
+            <span className="block h-4 w-1/2 animate-pulse rounded-full bg-primary/20" />
+            <SkeletonRows count={3} />
           </div>
         </div>
       );
@@ -236,8 +233,8 @@ function sectionSkeleton(key: string | null): React.ReactNode {
       return (
         <div className="pt-10">
           <SectionHeading>You get to ask questions too</SectionHeading>
-          <div className={`mt-4 rounded-2xl bg-linear-to-br p-4 shadow-card ${CQ_GRADIENTS[0]}`}>
-            <span className="block h-4 w-1/2 animate-pulse rounded-full bg-white/30" />
+          <div className={`mt-4 rounded-2xl bg-linear-to-br p-4 shadow-card ring-1 ring-primary/10 ${CQ_GRADIENTS[0]}`}>
+            <span className="block h-4 w-1/2 animate-pulse rounded-full bg-primary/20" />
           </div>
         </div>
       );
@@ -316,8 +313,8 @@ function Reveal({
 function SkeletonLine() {
   return (
     <div className="flex items-center gap-2 py-1" aria-hidden>
-      <span className="h-2.5 w-2/5 animate-pulse rounded-full bg-white/30" />
-      <span className="h-2.5 w-1/4 animate-pulse rounded-full bg-white/20" />
+      <span className="h-2.5 w-2/5 animate-pulse rounded-full bg-primary/25" />
+      <span className="h-2.5 w-1/4 animate-pulse rounded-full bg-primary/15" />
     </div>
   );
 }
@@ -386,8 +383,8 @@ function StreamCard({
   }, [revealed, previewing, lines]);
 
   return (
-    <div className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ${gradient}`}>
-      <p className="font-semibold text-white">{q.question}</p>
+    <div className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ring-1 ring-primary/10 ${gradient}`}>
+      <p className="font-semibold text-foreground">{q.question}</p>
       <div className="mt-3">
         {lines.map((ln, i) => {
           if (i > revealed) return null;
@@ -395,19 +392,19 @@ function StreamCard({
           return (
             <div
               key={i}
-              className="border-t border-white/15 py-2 first:border-t-0 first:pt-0"
+              className="border-t border-primary/15 py-2 first:border-t-0 first:pt-0"
             >
               {arriving ? (
                 <SkeletonLine />
               ) : (
-                <p className="text-sm leading-relaxed text-white/85">{ln}</p>
+                <p className="text-sm leading-relaxed text-foreground/80">{ln}</p>
               )}
             </div>
           );
         })}
       </div>
       {q.sample && revealed >= lines.length && (
-        <p className="mt-3 rounded-xl bg-white/10 p-3 text-sm leading-relaxed text-white/95">
+        <p className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-3 text-sm leading-relaxed text-foreground/90">
           {q.sample}
         </p>
       )}
@@ -599,7 +596,7 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
   };
 
   const fieldClass =
-    "w-full rounded-xl border border-border bg-card text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/20";
+    "w-full rounded-[10px] border border-border bg-card text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/20";
 
   return (
     <div className="mx-auto max-w-xl">
@@ -1051,7 +1048,7 @@ export function InterviewPrepView({
           onChange={(e) => setCustomText(e.target.value)}
           rows={5}
           placeholder="e.g. A panel interview on system design, with scenario questions and sample answers"
-          className="mt-6 w-full rounded-xl border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="mt-6 w-full rounded-[10px] border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
         <div className="mt-4">
           <button
@@ -1149,7 +1146,7 @@ export function InterviewPrepView({
                       onChange={(e) => setCustomText(e.target.value)}
                       rows={4}
                       placeholder="Describe the format here..."
-                      className="w-full rounded-xl border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                      className="w-full rounded-[10px] border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
                     />
                     <button
                       type="button"
@@ -1286,7 +1283,7 @@ export function InterviewPrepView({
                 {prep.role.keySkills.map((s) => (
                   <span
                     key={s}
-                    className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground"
+                    className="rounded-[10px] bg-secondary px-3 py-1 text-xs font-medium text-foreground"
                   >
                     {s}
                   </span>
@@ -1317,7 +1314,7 @@ export function InterviewPrepView({
         <GradientCard
           key="mentions"
           title="Worth mentioning in your answers"
-          gradient="from-[#4338CA] to-[#4F46E5]"
+          gradient="from-[#7c3aed] to-[#6d28d9]"
         >
           <ul className="space-y-2.5">
             {prep.mentions.map((m, i) => (
@@ -1341,15 +1338,15 @@ export function InterviewPrepView({
             {prep.questions.map((q, i) => (
               <div
                 key={i}
-                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ${Q_GRADIENTS[i % Q_GRADIENTS.length]}`}
+                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ring-1 ring-primary/10 ${Q_GRADIENTS[i % Q_GRADIENTS.length]}`}
               >
-                <p className="font-semibold text-white">{q.question}</p>
+                <p className="font-semibold text-foreground">{q.question}</p>
                 {q.guidance.length > 0 && (
                   <div className="mt-3">
                     {q.guidance.map((g, j) => (
                       <p
                         key={j}
-                        className="border-t border-white/15 py-2 text-sm leading-relaxed text-white/85 first:border-t-0 first:pt-0"
+                        className="border-t border-primary/15 py-2 text-sm leading-relaxed text-foreground/80 first:border-t-0 first:pt-0"
                       >
                         {g}
                       </p>
@@ -1357,7 +1354,7 @@ export function InterviewPrepView({
                   </div>
                 )}
                 {q.sample && (
-                  <p className="mt-3 rounded-xl bg-white/10 p-3 text-sm leading-relaxed text-white/95">
+                  <p className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-3 text-sm leading-relaxed text-foreground/90">
                     {q.sample}
                   </p>
                 )}
@@ -1372,7 +1369,7 @@ export function InterviewPrepView({
             onClick={getMore}
             disabled={moreLoading}
             aria-busy={moreLoading}
-            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-6 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-primary/30 bg-primary/5 px-6 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {moreLoading ? (
               <>
@@ -1400,9 +1397,9 @@ export function InterviewPrepView({
             {prep.candidateQuestions.map((q, i) => (
               <div
                 key={i}
-                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-4 shadow-card ${CQ_GRADIENTS[i % CQ_GRADIENTS.length]}`}
+                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-4 shadow-card ring-1 ring-primary/10 ${CQ_GRADIENTS[i % CQ_GRADIENTS.length]}`}
               >
-                <p className="font-semibold text-white">{q}</p>
+                <p className="font-semibold text-foreground">{q}</p>
               </div>
             ))}
           </div>
@@ -1421,7 +1418,7 @@ export function InterviewPrepView({
             All the key points on one page - open it before you walk in.
           </p>
           <div className="relative mx-auto mt-5 w-full max-w-60">
-            <span className="absolute -top-2 right-2 z-10 rounded-full bg-[#EC4899] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
+            <span className="absolute -top-2 right-2 z-10 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
               Printable sheet
             </span>
             <SheetPreview company={prep.company.name} role={prep.role.title} />
@@ -1429,7 +1426,7 @@ export function InterviewPrepView({
           <button
             type="button"
             onClick={handlePrint}
-            className="mt-6 inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-[#1D4ED8] shadow-sm transition-transform hover:-translate-y-0.5"
+            className="mt-6 inline-flex h-11 cursor-pointer items-center gap-2 rounded-[10px] bg-white px-6 text-sm font-semibold text-[#1D4ED8] shadow-sm transition-transform hover:-translate-y-0.5"
           >
             <Download className="size-4" />
             Download
@@ -1437,7 +1434,7 @@ export function InterviewPrepView({
         </section>
 
         {/* That's it - you're ready - gradient card with illustration + Apply */}
-        <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-[#7C3AED] via-[#C026D3] to-[#DB2777] p-6 text-center shadow-card">
+        <section className="relative overflow-hidden rounded-2xl bg-linear-to-br from-[#1D4ED8] to-[#2563EB] p-6 text-center shadow-card">
           <h3 className="text-lg font-bold text-white">That&apos;s it - you&apos;re ready</h3>
           <p className="mx-auto mt-1 max-w-sm text-sm text-white/85">
             You did the work. Now just show up and enjoy a good conversation - they&apos;re
@@ -1449,7 +1446,7 @@ export function InterviewPrepView({
               job?.applyUrl && window.open(job.applyUrl, "_blank", "noopener,noreferrer")
             }
             disabled={!job?.applyUrl}
-            className="mt-5 inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-[#9333EA] shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 inline-flex h-11 cursor-pointer items-center gap-2 rounded-[10px] bg-white px-6 text-sm font-semibold text-[#1D4ED8] shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Apply
             <ArrowUpRight className="size-4" />
@@ -1458,7 +1455,7 @@ export function InterviewPrepView({
           <button
             type="button"
             onClick={() => router.push("/jobs")}
-            className="mt-4 inline-flex h-10 cursor-pointer items-center rounded-full bg-white/15 px-5 text-sm font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
+            className="mt-4 inline-flex h-10 cursor-pointer items-center rounded-[10px] bg-white/15 px-5 text-sm font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
           >
             See more roles like this
           </button>

@@ -33,6 +33,30 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-08-10 — Blue+white UI redesign (branch: redesign-blue-white)
+
+App-wide chrome redesign to a disciplined blue+white system, driven entirely from
+the single `src/app/globals.css` `:root` token layer (no per-page palette, no
+hardcoded hex in components). No route, API, or workflow change; the resume/letter
+DOCUMENT themes (`src/config/resume-themes.ts`, live preview, template accents) are
+a carve-out and stay untouched.
+
+- Palette: `--primary #2563eb` (blue) + soft blue tints; neutrals on a light-gray
+  page (`--background #f6f7f9`), white cards, red-600 destructive. AI accent kept
+  purple (`--ai-* #6d28d9`, contrast-verified). Progress bar keeps its orange→green
+  motivational ramp; charts stay multi-hue (data-viz exception).
+- Type: Inter (UI) + Gabarito (headings), base-18 (~1.2) scale; cards use soft
+  elevation shadows.
+- Controls: blue active tab + solid-blue Home button; transparent 10px inputs;
+  neutral section-nav links with a green completion dot.
+- Jobs: Fair-match ring is now amber for a fair score (was always green) via a
+  score-banded `ringTheme` in `features/jobs/lib/keyword-match.ts`.
+
+Grounding doc: `docs/design-foundation.md`. Verified: `tsc --noEmit`, `check_no_emoji`,
+and render-and-look on the editor + home. A short-lived "Precision Workspace"
+(teal/Hanken/flat-card) pivot was applied then fully reverted on 2026-08-10. Not
+merged to main.
+
 ### 2026-08-03 — Technical prompt: evidence/gap/regulated rules + question length
 
 Folded the new-prompts Technical spec (`Technical_Interview_System_Prompt.docx`)

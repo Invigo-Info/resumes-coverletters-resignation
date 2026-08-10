@@ -94,7 +94,7 @@ export function ShareDialog({
         {/* Copyable link. min-w-0 on the row lets the input shrink inside the
             grid dialog so the Copy button never gets pushed off the edge. */}
         <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-4">
+          <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-border bg-card px-4">
             <span className="min-w-0 flex-1 truncate text-sm text-foreground">{shareUrl}</span>
             <a
               href={shareUrl}

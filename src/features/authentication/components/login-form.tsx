@@ -157,7 +157,7 @@ export function LoginForm({
             // Autofill/password-manager extensions inject attributes (e.g.
             // wfd-id) before hydration; ignore those server/client diffs.
             suppressHydrationWarning
-            className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
+            className="h-12 w-full rounded-[10px] border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
 
@@ -171,7 +171,7 @@ export function LoginForm({
             placeholder={isSignup ? "Create a password (min 8 characters)" : "Enter password"}
             autoComplete={isSignup ? "new-password" : "current-password"}
             suppressHydrationWarning
-            className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
+            className="h-12 w-full rounded-[10px] border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
           />
         </label>
 
@@ -186,13 +186,13 @@ export function LoginForm({
               placeholder="Re-enter your password"
               autoComplete="new-password"
               suppressHydrationWarning
-              className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
+              className="h-12 w-full rounded-[10px] border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
             />
           </label>
         )}
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600" role="alert">
+          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive" role="alert">
             {error}
           </p>
         )}
@@ -219,7 +219,7 @@ export function LoginForm({
         type="button"
         onClick={onGoogle}
         disabled={googleLoading}
-        className="inline-flex h-12 w-full max-w-md items-center justify-center gap-3 rounded-full border border-border bg-card text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary disabled:opacity-60"
+        className="inline-flex h-12 w-full max-w-md items-center justify-center gap-3 rounded-[10px] border border-border bg-card text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary disabled:opacity-60"
       >
         {googleLoading ? <Loader2 className="size-4 animate-spin" /> : <GoogleGlyph />}
         Continue with Google
@@ -236,7 +236,7 @@ export function LoginForm({
           setError(null);
           setConfirm("");
         }}
-        className="mt-3 h-12 w-full max-w-md rounded-full bg-secondary text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+        className="mt-3 h-12 w-full max-w-md rounded-[10px] bg-secondary text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
       >
         {isSignup ? "Sign in instead" : "Sign up now"}
       </button>

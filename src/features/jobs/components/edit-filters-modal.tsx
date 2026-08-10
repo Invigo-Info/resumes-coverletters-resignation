@@ -23,7 +23,7 @@ import {
 /** A removable filter chip (job title / location). */
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
       {label}
       <button
         type="button"
@@ -208,7 +208,7 @@ export function EditFiltersModal({
                       key={s}
                       type="button"
                       onClick={() => addTitle(s)}
-                      className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                      className="rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                     >
                       {s}
                     </button>
@@ -269,7 +269,7 @@ export function EditFiltersModal({
           <button
             type="button"
             onClick={() => setDraft(defaultFilters(role))}
-            className="inline-flex h-10 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+            className="inline-flex h-10 items-center rounded-[10px] bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
           >
             Reset filters
           </button>
@@ -306,23 +306,23 @@ export function EditFiltersModal({
                 {draft.jobTitles.map((t) => (
                   <span
                     key={t}
-                    className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground"
+                    className="rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground"
                   >
                     {t}
                   </span>
                 ))}
-                <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
+                <span className="rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
                   {WORK_MODEL_LABEL[draft.workModel]}
                 </span>
                 {draft.locations.map((loc) => (
                   <span
                     key={loc}
-                    className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground"
+                    className="rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground"
                   >
                     {loc}
                   </span>
                 ))}
-                <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
+                <span className="rounded-[10px] bg-secondary px-3 py-1.5 text-sm font-medium text-foreground">
                   {DATE_POSTED_LABEL[draft.datePosted]}
                 </span>
               </div>
@@ -331,7 +331,7 @@ export function EditFiltersModal({
                 <button
                   type="button"
                   onClick={discardAndClose}
-                  className="inline-flex h-11 items-center rounded-full bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
+                  className="inline-flex h-11 items-center rounded-[10px] bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]"
                 >
                   Leave previous
                 </button>

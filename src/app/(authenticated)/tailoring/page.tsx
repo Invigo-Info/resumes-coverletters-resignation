@@ -160,7 +160,7 @@ function TailoringTopBar() {
           </span>
           Design
         </Link>
-        <span aria-current="page" className={cn(tabBase, "bg-foreground text-background")}>
+        <span aria-current="page" className={cn(tabBase, "bg-primary text-primary-foreground")}>
           <span className="hidden sm:inline-flex">
             <Sparkles className="size-4" />
           </span>
@@ -172,7 +172,7 @@ function TailoringTopBar() {
         <button
           type="button"
           onClick={() => setShareOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
+          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
         >
           <Share2 className="size-4" />
           <span className="hidden sm:inline">Share</span>
@@ -352,7 +352,7 @@ function SuggestionCard({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1.5 block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary"
+          className="mt-1.5 block w-full rounded-[10px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary"
         />
       ) : (
         <textarea
@@ -360,7 +360,7 @@ function SuggestionCard({
           onChange={(e) => onChange(e.target.value)}
           rows={item.kind === "skills" ? 3 : 5}
           className={cn(
-            "mt-1.5 block w-full resize-none rounded-lg border bg-card px-3 py-2 text-sm leading-relaxed text-foreground outline-none transition-colors focus:border-primary",
+            "mt-1.5 block w-full resize-none rounded-[10px] border bg-card px-3 py-2 text-sm leading-relaxed text-foreground outline-none transition-colors focus:border-primary",
             item.kind === "skills" ? "border-[#16A34A]/40 bg-[#F2FBF5]" : "border-border"
           )}
         />
@@ -382,7 +382,7 @@ function SuggestionCard({
           type="button"
           onClick={onApply}
           disabled={!value.trim()}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#16A34A] px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D] disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-[#16A34A] px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D] disabled:opacity-50"
         >
           <Check className="size-4" strokeWidth={3} />
           {actionLabel}
@@ -760,7 +760,7 @@ export default function TailoringPage() {
                   <button
                     type="button"
                     onClick={() => router.push("/jobs")}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-[10px] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
                   >
                     <ChevronLeft className="size-4" />
                     Back

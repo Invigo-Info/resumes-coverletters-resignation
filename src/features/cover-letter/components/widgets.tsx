@@ -92,7 +92,7 @@ export function ChipSingleSelectInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-border bg-card px-4 text-center text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
+        className="h-12 w-full rounded-[10px] border border-border bg-card px-4 text-center text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
       />
       <div className="flex flex-wrap justify-center gap-2.5">
         {chips.map((opt) => {
@@ -147,7 +147,7 @@ export function CLField({
         placeholder={placeholder}
         aria-invalid={!!error}
         className={cn(
-          "h-12 w-full rounded-xl border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:ring-3",
+          "h-12 w-full rounded-[10px] border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:ring-3",
           error
             ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
             : "border-border focus:border-primary focus:ring-ring/30"

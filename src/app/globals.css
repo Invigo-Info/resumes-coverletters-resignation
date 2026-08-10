@@ -75,6 +75,7 @@
   keep Tailwind's default unitless ratios, so they scale with the new sizes.
 */
 @theme {
+  /* App type scale: base 18px, ~1.2 step (larger than stock Tailwind). */
   --text-xs: 14px;
   --text-sm: 16px;
   --text-base: 18px;
@@ -97,6 +98,7 @@
 :root {
   --radius: 0.75rem;
 
+  /* Blue+white system: light-gray page ground, white cards, blue accent. */
   --background: #f6f7f9;
   --foreground: #18181b;
   --card: #ffffff;
@@ -104,13 +106,13 @@
   --popover: #ffffff;
   --popover-foreground: #18181b;
 
+  /* Primary blue (reference image). White on #2563eb = 5.17:1 (AA). */
   --primary: #2563eb;
   --primary-foreground: #ffffff;
-  /* Dark blue used for the hover border on interactive cards (app-wide). */
   --primary-strong: #1d4ed8;
 
   --secondary: #f1f2f4;
-  --secondary-foreground: #1f2937;
+  --secondary-foreground: #18181b;
 
   --muted: #f1f2f4;
   --muted-foreground: #6b7280;
@@ -118,8 +120,7 @@
   --accent: #eef2ff;
   --accent-foreground: #1d4ed8;
 
-  /* red-600, not red-500: #ef4444 is only 3.76:1 on white (fails AA for text and
-     for white-on-destructive buttons). #dc2626 is 4.83:1 both ways. */
+  /* Danger red-600 (white 4.5:1+ both ways). */
   --destructive: #dc2626;
 
   --border: #e7e8eb;
@@ -134,17 +135,16 @@
 
   /* brand gradients / accents */
   --brand-blue: #2563eb;
-  /* Brand teal used for the account avatar (matches the teal logo mark);
-     darkened to teal-700 so white text stays >= 4.5:1 (POUR). */
-  --brand-teal: #0f766e;
-  --ai-from: #8b5cf6;
-  --ai-to: #d946ef;
-  /* --ai-from is only 4.23:1 on white, so it may tint gradients, icons and
-     borders (graphics, 3:1) but never carry small text. These two do:
-       --ai-text  on white 7.10:1 / on the 5% AI tint 6.69:1
-       --ai-solid behind white text 5.70:1                          */
+  /* Account-avatar brand mark (deep navy blue; white initials 8.72:1). */
+  --brand-teal: #1e40af;
+  /* AI accent = Precision Workspace "modern purple" for AI-assisted features.
+     --ai-from/--ai-to tint gradients/icons/borders (graphics, 3:1); --ai-text
+     and --ai-solid carry small/white text and are verified >= 4.5:1
+     (#6d28d9 is 7.10:1 both ways). */
+  --ai-from: #7c3aed;
+  --ai-to: #6d28d9;
   --ai-text: #6d28d9;
-  --ai-solid: #7c3aed;
+  --ai-solid: #6d28d9;
   /* Brand logo mark: an all-blue gradient (light blue -> primary blue). */
   --logo-from: #4f8bff;
   --logo-to: #2563eb;
@@ -157,8 +157,7 @@
   --progress-via: #fbbf24;
   --progress-to: #84cc16;
   /* Resume-builder completion stages: a motivational climb from orange (just
-     started) to green (finished). The bar fill and the face icon both switch to
-     the current stage colour as the total score crosses each range. */
+     started) to green (finished) - kept as the one semantic status ramp. */
   --progress-low: #f97316;
   --progress-early: #f59e0b;
   --progress-mid: #84cc16;
@@ -261,7 +260,7 @@
     box-shadow: 0 0 0 2px #e6eeff, 0 0 0 3px #9cb9f2;
   }
 
-  /* soft elevated card shadows used across the app */
+  /* Soft elevation shadows for cards (blue+white system). */
   .shadow-card {
     box-shadow:
       0 1px 2px rgba(16, 24, 40, 0.04),

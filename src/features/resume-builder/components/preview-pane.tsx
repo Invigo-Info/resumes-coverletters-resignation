@@ -142,7 +142,7 @@ export function PreviewPane({
           more than one printed page. It sits outside the scroll region, so it
           stays put while the preview scrolls. */}
       {pageCount > 1 && (
-        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-full bg-neutral-800/95 px-1 py-1.5 text-white shadow-lg">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-[10px] bg-neutral-800/95 px-1 py-1.5 text-white shadow-lg">
           <button
             type="button"
             onClick={() => goTo(page - 1)}

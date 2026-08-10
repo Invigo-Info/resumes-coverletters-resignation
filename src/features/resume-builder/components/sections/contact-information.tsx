@@ -76,7 +76,7 @@ export function ContactInformationForm() {
             <button
               type="button"
               onClick={() => setImportOpen(true)}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="inline-flex shrink-0 items-center gap-2 rounded-[10px] bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <LinkedInIcon className="size-4" aria-hidden />
               Import from LinkedIn

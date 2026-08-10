@@ -40,6 +40,22 @@ export function ringColor(score: number): string {
   return "#DC2626";
 }
 
+/**
+ * Full ring colour triad for the large detail-panel score ring - progress
+ * stroke, remaining track, and centre number - triaged on the same bands as
+ * `ringColor` so a Fair/Weak match never renders in the "strong" green. Green
+ * uses the brand-green spec (#116B3A on #E4EEE8) the reference detail card ships.
+ */
+export function ringTheme(score: number): {
+  progress: string;
+  track: string;
+  number: string;
+} {
+  if (score >= 67) return { progress: "#116B3A", track: "#E4EEE8", number: "#17352A" };
+  if (score >= 34) return { progress: "#B45309", track: "#F5EAD9", number: "#7C2D12" };
+  return { progress: "#B91C1C", track: "#F6E1E1", number: "#7F1D1D" };
+}
+
 // Generic Title-Case words that are not real job keywords - excluded from the
 // extracted set so chips stay meaningful ("Family Medicine", not "We"/"Our").
 const GENERIC = new Set([

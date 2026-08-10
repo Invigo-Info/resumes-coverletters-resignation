@@ -146,7 +146,7 @@ export function EditWithAiMenu({
   idleIcon: IdleIcon = WandSparkles,
   // Label uses --ai-text, not --ai-from: on the 5% tint the latter is only
   // 3.99:1, below the 4.5:1 this 12px text needs.
-  triggerClassName = "inline-flex items-center gap-1.5 rounded-full border border-[var(--ai-from)]/30 bg-[var(--ai-from)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--ai-text)] transition-colors hover:bg-[var(--ai-from)]/10 disabled:opacity-50",
+  triggerClassName = "inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--ai-from)]/30 bg-[var(--ai-from)]/5 px-3 py-1.5 text-xs font-semibold text-[var(--ai-text)] transition-colors hover:bg-[var(--ai-from)]/10 disabled:opacity-50",
   openUp = false,
 }: {
   /** This button's own action is running - shows the spinner + busyLabel. */
@@ -238,7 +238,7 @@ export function EditWithAiMenu({
             </>
           ) : (
             <div className="p-1.5">
-              <div className="flex items-center gap-2 rounded-xl border border-[var(--ai-from)]/40 bg-card py-1.5 pl-3 pr-1.5 transition-colors focus-within:border-[var(--ai-from)]">
+              <div className="flex items-center gap-2 rounded-[10px] border border-[var(--ai-from)]/40 bg-card py-1.5 pl-3 pr-1.5 transition-colors focus-within:border-[var(--ai-from)]">
                 <input
                   autoFocus
                   value={ask}
@@ -255,7 +255,7 @@ export function EditWithAiMenu({
                   disabled={!ask.trim()}
                   onClick={() => ask.trim() && run(ask.trim())}
                   aria-label="Send request"
-                  className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--ai-from)] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-[var(--ai-from)] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   <ArrowUp className="size-4" />
                 </button>

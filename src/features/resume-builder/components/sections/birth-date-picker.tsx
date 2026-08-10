@@ -63,7 +63,7 @@ export function BirthDatePicker({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex h-12 w-full items-center justify-between rounded-xl border border-input bg-card px-3 text-left text-sm transition-colors hover:border-primary/40",
+          "flex h-12 w-full items-center justify-between rounded-[10px] border border-input bg-card px-3 text-left text-sm transition-colors hover:border-primary/40",
           !value && "text-muted-foreground"
         )}
       >
@@ -77,7 +77,7 @@ export function BirthDatePicker({
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="flex-1 rounded-lg border border-input bg-card px-2 py-1.5 text-sm"
+              className="flex-1 rounded-[10px] border border-input bg-card px-2 py-1.5 text-sm"
             >
               {MONTHS.map((m, i) => (
                 <option key={m} value={i}>{m}</option>
@@ -86,7 +86,7 @@ export function BirthDatePicker({
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="w-24 rounded-lg border border-input bg-card px-2 py-1.5 text-sm"
+              className="w-24 rounded-[10px] border border-input bg-card px-2 py-1.5 text-sm"
             >
               {YEARS.map((y) => (
                 <option key={y} value={y}>{y}</option>

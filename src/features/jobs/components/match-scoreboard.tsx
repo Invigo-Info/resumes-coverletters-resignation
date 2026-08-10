@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, X, ThumbsUp } from "lucide-react";
 import { cn } from "@/utilities/utils";
-import { ringColor, type KeywordMatch } from "@/features/jobs/lib/keyword-match";
+import { ringColor, ringTheme, type KeywordMatch } from "@/features/jobs/lib/keyword-match";
 
 /**
  * Circular progress ring around a match percentage. Sized via `size` (small on
@@ -19,6 +19,7 @@ export function ScoreRing({
   trackColor = "#E5E7EB",
   progressColor,
   numberClassName,
+  numberColor,
   thumb = false,
 }: {
   score: number;
@@ -31,6 +32,8 @@ export function ScoreRing({
   progressColor?: string;
   /** Override for the centered number's color class. */
   numberClassName?: string;
+  /** Inline hex for the centered number (wins over numberClassName). */
+  numberColor?: string;
   /** Show a thumbs-up near the bottom of the ring (positive match). */
   thumb?: boolean;
 }) {
@@ -82,9 +85,10 @@ export function ScoreRing({
       <span
         className={cn(
           "absolute font-bold tabular-nums",
-          numberClassName ?? "text-foreground",
+          !numberColor && (numberClassName ?? "text-foreground"),
           fontClass
         )}
+        style={numberColor ? { color: numberColor } : undefined}
       >
         {Math.round(pct)}
       </span>
@@ -172,23 +176,29 @@ export function KeywordMatchCard({
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="grid gap-5 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] sm:gap-6">
-        {/* Left: the match score card - label, brand-green progress ring with a
-            thumbs-up for a positive match, and the Improve-keywords CTA. */}
+        {/* Left: the match score card - label, a score-triaged progress ring
+            (green strong / amber fair / red weak, matching the label) with a
+            thumbs-up only on a positive match, and the Improve-keywords CTA. */}
         <div className="flex flex-col items-center gap-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{match.label}</p>
-          <ScoreRing
-            score={match.score}
-            size={120}
-            strokeWidth={7}
-            trackColor="#E4EEE8"
-            progressColor="#116B3A"
-            numberClassName="text-[#17352A]"
-            thumb={match.score >= 55}
-          />
+          {(() => {
+            const ring = ringTheme(match.score);
+            return (
+              <ScoreRing
+                score={match.score}
+                size={120}
+                strokeWidth={7}
+                trackColor={ring.track}
+                progressColor={ring.progress}
+                numberColor={ring.number}
+                thumb={match.score >= 55}
+              />
+            );
+          })()}
           <button
             type="button"
             onClick={onImprove}
-            className="inline-flex items-center rounded-full bg-[#F6F6F6] px-5 py-2.5 text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#ECECEC]"
+            className="inline-flex items-center rounded-[10px] bg-[#F6F6F6] px-5 py-2.5 text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#ECECEC]"
           >
             Improve keywords
           </button>

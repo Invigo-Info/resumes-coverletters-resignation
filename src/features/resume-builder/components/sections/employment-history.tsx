@@ -321,7 +321,7 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
           ref={previewRef}
           className="relative mt-3 rounded-xl border border-dashed border-[var(--ai-from)]/40 bg-[var(--ai-from)]/5 px-4 pb-4 pt-5"
         >
-          <span className="absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-full bg-[var(--ai-from)] text-white shadow-sm">
+          <span className="absolute -top-3 left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded-[10px] bg-[var(--ai-from)] text-white shadow-sm">
             <Sparkles className="size-3.5" />
           </span>
           <button
@@ -354,13 +354,13 @@ function EmploymentDescription({ entry }: { entry: EmploymentEntry }) {
                   busyLabel="Rewriting…"
                   idleIcon={RefreshCw}
                   openUp
-                  triggerClassName="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  triggerClassName="inline-flex items-center gap-1.5 rounded-[10px] border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={usePreview}
                   disabled={editing}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ai-from)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--ai-from)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   <Check className="size-4" />
                   Use
@@ -683,14 +683,14 @@ export function EmploymentHistoryForm() {
             <button
               type="button"
               onClick={() => setConfirmOpen(false)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleDeleteSection}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

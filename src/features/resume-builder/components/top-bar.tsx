@@ -5,7 +5,6 @@ import {
   PenLine,
   Palette,
   BadgeCheck,
-  Clock,
   Loader2,
   Download,
   Share2,
@@ -109,7 +108,7 @@ export function TopBar({
               className={cn(
                 "inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:flex-none sm:px-4",
                 active
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -123,7 +122,7 @@ export function TopBar({
       {/* Progress - field-completion based: the score, bar width and face icon
           all move the instant real resume information is added. */}
       <div
-        className="hidden w-full max-w-sm items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:flex"
+        className="hidden items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card ring-1 ring-border sm:mx-auto sm:flex sm:w-96"
         role="progressbar"
         aria-label="Resume completion"
         aria-valuenow={progress}
@@ -142,28 +141,13 @@ export function TopBar({
         </span>
       </div>
 
-      {/* Promo badge */}
-      <div className="hidden items-center gap-3 xl:flex">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-emerald-600 text-white shadow-sm">
-          <Clock className="size-5" />
-        </span>
-        <div className="leading-tight">
-          <p className="text-sm font-bold text-foreground">
-            Job winning resume in 15 minutes
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Write with AI and format for ATS
-          </p>
-        </div>
-      </div>
-
       {/* Preview (mobile only) + Share + Download */}
-      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0 sm:gap-3">
         {onPreview && (
           <button
             onClick={onPreview}
             aria-label="Preview resume"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted sm:px-5 xl:hidden"
+            className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-card px-4 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted sm:px-5 xl:hidden"
           >
             <Eye className="size-4" />
             <span className="hidden sm:inline">Preview</span>
@@ -172,7 +156,7 @@ export function TopBar({
 
         <button
           onClick={() => setShareOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
+          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
         >
           <Share2 className="size-4" />
           <span className="hidden sm:inline">Share</span>

@@ -33,7 +33,7 @@ function SaveIndicator({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
+        "inline-flex items-center gap-1.5 rounded-[10px] bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
         className
       )}
       aria-live="polite"

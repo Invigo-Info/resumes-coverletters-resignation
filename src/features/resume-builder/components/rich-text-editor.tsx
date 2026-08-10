@@ -188,14 +188,14 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   if (!editor) {
     return (
       <div
-        className="rounded-xl border border-border bg-card"
+        className="rounded-[10px] border border-border bg-card"
         style={{ minHeight: minHeight + 44 }}
       />
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-[10px] border border-border bg-card">
       {/* Wraps so the format buttons plus the AI controls never force the card
           wider than a 280px screen. */}
       <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5">

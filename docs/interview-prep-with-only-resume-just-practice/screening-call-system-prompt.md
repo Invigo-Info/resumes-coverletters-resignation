@@ -6,6 +6,40 @@ It is sent to Gemini as the `systemInstruction`; the resume, the operation
 as the **user turn**. Source of truth for the rules: the resume-only spec's
 "SCREENING CALL RULES" and "Screening Call task prompt".
 
+## In simple terms
+
+In simple terms, the Screening Call uses **one system prompt** (`SCREENING_SYSTEM_PROMPT`
+in the code) that tells the AI how to act as a recruiter-style interview coach. Here's
+what it says, plainly:
+
+**Its job**
+- Act like an early recruiter/HR screening. Use **only the person's resume** — no job description, no company.
+
+**How many & what**
+- Make **exactly 7 questions** (3 more on "Get more").
+- Cover, in order: tell me about yourself → why leaving → a main skill → another skill/tool → experience/education → availability/location → salary.
+
+**For each question**
+- **2–3 short coaching tips** (6–14 words each).
+- **One sample answer**: 20–45 words, 1–3 sentences, first-person, plain and natural.
+- Keep questions **short and direct** — no "Your resume shows…" preambles.
+
+**Honesty rules**
+- Never invent employers, tools, numbers, or years — use only what the resume says.
+
+**Special handling**
+- **Salary:** give an approximate market range based on the person's role, level, and location (right currency), phrased differently each time — not a canned line.
+- **Availability / relocation / notice:** safe "let's discuss the timeline first" answer, since those are personal choices.
+
+**Ending**
+- Add **3 questions the candidate can ask** the interviewer (none on "Get more").
+
+**Output**
+- Return clean JSON only — no markdown, no styling.
+
+That system prompt is sent to Gemini as the `systemInstruction`, and a short "task"
+message carries the resume + operation. The full, word-for-word text follows below.
+
 Wired in [`src/app/api/ai/route.ts`](../../src/app/api/ai/route.ts):
 
 - Constant `SCREENING_SYSTEM_PROMPT` (the text below).

@@ -250,7 +250,7 @@ export function ResignationDashboardBody() {
             <button
               type="button"
               onClick={createNew}
-              className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-[10px] bg-card px-6 py-3 text-sm font-semibold text-primary shadow-card ring-1 ring-border transition-colors hover:bg-secondary"
             >
               <Plus className="size-4" />
               Create new resignation letter

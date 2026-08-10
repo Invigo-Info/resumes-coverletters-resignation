@@ -51,7 +51,7 @@ function ActionButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-[10px] px-4 py-2 text-sm font-medium transition-colors",
         "outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
         ACTION_VARIANTS[variant],
         disabled &&
@@ -178,15 +178,15 @@ export function ResumeCard({
       </div>
 
       {/* AI banner */}
-      <div className="m-1 flex flex-col items-start gap-4 rounded-2xl bg-[#F3F2FF] px-5 py-4 sm:flex-row sm:items-center">
-        <Sparkles className="mt-0.5 size-5 shrink-0 text-[#8B5CF6]" />
-        <p className="flex-1 text-sm font-medium leading-snug text-[#4F46E5]">
+      <div className="m-1 flex flex-col items-start gap-4 rounded-2xl bg-primary/5 px-5 py-4 sm:flex-row sm:items-center">
+        <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" />
+        <p className="flex-1 text-sm font-medium leading-snug text-primary">
           Customizing your resume for each specific job can significantly enhance
           your chances of getting an interview
         </p>
         <button
           onClick={handleTailor}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-ai px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+          className="inline-flex shrink-0 items-center gap-2 rounded-[10px] bg-gradient-ai px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
         >
           Tailor this resume
           <span aria-hidden>→</span>
@@ -229,7 +229,7 @@ export function ResumeCard({
             <button
               type="button"
               onClick={() => setConfirmOpen(false)}
-              className="flex-1 rounded-full bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
+              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
             >
               Cancel
             </button>
@@ -239,7 +239,7 @@ export function ResumeCard({
                 setConfirmOpen(false);
                 onDelete?.();
               }}
-              className="flex-1 rounded-full bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
+              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
             >
               Delete
             </button>

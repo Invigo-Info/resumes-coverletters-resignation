@@ -130,7 +130,7 @@ export function LandingPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto w-full max-w-5xl px-5 pt-12 pb-16 text-center sm:px-8 sm:pt-20 sm:pb-24">
-          <p className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+          <p className="mb-4 inline-flex items-center gap-1.5 rounded-[10px] border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5" aria-hidden />
             AI-assisted, grounded in your real experience
           </p>
