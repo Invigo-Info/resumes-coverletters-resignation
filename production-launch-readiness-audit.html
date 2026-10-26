@@ -1,0 +1,745 @@
+<title>Launch Blocker Worklist</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#f4f6fa; --surface:#ffffff; --surface-2:#eceff6; --code-bg:#1b2434; --code-ink:#dde5f2;
+    --ink:#111a29; --ink-2:#36435c; --muted:#66748d;
+    --accent:#1170cd; --accent-soft:#e6f0fb;
+    --act:#a65c00; --act-soft:#fdf1e0;
+    --done:#136b47; --done-soft:#e4f3ec;
+    --stop:#b31d36; --stop-soft:#fceef0;
+    --border:#dde3ed; --rule:#e9edf4;
+    --shadow:0 1px 2px rgba(17,26,41,.05), 0 10px 26px -14px rgba(17,26,41,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0b111c; --surface:#131c2a; --surface-2:#1a2435; --code-bg:#070c14; --code-ink:#cfdaeb;
+      --ink:#e8eef7; --ink-2:#bdc9db; --muted:#8a99b2;
+      --accent:#5aa6f3; --accent-soft:#16283e;
+      --act:#eba74f; --act-soft:#2a2013;
+      --done:#56cf96; --done-soft:#0e2720;
+      --stop:#ff7f96; --stop-soft:#2b1520;
+      --border:#243049; --rule:#1f2a3f;
+      --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -16px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0b111c; --surface:#131c2a; --surface-2:#1a2435; --code-bg:#070c14; --code-ink:#cfdaeb;
+    --ink:#e8eef7; --ink-2:#bdc9db; --muted:#8a99b2;
+    --accent:#5aa6f3; --accent-soft:#16283e;
+    --act:#eba74f; --act-soft:#2a2013;
+    --done:#56cf96; --done-soft:#0e2720;
+    --stop:#ff7f96; --stop-soft:#2b1520;
+    --border:#243049; --rule:#1f2a3f;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -16px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink);
+    font:400 16.5px/1.62 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 24px 100px}
+  h1,h2,h3,h4{font-family:Gabarito,Inter,sans-serif; margin:0; text-wrap:balance}
+  code{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+
+  header{padding:54px 0 26px; border-bottom:1px solid var(--border)}
+  .kicker{font:600 11.5px/1 "JetBrains Mono",monospace; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:16px}
+  h1{font-size:clamp(33px,5vw,50px); font-weight:700; letter-spacing:-.022em; line-height:1.04}
+  .sub{margin-top:14px; max-width:64ch; color:var(--ink-2); font-size:17px}
+  .facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+    margin-top:30px; background:var(--border); border:1px solid var(--border);
+    border-radius:10px; overflow:hidden}
+  .facts div{background:var(--surface); padding:12px 15px}
+  .facts dt{font:500 10px/1 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 6px}
+  .facts dd{margin:0; font-size:14px; font-weight:500}
+
+  .banner{margin-top:30px; padding:20px 24px; border-radius:11px; background:var(--stop-soft);
+    border:1px solid var(--stop); color:var(--ink)}
+  .banner strong{color:var(--stop)}
+  .banner p{margin:0} .banner p+p{margin-top:9px}
+
+  section{margin-top:60px}
+  h2{font-size:26px; font-weight:600; letter-spacing:-.01em; padding-bottom:11px;
+    border-bottom:2px solid var(--ink); display:inline-block}
+  .lede{margin:17px 0 0; max-width:72ch; color:var(--ink-2)}
+
+  /* wave header */
+  .wave{margin-top:44px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+  .wave h3{font-size:20px; font-weight:600}
+  .wave .tag{font:600 10.5px/1 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--accent); background:var(--accent-soft);
+    padding:5px 9px; border-radius:5px}
+  .wave .note{color:var(--muted); font-size:14px; flex-basis:100%; margin-top:2px}
+
+  /* task card */
+  .task{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    box-shadow:var(--shadow); margin-top:16px; overflow:hidden}
+  .task > header{padding:17px 22px 14px; border-bottom:1px solid var(--rule); background:none}
+  .idline{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+  .tid{font:600 12px/1 "JetBrains Mono",monospace; color:var(--stop);
+    background:var(--stop-soft); padding:4px 8px; border-radius:5px; letter-spacing:.04em}
+  .tid.hi{color:var(--act); background:var(--act-soft)}
+  .chip{font:500 11px/1.5 "JetBrains Mono",monospace; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--muted); background:var(--surface-2);
+    padding:3px 9px; border-radius:999px}
+  .task h4{font-size:18.5px; font-weight:600; line-height:1.32}
+  .body{padding:18px 22px 22px; display:flex; flex-direction:column; gap:17px}
+  .block > .lbl{font:600 10.5px/1 "JetBrains Mono",monospace; letter-spacing:.11em;
+    text-transform:uppercase; margin-bottom:8px; display:block}
+  .defect .lbl{color:var(--stop)}
+  .dothis .lbl{color:var(--act)}
+  .donewhen .lbl{color:var(--done)}
+  .verify .lbl{color:var(--accent)}
+  .block p{margin:0; color:var(--ink-2); font-size:15.5px}
+  .block p+p{margin-top:9px}
+  ol.steps,ul.acc{margin:0; padding-left:21px; color:var(--ink-2); font-size:15.5px}
+  ol.steps li,ul.acc li{margin-bottom:7px}
+  ol.steps li::marker{color:var(--act); font-weight:600; font-family:"JetBrains Mono",monospace}
+  ul.acc{list-style:none; padding-left:0}
+  ul.acc li{padding-left:27px; position:relative}
+  ul.acc li::before{content:""; position:absolute; left:0; top:4px; width:15px; height:15px;
+    border:1.5px solid var(--done); border-radius:4px}
+  pre{margin:0; background:var(--code-bg); color:var(--code-ink); border-radius:8px;
+    padding:13px 15px; overflow-x:auto; font-family:"JetBrains Mono",monospace;
+    font-size:12.8px; line-height:1.7}
+  pre .c{color:#8aa0bd}
+  .where{font-family:"JetBrains Mono",monospace; font-size:12.5px; color:var(--ink);
+    background:var(--surface-2); padding:9px 12px; border-radius:7px; margin-top:10px;
+    overflow-x:auto; white-space:nowrap}
+
+  .tw{overflow-x:auto; margin-top:24px; border:1px solid var(--border);
+    border-radius:11px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:600px; font-size:15px}
+  th{text-align:left; font:600 10.5px/1.4 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); padding:12px 15px;
+    border-bottom:1px solid var(--border); white-space:nowrap}
+  td{padding:11px 15px; border-bottom:1px solid var(--rule); color:var(--ink-2); vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:first-child{color:var(--ink); font-weight:500; font-family:"JetBrains Mono",monospace;
+    font-size:13px; white-space:nowrap}
+
+  ul.plain{margin:17px 0 0; padding-left:20px; color:var(--ink-2)}
+  ul.plain li{margin-bottom:8px}
+  ul.plain li::marker{color:var(--accent)}
+  ul.plain strong{color:var(--ink)}
+
+  footer{margin-top:70px; padding-top:20px; border-top:1px solid var(--border);
+    color:var(--muted); font-size:13.5px}
+  footer p+p{margin-top:9px}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">Remediation worklist &middot; for the incoming engineer</div>
+  <h1>Launch Blocker Worklist</h1>
+  <p class="sub">Thirteen defects that stand between this branch and a safe production launch, written
+  as work: what is broken, what to change, and the check that proves it is done. Every file reference
+  was read on this branch at this commit.</p>
+  <dl class="facts">
+    <div><dt>Branch</dt><dd>handover/production-readiness</dd></div>
+    <div><dt>Commit</dt><dd><code>317e46a</code></dd></div>
+    <div><dt>Dated</dt><dd>26 Oct 2026</dd></div>
+    <div><dt>Blockers</dt><dd>5 critical, 8 high</dd></div>
+    <div><dt>Deployed</dt><dd>No - never launched</dd></div>
+    <div><dt>Dev port</dt><dd>3001</dd></div>
+  </dl>
+</header>
+
+<div class="banner">
+  <p><strong>Do not deploy until Wave 1 and Wave 2 are closed.</strong> The build is green and the test
+  suite passes, which is exactly why these are easy to miss: none of them announce themselves at build
+  time. The paywall cannot hold, account deletion does not delete, forgotten passwords are unrecoverable,
+  and the checkout screen shows a price Stripe is never asked to charge.</p>
+  <p>Start with <strong>P1</strong>. It is a decision, not code, and it changes how much of the rest is
+  worth building.</p>
+</div>
+
+<section>
+  <h2>Before you start</h2>
+  <p class="lede">Get a working localhost first - verified from a clean clone of this branch.</p>
+  <pre><span class="c"># one variable is genuinely required; without it /api/auth/session returns 500</span>
+node -e "console.log('AUTH_SECRET=' + require('crypto').randomBytes(32).toString('base64'))" &gt; .env.local
+npm install --no-audit --no-fund
+npm run dev        <span class="c"># http://localhost:3001</span></pre>
+  <p class="lede">With only that set, the app runs on a JSON file store at <code>.data/</code> with canned
+  AI responses - no Postgres, Gemini, Stripe or Resend keys needed. Add <code>DATABASE_URL</code> to switch
+  to Postgres (apply <code>database/schema.sql</code> first). <code>GET /api/health</code> reports which
+  integrations are live. Full setup notes are in <code>HANDOVER.md</code>; the diagnostic report this
+  worklist derives from is <code>production-readiness-audit-2026-10-26.html</code>.</p>
+  <p class="lede"><strong>Local gotcha:</strong> if the dev server starts panicking with
+  <code>Failed to write app endpoint ... Next.js package not found</code> and the page appears to shake,
+  the Turbopack cache is stale. Stop the server, <code>rm -rf .next</code>, restart. Switching branches
+  triggers it.</p>
+</section>
+
+<section>
+  <h2>Work order</h2>
+  <p class="lede">The sequence is load-bearing. P1 gates how much of P2 matters; P6 must land before any
+  schema change ships; P13 is last because it is what keeps everything above it fixed.</p>
+  <div class="tw">
+  <table>
+    <thead><tr><th>ID</th><th>Task</th><th>Wave</th><th>Blocked by</th></tr></thead>
+    <tbody>
+      <tr><td>P1</td><td>Decide the paywall model</td><td>1 - decide</td><td>-</td></tr>
+      <tr><td>P2</td><td>Enforce entitlement on download</td><td>1 - blockers</td><td>P1</td></tr>
+      <tr><td>P3</td><td>Make account deletion actually delete</td><td>1 - blockers</td><td>-</td></tr>
+      <tr><td>P4</td><td>Align displayed price with charged price</td><td>1 - blockers</td><td>-</td></tr>
+      <tr><td>P5</td><td>Password reset + email verification</td><td>1 - blockers</td><td>-</td></tr>
+      <tr><td>P6</td><td>Introduce a migration ledger</td><td>1 - blockers</td><td>-</td></tr>
+      <tr><td>P7</td><td>Require a session at checkout</td><td>2 - payments</td><td>-</td></tr>
+      <tr><td>P8</td><td>Webhook idempotency + event ordering</td><td>2 - payments</td><td>P6</td></tr>
+      <tr><td>P9</td><td>Fix the spoofable rate-limit identity</td><td>2 - abuse</td><td>-</td></tr>
+      <tr><td>P10</td><td>Remove the LinkedIn scraping endpoint</td><td>2 - abuse</td><td>-</td></tr>
+      <tr><td>P11</td><td>Cap the document blob</td><td>2 - abuse</td><td>-</td></tr>
+      <tr><td>P12</td><td>Get CI green</td><td>3 - process</td><td>-</td></tr>
+      <tr><td>P13</td><td>End-to-end tests for every journey</td><td>3 - process</td><td>P2, P3, P5</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>The work</h2>
+
+  <div class="wave"><span class="tag">Wave 1</span><h3>Launch blockers</h3>
+    <div class="note">Nothing ships until these are closed.</div></div>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P1</span><span class="chip">Decision</span><span class="chip">Product + eng</span></div>
+      <h4>Decide the paywall model before writing any paywall code</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p>Premium is a <code>localStorage</code> flag. Editing <code>resume-co:paywall</code> in devtools,
+        or calling <code>usePaywall.setState({premium:true})</code> in the console, unlocks everything. The
+        server reconciliation only corrects that flag when the entitlement API answers
+        <code>source === "server"</code>, and it writes back into the same client store.</p>
+        <p>There is no server step to gate: all seven download entry points funnel into
+        <code>exportElementToPdf</code>, which renders the PDF in the browser. No server-side check can
+        rescue the current architecture - the file never passes through your infrastructure.</p>
+        <div class="where">src/features/cover-letter/lib/paywall.ts &middot; src/services/storage/{pdf-export,download-pdf}.ts</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Pick one: <strong>(a) server-rendered downloads</strong> - a route that authenticates,
+          checks entitlement, renders the PDF server-side and streams it; or <strong>(b) accept the free
+          tier</strong> - treat downloads as free and monetise something that genuinely requires your
+          server (AI tailoring, job matching, stored documents).</li>
+          <li>Option (a) is the real fix and the larger job: it means moving rendering off
+          <code>html2canvas-pro</code> in the browser to a server renderer, and the output must match the
+          current visual result.</li>
+          <li>Option (b) is honest and cheap, but it is a pricing change - it needs the business to agree.</li>
+          <li>Write the decision down in the PR description. Everything in P2 follows from it.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc"><li>The chosen model is recorded and agreed, with the free tier defined explicitly.</li></ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P2</span><span class="chip">Critical</span><span class="chip">Payments</span><span class="chip">after P1</span></div>
+      <h4>Enforce entitlement where it cannot be edited</h4>
+    </header>
+    <div class="body">
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>If P1 chose server downloads: add the route, call
+          <code>isPremium(session.user.email)</code> from <code>src/permissions/entitlements.ts</code>
+          before producing the file, and return 401/403 otherwise.</li>
+          <li>Demote the client store to presentation only. Keep it for showing the upgrade dialog; never
+          let it decide whether an action is allowed.</li>
+          <li>Audit the five consumers so none of them gate a real capability on the local flag:
+          <code>unlock-premium.tsx</code>, <code>paywall-dialog.tsx</code>,
+          <code>dashboard-resumes.tsx</code>, <code>resume-card.tsx</code>,
+          <code>documents-store.ts</code>.</li>
+          <li>The server-side free-resume cap in <code>PUT /api/documents</code> is the pattern to copy -
+          it already re-checks entitlement rather than trusting the client.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>With <code>localStorage</code> hand-edited to premium, the gated action still fails.</li>
+          <li>Revoking the subscription in Stripe removes access without the user clearing storage.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P3</span><span class="chip">Critical</span><span class="chip">Privacy / GDPR</span></div>
+      <h4>Make account deletion actually delete</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>pgDeleteUser</code> runs one statement - <code>delete from users</code> - and its comment
+        claims documents go via <code>ON DELETE CASCADE</code>. That cascade does not exist:
+        <code>schema.sql</code> explicitly drops the foreign key so OAuth accounts can own documents.</p>
+        <p>Surviving deletion: <code>documents</code> (resumes - legal name, address, phone, employment
+        history), <code>saved_jobs</code>, <code>dismissed_jobs</code>, <code>tailoring_sessions</code>,
+        <code>subscriptions</code>. A Google-only account has no <code>users</code> row at all, so for
+        those users the delete is a <strong>complete no-op</strong> while the UI reports success. The file
+        store has the same hole: <code>fileDeleteUser</code> rewrites <code>users.json</code> and never
+        touches <code>documents.json</code>.</p>
+        <p>Your published privacy policy says: &ldquo;We keep your account and content until you delete
+        them.&rdquo;</p>
+        <div class="where">src/services/database/users.ts:99 (file) &middot; :185 (postgres) &middot; database/schema.sql</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Rewrite <code>pgDeleteUser</code> to clear all six tables in one transaction keyed on the
+          normalised email, never conditional on a <code>users</code> row existing.
+          <code>postgres@3.4.9</code> gives you <code>sql.begin</code> - confirmed available.</li>
+          <li>Fix <code>fileDeleteUser</code> to match: strip the email from
+          <code>.data/documents.json</code> as well as <code>users.json</code>.</li>
+          <li>Decide what happens to a live subscription row. Cancellation already happens first in
+          <code>DELETE /api/account</code>; keep a billing record only if you have a stated legal basis,
+          and say so in the policy.</li>
+          <li>Correct the misleading comment - it is what hid this.</li>
+        </ol>
+        <pre><span class="c">// shape, not finished code</span>
+await sql.begin(async (tx) =&gt; {
+  const e = normalize(email);
+  await tx`delete from documents          where email = ${e}`;
+  await tx`delete from saved_jobs         where email = ${e}`;
+  await tx`delete from dismissed_jobs     where email = ${e}`;
+  await tx`delete from tailoring_sessions where email = ${e}`;
+  await tx`delete from subscriptions      where email = ${e}`;
+  await tx`delete from users              where email = ${e}`;
+});</pre>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>A test seeds rows in all six tables, deletes the account, and asserts zero rows remain.</li>
+          <li>The same test passes for an OAuth-style account that has no <code>users</code> row.</li>
+          <li>The same test passes against the file store backend.</li>
+          <li>The privacy policy matches what the code now does.</li>
+        </ul>
+      </div>
+      <div class="block verify"><span class="lbl">Verify</span>
+        <pre>npm run test:run   <span class="c"># add the new case under tests/security/</span></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P4</span><span class="chip">Critical</span><span class="chip">Billing disclosure</span></div>
+      <h4>Make the displayed price the charged price</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p>The trial plan shows <code>priceLabel: "$1.95"</code> and <code>summaryAmount: "$1.95"</code>.
+        The Stripe payload for the same plan is <code>unitAmount: 2995</code> with
+        <code>trial_period_days: 7</code>. The customer is charged <strong>$0.00 today</strong> and
+        <strong>$29.95 in seven days</strong>. The figure $1.95 is never sent to Stripe.</p>
+        <p>This invites chargebacks, breaches consumer-disclosure rules in the EU, UK and several US
+        states, and is a common trigger for Stripe account review and ad disapproval.</p>
+        <div class="where">src/services/payments/plans.ts - PLANS.trial</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Decide the actual offer: a genuinely paid $1.95 trial (add a one-off $1.95 line item and drop
+          the free trial days), or a free 7-day trial (relabel to &ldquo;$0.00 today, then $29.95/month&rdquo;).</li>
+          <li>Derive every displayed figure from the same plan object the Stripe call uses. The bug exists
+          because the labels are hand-written strings sitting next to the real amounts.</li>
+          <li>Check the annual plan too while you are in there - confirm $119.40 matches
+          <code>unitAmount: 11940</code>.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>A test-mode checkout charges exactly what the summary says, for both plans.</li>
+          <li>No price string in the codebase is written independently of the Stripe amount.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P5</span><span class="chip">Critical</span><span class="chip">Auth</span></div>
+      <h4>Password reset, email verification, and the linking hole</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p>No forgot-password route, page or token flow exists anywhere in <code>src</code>, and no email
+        verification. A user who forgets their password is permanently locked out of their resumes.</p>
+        <p>Worse in combination: Google sign-in sets <code>allowDangerousEmailAccountLinking: true</code>
+        while credential signup never verifies the address. An attacker registers a password account for
+        <code>victim@gmail.com</code>; when the victim later signs in with Google the accounts link, and
+        the attacker's password now opens the victim's account.</p>
+        <div class="where">src/features/authentication/auth.ts &middot; src/services/email/email.ts (only welcome + receipt exist)</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Set <code>allowDangerousEmailAccountLinking: false</code> now. This is a one-line change and
+          closes the takeover path immediately.</li>
+          <li>Add email verification on credential signup - single-use, expiring token.</li>
+          <li>Add the reset flow: request, single-use expiring token, set-new-password. Resend is already
+          wired; follow <code>sendWelcomeEmail</code> for the sending pattern.</li>
+          <li>Re-enable account linking only once verification is enforced on both sides.</li>
+          <li>While you are in the email service, the four missing lifecycle emails belong here too:
+          payment failed, trial ending, subscription cancelled, deletion confirmation.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>A real reset email arrives in a real inbox and the new password works.</li>
+          <li>Reset tokens are single-use and expire; a consumed token is rejected.</li>
+          <li>An unverified credential account cannot be linked to a Google sign-in.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid">P6</span><span class="chip">Critical</span><span class="chip">Database</span></div>
+      <h4>Introduce a migration ledger before any schema change ships</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>database/migrations/</code>, <code>policies/</code>, <code>functions/</code> and
+        <code>seed/</code> are all empty. The schema is one 105-line file applied by hand, and it already
+        carries in-place drift repairs (<code>drop constraint if exists</code>) for databases created by
+        earlier runs. There is no way to know what a production database contains, no rollback, and no CI
+        check that code matches schema.</p>
+        <div class="where">database/schema.sql &middot; scripts/db-setup.mjs</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Freeze today's schema as <code>database/migrations/0001_init.sql</code>.</li>
+          <li>Add a <code>schema_migrations</code> ledger table and make the runner idempotent - applied
+          migrations are recorded and skipped.</li>
+          <li>Apply to a fresh staging database and diff the result against <code>schema.sql</code>; they
+          must match exactly.</li>
+          <li>Add a CI job that applies migrations to an empty database, so drift fails the build rather
+          than production.</li>
+          <li>Every later task that touches the schema (P3's deletes, P8's ledger) ships as a numbered
+          migration from here on.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>A fresh database reaches the current schema from migrations alone.</li>
+          <li>Running the migration runner twice is a no-op the second time.</li>
+          <li>CI fails if a schema change lands without a migration.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <div class="wave"><span class="tag">Wave 2</span><h3>Payments integrity and abuse surface</h3>
+    <div class="note">Fix before real users and real money arrive.</div></div>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P7</span><span class="chip">High</span><span class="chip">Payments</span></div>
+      <h4>Require a session at checkout and stop keying entitlement on a typed email</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>auth()</code> is read but never required, so <code>client_reference_id</code> and the
+        subscription metadata are omitted for anonymous buyers. The webhook then falls back to
+        <code>customer_details.email</code> - the address the payer typed into Stripe's form - and grants
+        premium to it. A mistyped address means the payer gets nothing with no link to any account; someone
+        else's address grants premium to that account.</p>
+        <div class="where">src/app/api/checkout/session/route.ts &middot; src/app/api/stripe/webhook/route.ts</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Return 401 from the checkout route when there is no session.</li>
+          <li>In the webhook, accept only <code>client_reference_id</code> and subscription metadata that
+          your own server set. Drop the <code>customer_details.email</code> fallback.</li>
+          <li>Longer term, key <code>subscriptions</code> on a stable user id rather than email, which is
+          mutable. That is a migration (P6) plus a backfill.</li>
+          <li>Add a rate limit to the checkout route - it currently has none, so session creation can be
+          spammed.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>An anonymous POST to the checkout route is refused.</li>
+          <li>Entitlement cannot be granted to an address the server did not supply.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P8</span><span class="chip">High</span><span class="chip">Payments</span><span class="chip">after P6</span></div>
+      <h4>Webhook idempotency and event ordering</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p>Signature verification is correct - raw body, async verify, Node runtime, 500-on-error so Stripe
+        retries. Two gaps remain. No <code>event.id</code> is recorded, so at-least-once delivery can send a
+        duplicate receipt email. And entitlement writes stamp <code>Date.now()</code> rather than the
+        event's own timestamp, so a <code>subscription.updated</code> arriving after
+        <code>subscription.deleted</code> can silently restore cancelled access.</p>
+        <div class="where">src/app/api/stripe/webhook/route.ts - const now = Date.now()</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Add a <code>processed_events</code> table (migration, per P6). Insert <code>event.id</code>
+          and return early on conflict.</li>
+          <li>Use <code>event.created</code> as the write timestamp instead of <code>Date.now()</code>.</li>
+          <li>Refuse any entitlement write whose event timestamp is older than the stored
+          <code>updated_at</code>.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>Replaying the same event twice produces one receipt email and one write.</li>
+          <li>An out-of-order update after a cancellation does not restore access.</li>
+        </ul>
+      </div>
+      <div class="block verify"><span class="lbl">Verify</span>
+        <pre>stripe listen --forward-to localhost:3001/api/stripe/webhook
+stripe trigger customer.subscription.deleted
+<span class="c"># then replay the earlier updated event and confirm access stays revoked</span></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P9</span><span class="chip">High</span><span class="chip">Abuse / cost</span></div>
+      <h4>The rate-limit identity is attacker-supplied</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>clientIp()</code> returns the <em>first</em> entry of <code>X-Forwarded-For</code>, which
+        the caller controls. Rotating that header per request defeats every IP-keyed limit. The AI endpoint
+        accepts anonymous requests and is keyed on exactly this value, so your Gemini spend is uncapped by
+        anyone willing to send a header.</p>
+        <div class="where">src/permissions/rate-limit.ts:155</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Trust only the platform-provided client address - on Vercel the last hop, not the first
+          entry a client can prepend.</li>
+          <li>Require a session for <code>/api/ai</code>, or give anonymous callers a much smaller,
+          separately-keyed budget.</li>
+          <li>Treat Upstash as required in production. Without
+          <code>UPSTASH_REDIS_REST_URL</code>/<code>_TOKEN</code> every limiter falls back to a per-instance
+          <code>Map</code>, which on serverless makes both the login brake and the AI quota close to
+          meaningless. <code>GET /api/health</code> already exposes
+          <code>sharedRateLimit</code> - alert on it being false.</li>
+          <li>Same fix protects <code>/api/jobs</code> (Adzuna quota) and <code>/api/register</code>
+          (signup spam).</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>Rotating <code>X-Forwarded-For</code> no longer raises the effective quota.</li>
+          <li>Production refuses to run, or alerts loudly, with in-memory rate limiting.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P10</span><span class="chip">High</span><span class="chip">Legal</span></div>
+      <h4>Remove the LinkedIn scraping endpoint from the launch build</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>POST /api/linkedin</code> fetches a LinkedIn profile page server-side and returns its
+        text. No session, no rate limit - anyone on the internet can use the deployment as a scraping
+        proxy, from your IP and under your platform account. Server-side scraping of profile pages also
+        conflicts with LinkedIn's terms of service. The URL regex is anchored to
+        <code>linkedin.com/in/</code>, so SSRF is contained; the abuse and legal exposure are not.</p>
+        <div class="where">src/app/api/linkedin/route.ts</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Delete the route from the launch build. Project notes already record this feature as held
+          pending a real LinkedIn API key - the endpoint should be held with it.</li>
+          <li>If it must stay for internal testing, require a session and a rate limit, and keep it out of
+          production builds.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc"><li>The route returns 404 in a production build.</li></ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P11</span><span class="chip">Medium</span><span class="chip">Data</span></div>
+      <h4>Cap the document blob</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>PUT /api/documents</code> stores an arbitrary <code>record.data</code> value as
+        <code>jsonb</code> with no size limit, and there is no document-count cap outside resumes. One
+        account can fill the database. Authorization itself is sound - every handler scopes by session
+        email, and four isolation tests cover it.</p>
+        <div class="where">src/app/api/documents/route.ts</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Validate the body with Zod, as <code>/api/ai</code> already does, including a maximum
+          serialised size.</li>
+          <li>Apply a per-account cap to cover letters, resignation letters and interview-prep sheets, not
+          only resumes.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc"><li>An oversized document is rejected with 413, and the caps have tests.</li></ul>
+      </div>
+    </div>
+  </article>
+
+  <div class="wave"><span class="tag">Wave 3</span><h3>Process - what keeps the fixes fixed</h3>
+    <div class="note">Without these, Waves 1 and 2 regress silently.</div></div>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P12</span><span class="chip">High</span><span class="chip">CI</span></div>
+      <h4>Get CI green so the gate actually gates</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>npm run lint</code> exits non-zero with 189 errors and 1,525 warnings, and the
+        <code>quality</code> job runs lint as a required step - so CI fails on this branch today and
+        protects nothing. Most of the volume is not application code: ESLint is reading
+        <code>ds-bundle/</code>, <code>design-ref/</code>, <code>.ds-sync/</code> and
+        <code>agent-skills/</code>, including a minified bundle. <code>npx eslint src</code> alone gives 62
+        errors, and those are real - one <code>rules-of-hooks</code> violation and 38
+        <code>set-state-in-effect</code>.</p>
+        <div class="where">eslint.config.mjs - globalIgnores covers only .next, out, build, next-env.d.ts</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Add the design-reference directories to <code>globalIgnores</code>.</li>
+          <li>Fix the <code>rules-of-hooks</code> violation first - that one is a genuine runtime hazard,
+          not style.</li>
+          <li>Work through the remaining errors in <code>src</code>.</li>
+          <li>Once the tree is clean, drop <code>continue-on-error</code> from the format check so
+          formatting is enforced too.</li>
+          <li>Resolve the Node version drift: CI pins 20, developers are on 22, the hosting runtime is
+          unset. Pin all three.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>All four gates pass on a PR into <code>main</code>.</li>
+          <li>Branch protection requires them before merge.</li>
+        </ul>
+      </div>
+      <div class="block verify"><span class="lbl">Verify</span>
+        <pre>npx tsc --noEmit     <span class="c"># currently clean</span>
+npm run test:run     <span class="c"># 113 tests / 16 files, currently green</span>
+npm run build        <span class="c"># currently succeeds</span>
+npm run lint         <span class="c"># currently RED - this is the task</span></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
+      <div class="idline"><span class="tid hi">P13</span><span class="chip">High</span><span class="chip">Testing</span><span class="chip">after P2, P3, P5</span></div>
+      <h4>End-to-end tests for every journey</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p><code>tests/end-to-end/</code> and <code>tests/integration/</code> are empty. Playwright is
+        installed and unused. The 113 passing tests are unit and isolation tests - good ones, especially
+        the tenancy set - but no user journey has ever been verified as a flow.</p>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Write specs for: signup, login, build-and-download a resume, checkout, entitlement
+          revocation, and account deletion.</li>
+          <li>Make the paywall and deletion specs adversarial - they are the regression guards for P2 and
+          P3. Hand-edit <code>localStorage</code> in the download spec; assert empty tables in the deletion
+          spec.</li>
+          <li>Wire them into CI against the dev server.</li>
+          <li><strong>Auth gotcha:</strong> set cookie <code>authjs.session-token</code> <em>and</em> stub
+          <code>page.route("**/api/auth/session", ...)</code>. NextAuth discards a forged cookie on reload,
+          so the cookie alone is not enough.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>Six specs green in CI.</li>
+          <li>Reverting any Wave 1 fix turns a spec red.</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section>
+  <h2>Also outstanding</h2>
+  <p class="lede">Not launch blockers on their own, but each is a commitment you have already made to
+  users or a gap an operator will need on day one.</p>
+  <div class="tw">
+  <table>
+    <thead><tr><th>ID</th><th>Item</th><th>Area</th></tr></thead>
+    <tbody>
+      <tr><td>M1</td><td>The route gate in <code>src/proxy.ts</code> checks only that a session cookie <em>exists</em>, not that the JWT is valid. A forged cookie reaches the app shells. No data leaks - every API handler calls <code>auth()</code> and the pages are static shells - but verify the token.</td><td>Auth</td></tr>
+      <tr><td>M3</td><td>No cookie consent. PostHog and Sentry initialise unconditionally, which is an ePrivacy/GDPR problem the moment an EU visitor loads the page.</td><td>Privacy</td></tr>
+      <tr><td>M4</td><td>The privacy policy names Stripe, Gemini, Google and Adzuna but omits Resend, PostHog, Sentry, Dropbox and Upstash, and states no retention period, legal basis or contact route.</td><td>Privacy</td></tr>
+      <tr><td>M5</td><td><code>EMAIL_FROM</code> is read by the code but documented in neither env template - it affects deliverability.</td><td>Email</td></tr>
+      <tr><td>M6</td><td>No <code>script-src</code> CSP. A reasoned trade-off documented in <code>next.config.ts</code> (nonces need middleware); <code>frame-ancestors 'none'</code> and HSTS are in place. Revisit, do not ignore.</td><td>Security</td></tr>
+      <tr><td>M9</td><td>No backup or restore plan, and no restore ever rehearsed. Needed before launch, not after.</td><td>DR</td></tr>
+      <tr><td>1P</td><td>Sentry and PostHog are wired and <code>/api/health</code> is a good probe, but there are no alerts, no runbook and no on-call path.</td><td>Ops</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>What is already sound</h2>
+  <p class="lede">Do not disturb these while fixing the above - several are better than typical.</p>
+  <ul class="plain">
+    <li><strong>Stripe webhook construction</strong> - raw body before parsing, async signature verify,
+    Node runtime pinned, 500-on-error so Stripe retries, receipt email wrapped so it cannot fail the event.
+    Only idempotency and ordering are missing (P8).</li>
+    <li><strong>SQL is parameterised throughout</strong> via <code>postgres.js</code> tagged templates - no
+    concatenated query anywhere.</li>
+    <li><strong>Tenancy scoping is consistent</strong> - documents, saved jobs, dismissed jobs and
+    tailoring sessions all key on the session email, with four isolation tests.</li>
+    <li><strong>The AI endpoint is well defended</strong> - Zod at the boundary, upload MIME allowlist,
+    decoded-size cap, per-minute and per-day quotas. Only the identity it keys on is weak (P9).</li>
+    <li><strong>Deletion ordering is right</strong> - Stripe subscriptions are cancelled before the delete,
+    and a failure returns 502 without deleting. It is the deletion itself that is incomplete (P3).</li>
+    <li><strong>Login brute-force brake</strong> keyed on email, counting only failures, resetting on
+    success.</li>
+    <li><strong>Security headers</strong> - nosniff, DENY framing, strict-origin referrer,
+    Permissions-Policy, two-year HSTS with preload.</li>
+    <li><strong>SEO is correct</strong> - robots disallows every per-account surface; the sitemap lists
+    only the four public routes.</li>
+    <li><strong>Secret hygiene</strong> - <code>.env*</code> ignored, no env file tracked. The two
+    committed <code>*.example</code> templates carry placeholders only.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Remediation worklist &middot; 26 Oct 2026 &middot; <code>resume-co</code> on
+  <code>handover/production-readiness</code> at <code>317e46a</code>. Derived from the Stage 2 audit
+  (<code>production-readiness-audit-2026-10-26.html</code>), which carries the full evidence and the
+  stage-by-stage readiness matrix.</p>
+  <p>Findings come from source inspection plus executed gates (typecheck, tests, build, lint) on this
+  branch. <strong>Not verified and not claimed:</strong> production environment variables and domains, the
+  live Postgres schema, Stripe dashboard configuration including test-vs-live mode and the webhook
+  endpoint, Resend sending-domain DNS, repository branch protection, backup retention, and all live
+  performance and accessibility measurement. Treat those as open until someone with that access checks
+  them.</p>
+</footer>
+</div>
