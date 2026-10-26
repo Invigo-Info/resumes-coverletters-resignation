@@ -120,6 +120,32 @@
   td:first-child{color:var(--ink); font-weight:500; font-family:"JetBrains Mono",monospace;
     font-size:13px; white-space:nowrap}
 
+  /* requirements inventory */
+  .inv table{min-width:720px; font-size:14.5px}
+  .inv td:first-child{font-family:Inter,sans-serif; font-size:14.5px; white-space:normal;
+    min-width:230px}
+  .inv td:nth-child(3){font-family:"JetBrains Mono",monospace; font-size:12.2px;
+    color:var(--muted)}
+  .inv td:last-child{font-family:"JetBrains Mono",monospace; font-size:12.5px;
+    color:var(--accent); white-space:nowrap}
+  .inv caption{caption-side:top; text-align:left; font:600 11px/1 "JetBrains Mono",monospace;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--ink);
+    padding:15px 15px 11px; background:var(--surface-2)}
+  .st{display:inline-block; font:600 10.5px/1.6 "JetBrains Mono",monospace;
+    letter-spacing:.06em; padding:2px 8px; border-radius:4px; white-space:nowrap}
+  .s-ok{background:var(--done-soft); color:var(--done)}
+  .s-part{background:var(--act-soft); color:var(--act)}
+  .s-miss{background:var(--stop-soft); color:var(--stop)}
+  .s-block{background:var(--surface-2); color:var(--muted)}
+  .tally{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:12px;
+    margin-top:24px}
+  .tally div{background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; box-shadow:var(--shadow)}
+  .tally .n{font-family:Gabarito,sans-serif; font-weight:700; font-size:27px;
+    font-variant-numeric:tabular-nums; line-height:1}
+  .tally .t{font:600 10px/1 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); margin-top:8px}
+
   ul.plain{margin:17px 0 0; padding-left:20px; color:var(--ink-2)}
   ul.plain li{margin-bottom:8px}
   ul.plain li::marker{color:var(--accent)}
@@ -682,6 +708,269 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
       </div>
     </div>
   </article>
+</section>
+
+<section class="inv">
+  <h2>Complete requirements inventory</h2>
+  <p class="lede">Every production requirement assessed on this branch, grouped by area. Status is what
+  the code shows, not what it intends: <span class="st s-ok">PRESENT</span> means implemented and found,
+  <span class="st s-part">PARTIAL</span> means present but incomplete or defective,
+  <span class="st s-miss">MISSING</span> means not implemented anywhere, and
+  <span class="st s-block">BLOCKED</span> means it needs access I did not have - never assume those are
+  fine. The last column links to the task that closes the gap.</p>
+
+  <div class="tally">
+    <div><div class="n" style="color:var(--done)">51</div><div class="t">Present</div></div>
+    <div><div class="n" style="color:var(--act)">14</div><div class="t">Partial</div></div>
+    <div><div class="n" style="color:var(--stop)">74</div><div class="t">Missing</div></div>
+    <div><div class="n" style="color:var(--muted)">13</div><div class="t">Blocked</div></div>
+    <div><div class="n">152</div><div class="t">Assessed</div></div>
+  </div>
+
+  <div class="tw"><table>
+    <caption>Pages and application shell</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Public marketing landing</td><td><span class="st s-ok">PRESENT</span></td><td>(public)/page.tsx</td><td>-</td></tr>
+      <tr><td>Sign-in / sign-up page</td><td><span class="st s-ok">PRESENT</span></td><td>(public)/login</td><td>-</td></tr>
+      <tr><td>Terms of service page</td><td><span class="st s-ok">PRESENT</span></td><td>(public)/terms, 142 lines</td><td>-</td></tr>
+      <tr><td>Privacy policy page</td><td><span class="st s-part">PARTIAL</span></td><td>147 lines; incomplete disclosure</td><td>M4</td></tr>
+      <tr><td>Custom 404 page</td><td><span class="st s-miss">MISSING</span></td><td>no not-found.tsx anywhere</td><td>R1</td></tr>
+      <tr><td>Error boundary / 500 page</td><td><span class="st s-miss">MISSING</span></td><td>no error.tsx or global-error.tsx</td><td>R1</td></tr>
+      <tr><td>Route loading states</td><td><span class="st s-miss">MISSING</span></td><td>no loading.tsx anywhere</td><td>R1</td></tr>
+      <tr><td>About page</td><td><span class="st s-miss">MISSING</span></td><td>only 4 public routes exist</td><td>M8</td></tr>
+      <tr><td>Contact / support page</td><td><span class="st s-miss">MISSING</span></td><td>no support route or address</td><td>M8</td></tr>
+      <tr><td>Public pricing page</td><td><span class="st s-miss">MISSING</span></td><td>/payment is behind auth</td><td>M8</td></tr>
+      <tr><td>Refund / cancellation policy</td><td><span class="st s-miss">MISSING</span></td><td>not in terms or a page</td><td>M8</td></tr>
+      <tr><td>Cookie policy page</td><td><span class="st s-miss">MISSING</span></td><td>no cookie disclosure</td><td>M3</td></tr>
+      <tr><td>Per-section empty states</td><td><span class="st s-ok">PRESENT</span></td><td>resumes, cover letters, jobs</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Authentication and account lifecycle</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Email + password sign-up</td><td><span class="st s-ok">PRESENT</span></td><td>/api/register, zod validated</td><td>-</td></tr>
+      <tr><td>Google OAuth sign-in</td><td><span class="st s-ok">PRESENT</span></td><td>enabled when env vars set</td><td>-</td></tr>
+      <tr><td>Password hashing</td><td><span class="st s-ok">PRESENT</span></td><td>bcryptjs</td><td>-</td></tr>
+      <tr><td>Brute-force throttle on login</td><td><span class="st s-ok">PRESENT</span></td><td>per-email, resets on success</td><td>-</td></tr>
+      <tr><td>Sign out</td><td><span class="st s-ok">PRESENT</span></td><td>account-settings.tsx</td><td>-</td></tr>
+      <tr><td>Secure session cookies</td><td><span class="st s-ok">PRESENT</span></td><td>useSecureCookies in production</td><td>-</td></tr>
+      <tr><td>Route gate on protected pages</td><td><span class="st s-part">PARTIAL</span></td><td>proxy.ts checks cookie presence only</td><td>M1</td></tr>
+      <tr><td>Email verification</td><td><span class="st s-miss">MISSING</span></td><td>no token flow in src</td><td>P5</td></tr>
+      <tr><td>Password reset / forgot password</td><td><span class="st s-miss">MISSING</span></td><td>no route, page or token</td><td>P5</td></tr>
+      <tr><td>Change password while signed in</td><td><span class="st s-miss">MISSING</span></td><td>no UI or endpoint</td><td>P5</td></tr>
+      <tr><td>Safe OAuth account linking</td><td><span class="st s-miss">MISSING</span></td><td>allowDangerousEmailAccountLinking: true</td><td>P5</td></tr>
+      <tr><td>Account deletion</td><td><span class="st s-part">PARTIAL</span></td><td>deletes users row only</td><td>P3</td></tr>
+      <tr><td>Two-factor authentication</td><td><span class="st s-miss">MISSING</span></td><td>no TOTP/MFA code</td><td>-</td></tr>
+      <tr><td>Security event audit log</td><td><span class="st s-miss">MISSING</span></td><td>no audit trail</td><td>-</td></tr>
+      <tr><td>AUTH_SECRET configured</td><td><span class="st s-ok">PRESENT</span></td><td>required; documented in HANDOVER.md</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Email and notifications</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Transactional provider wired</td><td><span class="st s-ok">PRESENT</span></td><td>Resend</td><td>-</td></tr>
+      <tr><td>Welcome email</td><td><span class="st s-ok">PRESENT</span></td><td>sendWelcomeEmail</td><td>-</td></tr>
+      <tr><td>Payment receipt</td><td><span class="st s-ok">PRESENT</span></td><td>sendReceiptEmail</td><td>-</td></tr>
+      <tr><td>Email verification message</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P5</td></tr>
+      <tr><td>Password reset message</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P5</td></tr>
+      <tr><td>Payment failed notice</td><td><span class="st s-miss">MISSING</span></td><td>webhook sets past_due silently</td><td>P5</td></tr>
+      <tr><td>Trial ending reminder</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P5</td></tr>
+      <tr><td>Subscription cancelled notice</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P5</td></tr>
+      <tr><td>Account deletion confirmation</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P5</td></tr>
+      <tr><td>EMAIL_FROM documented</td><td><span class="st s-miss">MISSING</span></td><td>read by code, in neither template</td><td>M5</td></tr>
+      <tr><td>SPF / DKIM / DMARC on domain</td><td><span class="st s-block">BLOCKED</span></td><td>needs DNS access</td><td>-</td></tr>
+      <tr><td>Delivery verified to a real inbox</td><td><span class="st s-block">BLOCKED</span></td><td>needs Resend dashboard</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Payments, subscription and entitlement</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Checkout session creation</td><td><span class="st s-ok">PRESENT</span></td><td>embedded Stripe Checkout</td><td>-</td></tr>
+      <tr><td>Amount set server-side</td><td><span class="st s-ok">PRESENT</span></td><td>getPlan, not client-supplied</td><td>-</td></tr>
+      <tr><td>Webhook signature verification</td><td><span class="st s-ok">PRESENT</span></td><td>raw body, async verify, node runtime</td><td>-</td></tr>
+      <tr><td>Entitlement persisted server-side</td><td><span class="st s-ok">PRESENT</span></td><td>subscriptions table</td><td>-</td></tr>
+      <tr><td>Server entitlement API</td><td><span class="st s-ok">PRESENT</span></td><td>GET /api/entitlement</td><td>-</td></tr>
+      <tr><td>Subscription cancelled on delete</td><td><span class="st s-ok">PRESENT</span></td><td>cancels before deleting, 502 on failure</td><td>-</td></tr>
+      <tr><td>Entitlement enforced on paid feature</td><td><span class="st s-miss">MISSING</span></td><td>client localStorage flag only</td><td>P1, P2</td></tr>
+      <tr><td>Displayed price equals charged price</td><td><span class="st s-miss">MISSING</span></td><td>$1.95 shown, 2995 + 7 trial days sent</td><td>P4</td></tr>
+      <tr><td>Session required at checkout</td><td><span class="st s-miss">MISSING</span></td><td>auth() read but not required</td><td>P7</td></tr>
+      <tr><td>Webhook idempotency</td><td><span class="st s-miss">MISSING</span></td><td>no event.id ledger</td><td>P8</td></tr>
+      <tr><td>Event ordering protection</td><td><span class="st s-miss">MISSING</span></td><td>uses Date.now(), not event.created</td><td>P8</td></tr>
+      <tr><td>Rate limit on checkout route</td><td><span class="st s-miss">MISSING</span></td><td>no limit() call</td><td>P7</td></tr>
+      <tr><td>Self-serve cancel / billing portal</td><td><span class="st s-miss">MISSING</span></td><td>no portal session anywhere</td><td>R2</td></tr>
+      <tr><td>Invoice / billing history UI</td><td><span class="st s-miss">MISSING</span></td><td>no billing screen</td><td>R2</td></tr>
+      <tr><td>Entitlement keyed on stable id</td><td><span class="st s-part">PARTIAL</span></td><td>keyed on mutable email</td><td>P7</td></tr>
+      <tr><td>Tax / VAT handling</td><td><span class="st s-miss">MISSING</span></td><td>"Tax may apply" copy only</td><td>-</td></tr>
+      <tr><td>Documented refund process</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>M8</td></tr>
+      <tr><td>Live vs test mode confirmed</td><td><span class="st s-block">BLOCKED</span></td><td>needs Stripe dashboard</td><td>-</td></tr>
+      <tr><td>Webhook endpoint registered</td><td><span class="st s-block">BLOCKED</span></td><td>needs Stripe dashboard</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Data, database and storage</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Schema defined</td><td><span class="st s-ok">PRESENT</span></td><td>schema.sql, 6 tables</td><td>-</td></tr>
+      <tr><td>Parameterised SQL throughout</td><td><span class="st s-ok">PRESENT</span></td><td>postgres.js tagged templates</td><td>-</td></tr>
+      <tr><td>Per-account data scoping</td><td><span class="st s-ok">PRESENT</span></td><td>4 isolation tests</td><td>-</td></tr>
+      <tr><td>Dual backend (file or Postgres)</td><td><span class="st s-ok">PRESENT</span></td><td>keyed on DATABASE_URL</td><td>-</td></tr>
+      <tr><td>Upload type allowlist</td><td><span class="st s-ok">PRESENT</span></td><td>415 on unsupported type</td><td>-</td></tr>
+      <tr><td>Upload size cap</td><td><span class="st s-ok">PRESENT</span></td><td>413, re-checked server-side</td><td>-</td></tr>
+      <tr><td>Versioned migrations</td><td><span class="st s-miss">MISSING</span></td><td>migrations/ is empty</td><td>P6</td></tr>
+      <tr><td>Migration ledger table</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P6</td></tr>
+      <tr><td>Schema rollback path</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>P6</td></tr>
+      <tr><td>Seed data</td><td><span class="st s-miss">MISSING</span></td><td>database/seed/ is empty</td><td>-</td></tr>
+      <tr><td>Document blob size cap</td><td><span class="st s-miss">MISSING</span></td><td>unbounded jsonb</td><td>P11</td></tr>
+      <tr><td>Per-type document count cap</td><td><span class="st s-part">PARTIAL</span></td><td>resumes only</td><td>P11</td></tr>
+      <tr><td>Deletion removes all user data</td><td><span class="st s-miss">MISSING</span></td><td>5 of 6 tables survive</td><td>P3</td></tr>
+      <tr><td>Automated backups</td><td><span class="st s-block">BLOCKED</span></td><td>needs database provider access</td><td>-</td></tr>
+      <tr><td>Restore rehearsed</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>M9</td></tr>
+      <tr><td>Virus scanning on upload</td><td><span class="st s-miss">MISSING</span></td><td>files go straight to the model</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Privacy and compliance</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Published privacy policy</td><td><span class="st s-ok">PRESENT</span></td><td>(public)/privacy</td><td>-</td></tr>
+      <tr><td>Policy matches implementation</td><td><span class="st s-miss">MISSING</span></td><td>promises deletion that does not happen</td><td>P3</td></tr>
+      <tr><td>All processors disclosed</td><td><span class="st s-part">PARTIAL</span></td><td>omits Resend, PostHog, Sentry, Dropbox, Upstash</td><td>M4</td></tr>
+      <tr><td>Cookie consent before analytics</td><td><span class="st s-miss">MISSING</span></td><td>PostHog + Sentry load unconditionally</td><td>M3</td></tr>
+      <tr><td>Data export / portability</td><td><span class="st s-miss">MISSING</span></td><td>no export endpoint</td><td>R3</td></tr>
+      <tr><td>Stated retention periods</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>M4</td></tr>
+      <tr><td>Stated legal basis</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>M4</td></tr>
+      <tr><td>Privacy contact route</td><td><span class="st s-miss">MISSING</span></td><td>no address or form</td><td>M4</td></tr>
+      <tr><td>Right to erasure honoured</td><td><span class="st s-miss">MISSING</span></td><td>deletion is incomplete</td><td>P3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Security</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline security headers</td><td><span class="st s-ok">PRESENT</span></td><td>nosniff, DENY, referrer, permissions</td><td>-</td></tr>
+      <tr><td>HSTS with preload</td><td><span class="st s-ok">PRESENT</span></td><td>max-age 2 years</td><td>-</td></tr>
+      <tr><td>Clickjacking protection</td><td><span class="st s-ok">PRESENT</span></td><td>frame-ancestors none</td><td>-</td></tr>
+      <tr><td>Secrets kept out of git</td><td><span class="st s-ok">PRESENT</span></td><td>.env* ignored, no env file tracked</td><td>-</td></tr>
+      <tr><td>Dependency + secret scanning</td><td><span class="st s-ok">PRESENT</span></td><td>CI security job</td><td>-</td></tr>
+      <tr><td>Input validation at AI boundary</td><td><span class="st s-ok">PRESENT</span></td><td>zod safeParse</td><td>-</td></tr>
+      <tr><td>Input validation on documents</td><td><span class="st s-part">PARTIAL</span></td><td>hand-rolled narrowing, no zod</td><td>P11</td></tr>
+      <tr><td>Trustworthy rate-limit identity</td><td><span class="st s-miss">MISSING</span></td><td>first X-Forwarded-For entry</td><td>P9</td></tr>
+      <tr><td>Shared rate-limit store in prod</td><td><span class="st s-block">BLOCKED</span></td><td>needs production env check</td><td>P9</td></tr>
+      <tr><td>script-src CSP</td><td><span class="st s-miss">MISSING</span></td><td>documented trade-off, needs nonces</td><td>M6</td></tr>
+      <tr><td>No unauthenticated scraping proxy</td><td><span class="st s-miss">MISSING</span></td><td>/api/linkedin open to anyone</td><td>P10</td></tr>
+      <tr><td>Session token verified on pages</td><td><span class="st s-part">PARTIAL</span></td><td>cookie presence only</td><td>M1</td></tr>
+      <tr><td>Credential rotation procedure</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>-</td></tr>
+      <tr><td>Penetration test</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>SEO, discovery and advertising</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Page metadata and title template</td><td><span class="st s-ok">PRESENT</span></td><td>layout.tsx, metadataBase set</td><td>-</td></tr>
+      <tr><td>robots.txt</td><td><span class="st s-ok">PRESENT</span></td><td>app surfaces disallowed</td><td>-</td></tr>
+      <tr><td>sitemap.xml</td><td><span class="st s-ok">PRESENT</span></td><td>4 public routes</td><td>-</td></tr>
+      <tr><td>Open Graph / Twitter tags</td><td><span class="st s-ok">PRESENT</span></td><td>title + description set</td><td>-</td></tr>
+      <tr><td>Favicon</td><td><span class="st s-ok">PRESENT</span></td><td>src/app/favicon.ico</td><td>-</td></tr>
+      <tr><td>Open Graph share image</td><td><span class="st s-miss">MISSING</span></td><td>no images array, no opengraph-image</td><td>R4</td></tr>
+      <tr><td>JSON-LD structured data</td><td><span class="st s-miss">MISSING</span></td><td>no schema.org markup</td><td>R4</td></tr>
+      <tr><td>Web app manifest</td><td><span class="st s-miss">MISSING</span></td><td>no manifest.json</td><td>-</td></tr>
+      <tr><td>Content depth for ad review</td><td><span class="st s-miss">MISSING</span></td><td>4 public pages, no articles</td><td>M8</td></tr>
+      <tr><td>ads.txt</td><td><span class="st s-miss">MISSING</span></td><td>only needed if monetising</td><td>-</td></tr>
+      <tr><td>Analytics installed</td><td><span class="st s-ok">PRESENT</span></td><td>PostHog</td><td>-</td></tr>
+      <tr><td>Search Console verification</td><td><span class="st s-block">BLOCKED</span></td><td>needs the live domain</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>UX, mobile and accessibility</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Print / PDF stylesheet</td><td><span class="st s-ok">PRESENT</span></td><td>chrome hidden, cards kept whole</td><td>-</td></tr>
+      <tr><td>Scrollbar-stable layout</td><td><span class="st s-ok">PRESENT</span></td><td>scrollbar-gutter: stable</td><td>-</td></tr>
+      <tr><td>Skip-to-content link</td><td><span class="st s-miss">MISSING</span></td><td>not in layout.tsx</td><td>R5</td></tr>
+      <tr><td>Error and loading feedback</td><td><span class="st s-part">PARTIAL</span></td><td>no route-level error or loading files</td><td>R1</td></tr>
+      <tr><td>Responsive across breakpoints</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
+      <tr><td>Keyboard navigation and focus</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
+      <tr><td>Alt text coverage</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
+      <tr><td>WCAG audit</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>R5</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Testing</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Unit tests</td><td><span class="st s-ok">PRESENT</span></td><td>113 passing across 16 files</td><td>-</td></tr>
+      <tr><td>Tenancy isolation tests</td><td><span class="st s-ok">PRESENT</span></td><td>4 security tests</td><td>-</td></tr>
+      <tr><td>Tests run in CI</td><td><span class="st s-ok">PRESENT</span></td><td>quality job</td><td>-</td></tr>
+      <tr><td>Integration tests</td><td><span class="st s-miss">MISSING</span></td><td>tests/integration is empty</td><td>P13</td></tr>
+      <tr><td>End-to-end journey tests</td><td><span class="st s-miss">MISSING</span></td><td>tests/end-to-end is empty</td><td>P13</td></tr>
+      <tr><td>Negative / abuse tests</td><td><span class="st s-miss">MISSING</span></td><td>no tampering or authz-bypass cases</td><td>P13</td></tr>
+      <tr><td>Load / performance test</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>-</td></tr>
+      <tr><td>Coverage reporting</td><td><span class="st s-miss">MISSING</span></td><td>no coverage gate</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Build, CI/CD and environments</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Typecheck gate</td><td><span class="st s-ok">PRESENT</span></td><td>tsc --noEmit, clean</td><td>-</td></tr>
+      <tr><td>Test gate</td><td><span class="st s-ok">PRESENT</span></td><td>green</td><td>-</td></tr>
+      <tr><td>Build gate</td><td><span class="st s-ok">PRESENT</span></td><td>next build succeeds</td><td>-</td></tr>
+      <tr><td>Env templates committed</td><td><span class="st s-ok">PRESENT</span></td><td>.env.example, .env.local.example</td><td>-</td></tr>
+      <tr><td>Lint gate</td><td><span class="st s-part">PARTIAL</span></td><td>runs but fails: 189 errors</td><td>P12</td></tr>
+      <tr><td>Format gate</td><td><span class="st s-part">PARTIAL</span></td><td>continue-on-error</td><td>P12</td></tr>
+      <tr><td>Complete env documentation</td><td><span class="st s-part">PARTIAL</span></td><td>11 vars used but undocumented</td><td>M5</td></tr>
+      <tr><td>Node version pinned consistently</td><td><span class="st s-part">PARTIAL</span></td><td>CI 20, local 22, host unset</td><td>P12</td></tr>
+      <tr><td>Deploy pipeline</td><td><span class="st s-miss">MISSING</span></td><td>no vercel.json, Dockerfile or deploy job</td><td>R6</td></tr>
+      <tr><td>Staging environment</td><td><span class="st s-miss">MISSING</span></td><td>never stood up</td><td>R6</td></tr>
+      <tr><td>Environment isolation (prod/staging keys)</td><td><span class="st s-miss">MISSING</span></td><td>no separation defined</td><td>R6</td></tr>
+      <tr><td>Rollback runbook</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>R6</td></tr>
+      <tr><td>Release tagging / changelog discipline</td><td><span class="st s-part">PARTIAL</span></td><td>CHANGELOG.md exists, no tags</td><td>-</td></tr>
+      <tr><td>Branch protection on main</td><td><span class="st s-block">BLOCKED</span></td><td>needs repository settings</td><td>-</td></tr>
+      <tr><td>Production env vars set</td><td><span class="st s-block">BLOCKED</span></td><td>needs hosting dashboard</td><td>-</td></tr>
+      <tr><td>Custom domain and DNS</td><td><span class="st s-block">BLOCKED</span></td><td>needs hosting dashboard</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tw"><table>
+    <caption>Monitoring and operations</caption>
+    <thead><tr><th>Requirement</th><th>Status</th><th>Evidence</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td>Error tracking</td><td><span class="st s-ok">PRESENT</span></td><td>Sentry, client + server instrumentation</td><td>-</td></tr>
+      <tr><td>Product analytics</td><td><span class="st s-ok">PRESENT</span></td><td>PostHog</td><td>-</td></tr>
+      <tr><td>Health / liveness endpoint</td><td><span class="st s-ok">PRESENT</span></td><td>GET /api/health</td><td>-</td></tr>
+      <tr><td>Uptime monitoring</td><td><span class="st s-miss">MISSING</span></td><td>health probe exists, nothing polls it</td><td>R7</td></tr>
+      <tr><td>Alerting on errors or downtime</td><td><span class="st s-miss">MISSING</span></td><td>no alert rules</td><td>R7</td></tr>
+      <tr><td>Incident response runbook</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>R7</td></tr>
+      <tr><td>On-call / escalation path</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>R7</td></tr>
+      <tr><td>Structured request logging</td><td><span class="st s-miss">MISSING</span></td><td>console.error only</td><td>R7</td></tr>
+      <tr><td>Log retention policy</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>R7</td></tr>
+      <tr><td>Status page</td><td><span class="st s-miss">MISSING</span></td><td>-</td><td>-</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="lede"><strong>Tasks referenced above that are not in the worklist waves</strong> - smaller
+  items, each self-contained: <code>R1</code> route-level <code>not-found</code>, <code>error</code> and
+  <code>loading</code> files; <code>R2</code> self-serve cancel and billing history; <code>R3</code> data
+  export for portability; <code>R4</code> Open Graph image and JSON-LD; <code>R5</code> accessibility pass
+  including a skip link; <code>R6</code> deploy pipeline, staging and rollback runbook; <code>R7</code>
+  uptime monitoring, alerting and an incident runbook. Schedule these alongside Wave 3 - none of them
+  block the Wave 1 fixes, but <code>R2</code> and <code>R6</code> must land before you take real
+  money or deploy.</p>
 </section>
 
 <section>
