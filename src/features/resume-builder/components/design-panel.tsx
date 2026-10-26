@@ -316,14 +316,14 @@ export function DesignPanel({
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 rounded-[10px] bg-muted px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70"
+          className="inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <ChevronLeft className="size-4" />
           Back
         </button>
         <button
           onClick={onNext}
-          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           Next
           <ChevronRight className="size-4" />

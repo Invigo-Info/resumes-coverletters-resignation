@@ -23,7 +23,7 @@ function CtaPrimary({
   return (
     <Link
       href={href}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--brand-blue) px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {children}
     </Link>
@@ -41,7 +41,25 @@ function CtaSecondary({
   return (
     <Link
       href={href}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border-[1.5px] border-primary bg-card px-6 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/** Compact top-nav outline link, sized to sit beside the filled "Get started". */
+function NavOutline({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex h-9 items-center justify-center rounded-lg border-[1.5px] border-primary bg-card px-4 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {children}
     </Link>
@@ -117,20 +135,22 @@ export function LandingPage() {
           <LogoMark />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3">
+          <span className="hidden sm:inline-flex">
+            <NavOutline href="/login">Sign in</NavOutline>
+          </span>
           <Link
             href="/login"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg bg-(--brand-blue) px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            Sign in
+            Get started
           </Link>
-          <CtaPrimary href="/login">Get started</CtaPrimary>
         </nav>
       </header>
 
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto w-full max-w-5xl px-5 pt-12 pb-16 text-center sm:px-8 sm:pt-20 sm:pb-24">
-          <p className="mb-4 inline-flex items-center gap-1.5 rounded-[10px] border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+          <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-xs font-semibold text-accent-foreground">
             <Sparkles className="size-3.5" aria-hidden />
             AI-assisted, grounded in your real experience
           </p>
@@ -195,7 +215,7 @@ export function LandingPage() {
 
         {/* Final CTA */}
         <section className="mx-auto w-full max-w-5xl px-5 pb-20 sm:px-8">
-          <div className="rounded-3xl border border-border bg-muted px-6 py-12 text-center sm:py-16">
+          <div className="rounded-3xl bg-accent px-6 py-12 text-center sm:py-16">
             <h2 className="mx-auto max-w-2xl font-heading text-2xl font-bold tracking-tight text-balance text-foreground sm:text-3xl">
               Ready to build your next resume?
             </h2>

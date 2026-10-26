@@ -249,14 +249,16 @@ export function PersonalDetailsForm() {
         </FieldWrap>
       </div>
 
-      {/* Additional details */}
+      {/* Additional details - same v9 add/disclosure recipe as AddMoreButton:
+          no fill, blue outline + blue label/icon at rest; highlights with the
+          light-blue accent on hover (text darkens to primary-strong for AA). */}
       <button
         type="button"
         onClick={() => setShowMore((v) => !v)}
         aria-expanded={showMore}
-        className="mt-6 flex w-full items-center gap-3 rounded-xl bg-muted px-5 py-4 text-left font-semibold text-foreground transition-colors hover:bg-muted/70"
+        className="mt-6 flex w-full cursor-pointer items-center gap-2 rounded-[6px] border-[1.5px] border-primary/50 bg-transparent px-4 py-2.5 text-left text-sm font-semibold text-primary outline-none transition-colors hover:border-primary hover:bg-accent hover:text-primary-strong focus-visible:ring-3 focus-visible:ring-ring/40"
       >
-        {showMore ? <Minus className="size-5" /> : <Plus className="size-5" />}
+        {showMore ? <Minus className="size-4" /> : <Plus className="size-4" />}
         {showMore ? "Hide additional details" : "Show additional details"}
       </button>
 

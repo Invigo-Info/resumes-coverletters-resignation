@@ -454,7 +454,7 @@ export function ConfigurePhotoDialog({
             type="button"
             onClick={save}
             disabled={!canSave}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
           >
             {saving && <Loader2 className="size-4 animate-spin" />}
             {saving ? "Saving…" : "Save"}

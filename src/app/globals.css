@@ -98,80 +98,94 @@
 :root {
   --radius: 0.75rem;
 
-  /* Blue+white system: light-gray page ground, white cards, blue accent. */
-  --background: #f6f7f9;
-  --foreground: #18181b;
+  /* v9 raw brand tokens (source colours). The semantic tokens below map onto
+     these, using AA-safe variants where the bright value fails white-text
+     contrast (verified with scripts/contrast.py). */
+  --brand-blue: #1A91F0;        /* bright brand blue - accents, gradient, focus ring (graphic 3:1) */
+  --brand-blue-dark: #1170CD;   /* white-text-safe blue - filled buttons/CTAs (white 5.6:1) */
+  --brand-blue-soft: #E8F4FE;   /* soft tint - icon tiles, chips, hovers */
+  --brand-purple: #7B61FF;      /* gradient partner + AI accent (graphic) */
+  --success: #21A45D;           /* green checks, progress done, Pro badge */
+  --success-soft: #E8F5EC;
+  --destructive-soft: #FBEAEA;  /* danger-button hover wash */
+  --field-resting: #FAFBFD;     /* input resting background */
+  --text-mute: #9AA6B8;         /* eyebrows, timestamps */
+
+  /* v9 surfaces */
+  --background: #F4F5F8;         /* v9 page gray */
+  --foreground: #1E2532;         /* v9 body text */
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: #111418;    /* v9 headings ink */
   --popover: #ffffff;
-  --popover-foreground: #18181b;
+  --popover-foreground: #111418;
 
-  /* Primary blue (reference image). White on #2563eb = 5.17:1 (AA). */
-  --primary: #2563eb;
+  /* Brand blue. Per Keshav's explicit direction, FILLED primary buttons use the
+     bright image blue #1A91F0 (= --brand-blue) as the fill with #1170CD (--primary)
+     as the hover - see the filled button variants. NOTE: white text on the bright
+     #1A91F0 fill is 3.31:1 (below WCAG AA 4.5:1) - an accepted deviation for the
+     button fill only. --primary (#1170CD, white 4.97:1) stays the AA-safe value
+     for outline-button text, links, borders, and every other primary text use. */
+  --primary: #1170CD;
   --primary-foreground: #ffffff;
-  --primary-strong: #1d4ed8;
+  --primary-strong: #0E63A8;     /* hover fill / hover border (white 6.0:1) */
 
-  --secondary: #f1f2f4;
-  --secondary-foreground: #18181b;
+  --secondary: #F1F4F9;          /* v9 field/pill gray */
+  --secondary-foreground: #1E2532;
 
-  --muted: #f1f2f4;
-  --muted-foreground: #6b7280;
+  --muted: #F1F4F9;
+  --muted-foreground: #5E6B7E;   /* v9 soft - all secondary text */
 
-  --accent: #eef2ff;
-  --accent-foreground: #1d4ed8;
+  --accent: #E8F4FE;             /* v9 blue-soft - hovers, icon tiles, chips */
+  --accent-foreground: #0F5FB0;  /* AA-safe blue text on the #E8F4FE tint (4.5:1) */
 
-  /* Danger red-600 (white 4.5:1+ both ways). */
-  --destructive: #dc2626;
+  --destructive: #DC2626;        /* v9 red (unchanged) */
 
-  --border: #e7e8eb;
-  --input: #e2e3e7;
-  --ring: #2563eb;
+  --border: #E7EAF0;             /* v9 line */
+  --input: #DFE3EA;              /* v9 input resting border */
+  --ring: #1A91F0;               /* focus ring (graphic 3:1) */
 
-  --chart-1: #2563eb;
+  --chart-1: #1A91F0;
   --chart-2: #14b8a6;
   --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
+  --chart-4: #7B61FF;
   --chart-5: #ef4444;
 
-  /* brand gradients / accents */
-  --brand-blue: #2563eb;
-  /* Account-avatar brand mark (deep navy blue; white initials 8.72:1). */
+  /* Account-avatar brand mark (deep navy blue; white initials AA). */
   --brand-teal: #1e40af;
-  /* AI accent = Precision Workspace "modern purple" for AI-assisted features.
-     --ai-from/--ai-to tint gradients/icons/borders (graphics, 3:1); --ai-text
-     and --ai-solid carry small/white text and are verified >= 4.5:1
-     (#6d28d9 is 7.10:1 both ways). */
-  --ai-from: #7c3aed;
-  --ai-to: #6d28d9;
-  --ai-text: #6d28d9;
-  --ai-solid: #6d28d9;
-  /* Brand logo mark: an all-blue gradient (light blue -> primary blue). */
-  --logo-from: #4f8bff;
-  --logo-to: #2563eb;
+  /* AI accent (v9 purple). Gradients/icons use --brand-purple #7B61FF (graphic
+     3:1); --ai-text/--ai-solid carry small/white text and use #6247E0 (AA-safe
+     both ways, verified). */
+  --ai-from: #7B61FF;
+  --ai-to: #6247E0;
+  --ai-text: #6247E0;
+  --ai-solid: #6247E0;
+  /* Brand logo mark: a v9-blue gradient (light -> brand blue). */
+  --logo-from: #4CB0FF;
+  --logo-to: #1A91F0;
   /* creation-menu icon tiles (the "How should we start?" cards) */
-  --tile-strong-from: #4f8bff;
-  --tile-strong-to: #2563eb;
-  --tile-soft-from: #7aa6ff;
-  --tile-soft-to: #4f7dff;
-  --progress-from: #fb923c;
-  --progress-via: #fbbf24;
-  --progress-to: #84cc16;
-  /* Resume-builder completion stages: a motivational climb from orange (just
-     started) to green (finished) - kept as the one semantic status ramp. */
-  --progress-low: #f97316;
-  --progress-early: #f59e0b;
-  --progress-mid: #84cc16;
-  --progress-high: #22c55e;
-  --progress-done: #16a34a;
+  --tile-strong-from: #4CB0FF;
+  --tile-strong-to: #1A91F0;
+  --tile-soft-from: #8CCBFF;
+  --tile-soft-to: #4CB0FF;
+  --progress-from: #F6A21E;
+  --progress-via: #C7D22B;
+  --progress-to: #35B558;
+  /* Resume-builder completion stages: a motivational climb (v9 amber->green)
+     ending on the v9 success green. */
+  --progress-low: #F6A21E;
+  --progress-early: #F0AE1F;
+  --progress-mid: #C7D22B;
+  --progress-high: #35B558;
+  --progress-done: #21A45D;
 
   --sidebar: #ffffff;
-  --sidebar-foreground: #18181b;
-  --sidebar-primary: #2563eb;
+  --sidebar-foreground: #111418;
+  --sidebar-primary: #1170CD;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f2f4;
-  --sidebar-accent-foreground: #18181b;
-  --sidebar-border: #e7e8eb;
-  --sidebar-ring: #2563eb;
+  --sidebar-accent: #F1F4F9;
+  --sidebar-accent-foreground: #1E2532;
+  --sidebar-border: #E7EAF0;
+  --sidebar-ring: #1A91F0;
 }
 
 @layer base {
@@ -250,6 +264,32 @@
       var(--progress-via),
       var(--progress-to)
     );
+  }
+
+  /* v9 signature gradient (insight banners, "ready" cards, letter progress). */
+  .bg-brand-gradient {
+    background-image: linear-gradient(95deg, var(--brand-blue), var(--brand-purple));
+  }
+
+  /* v9 eyebrow label ("RESUMES · STEP 1 OF 2"). */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--text-mute);
+    text-transform: uppercase;
+  }
+
+  /* v9 hover-trace card (border traces blue, shadow deepens on hover). */
+  .card-trace {
+    border: 1px solid transparent;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .card-trace:hover {
+    border-color: var(--primary);
+    box-shadow: 0 10px 26px rgba(30, 37, 50, 0.1);
   }
 
   /* Active bullet/paragraph highlight in the live resume preview. Editor-only -

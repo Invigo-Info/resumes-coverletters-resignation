@@ -443,7 +443,7 @@ function NoExperience({ onAdd }: { onAdd: () => void }) {
       <button
         type="button"
         onClick={onAdd}
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+        className="inline-flex items-center gap-2 rounded-[6px] bg-(--brand-blue) px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
       >
         <Plus className="size-4" />
         Add work experience

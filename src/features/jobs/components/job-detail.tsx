@@ -159,7 +159,7 @@ export function JobDetail({
             <button
               type="button"
               onClick={onApply}
-              className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              className="inline-flex h-9 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
             >
               Apply now
             </button>

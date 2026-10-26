@@ -146,7 +146,7 @@ export function AutocompleteInput({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        className={cn("h-12 rounded-xl bg-card", icon && "pl-10")}
+        className={cn("h-12 rounded-[10px] bg-card", icon && "pl-10")}
       />
       {showPanel && (
         <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-popover p-1 shadow-card-lg">

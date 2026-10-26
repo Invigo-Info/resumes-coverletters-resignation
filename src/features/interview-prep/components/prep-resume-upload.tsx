@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import { FileUp, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { FileUp, FileText, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import {
   UploadingResume,
@@ -40,10 +40,14 @@ import {
  */
 export function PrepResumeUpload({
   onPicked,
+  onBack,
 }: {
   /** Fired once a resume is chosen (saved pick or a fresh upload) so the parent
    *  can advance to the prep flow using that resume. */
   onPicked?: () => void;
+  /** Optional back-navigation for the focused funnel Step 1; renders the Back
+   *  button when provided (Step 1 of 4 in the interview-prep flow). */
+  onBack?: () => void;
 } = {}) {
   const hydrate = useResumeStore((s) => s.hydrate);
   const reset = useResumeStore((s) => s.reset);
@@ -53,7 +57,7 @@ export function PrepResumeUpload({
   // Saved resumes lead (expanded) when the user has any; the upload card then
   // starts collapsed as the secondary path. With no saved resumes, upload leads.
   const hasSaved = savedResumes.length > 0;
-  const [savedOpen, setSavedOpen] = useState(true);
+  const [savedOpen, setSavedOpen] = useState(false);
   const [open, setOpen] = useState(!hasSaved);
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -124,8 +128,21 @@ export function PrepResumeUpload({
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+    <div className="mx-auto max-w-3xl">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <ChevronLeft className="size-4" />
+          Back
+        </button>
+      )}
+      <p className="text-center text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+        Interview prep · Step 1 of 4
+      </p>
+      <h1 className="mt-2 text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
         Start with your resume
       </h1>
       <p className="mx-auto mt-3 max-w-md text-center text-muted-foreground">
@@ -144,10 +161,11 @@ export function PrepResumeUpload({
         }}
       />
 
-      {/* Use a saved resume - only when the account has at least one. Lists every
-          saved resume; picking one loads it and advances to the prep flow. */}
-      {hasSaved && (
-        <div className="mt-8">
+      {/* The two choice cards, stacked full-width in the widened container. */}
+      <div className="mt-8 space-y-4">
+        {/* Use a saved resume - only when the account has at least one. Lists every
+            saved resume; picking one loads it and advances to the prep flow. */}
+        {hasSaved && (
           <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-black/5">
             <button
               type="button"
@@ -166,12 +184,13 @@ export function PrepResumeUpload({
                   From your account
                 </span>
               </span>
-              <ChevronDown
-                className={cn(
-                  "size-5 shrink-0 text-primary transition-transform",
-                  !savedOpen && "-rotate-90"
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
+                {savedOpen ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
                 )}
-              />
+              </span>
             </button>
 
             {savedOpen && (
@@ -193,10 +212,10 @@ export function PrepResumeUpload({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      <div className={cn(hasSaved ? "mt-4" : "mt-8")}>
+        {/* Upload a new resume - the second choice card (or the only one when
+            the account has no saved resumes). */}
         <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-black/5">
           <button
             type="button"
@@ -215,12 +234,13 @@ export function PrepResumeUpload({
                 Add a file from your device
               </span>
             </span>
-            <ChevronDown
-              className={cn(
-                "size-5 shrink-0 text-primary transition-transform",
-                !open && "-rotate-90"
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
+              {open ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
               )}
-            />
+            </span>
           </button>
 
           {open && (

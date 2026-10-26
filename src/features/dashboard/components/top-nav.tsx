@@ -118,7 +118,7 @@ export function TopNav({ active = "Resumes" }: { active?: string }) {
           </DropdownMenu>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm outline-none transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40">
+            <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-[6px] bg-(--brand-blue) px-4 text-sm font-semibold text-primary-foreground shadow-sm outline-none transition-colors hover:bg-(--brand-blue) focus-visible:ring-3 focus-visible:ring-ring/40">
               <Plus className="size-4" />
               Create
             </DropdownMenuTrigger>

@@ -95,7 +95,7 @@ export function TopBar({
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4">
       {/* Home */}
-      <HomeButton className="size-13" />
+      <HomeButton className="size-10 rounded-xl" iconClassName="size-[18px]" />
 
       {/* Tabs: full-width text row on mobile (wraps below), compact on desktop */}
       <div className="order-last flex w-full items-center gap-1 rounded-2xl bg-card p-1.5 shadow-card ring-1 ring-border sm:order-none sm:w-auto sm:shrink-0">
@@ -106,9 +106,9 @@ export function TopBar({
               key={t.key}
               onClick={() => onTabChange(t.key)}
               className={cn(
-                "inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:flex-none sm:px-4",
+                "inline-flex flex-1 items-center justify-center gap-2 rounded-[6px] px-3 py-2 text-sm font-semibold transition-colors sm:flex-none sm:px-4",
                 active
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -147,7 +147,7 @@ export function TopBar({
           <button
             onClick={onPreview}
             aria-label="Preview resume"
-            className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-card px-4 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted sm:px-5 xl:hidden"
+            className="inline-flex h-11 items-center gap-2 rounded-[6px] bg-card px-4 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted sm:px-5 xl:hidden"
           >
             <Eye className="size-4" />
             <span className="hidden sm:inline">Preview</span>
@@ -156,7 +156,7 @@ export function TopBar({
 
         <button
           onClick={() => setShareOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
+          className="inline-flex h-11 items-center gap-2 rounded-[6px] bg-card px-5 text-sm font-semibold text-primary ring-1 ring-border transition-colors hover:bg-muted"
         >
           <Share2 className="size-4" />
           <span className="hidden sm:inline">Share</span>
@@ -172,7 +172,7 @@ export function TopBar({
         <button
           onClick={handleDownload}
           disabled={downloading}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+          className="inline-flex h-11 items-center gap-2 rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary disabled:opacity-60"
         >
           {downloading ? (
             <Loader2 className="size-4 animate-spin" />

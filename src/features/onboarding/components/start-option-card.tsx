@@ -34,8 +34,8 @@ export function StartOptionCard({
       className={cn(
         "overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-lg",
         recommended
-          ? "ring-2 ring-primary/25 shadow-[0_8px_28px_-10px_var(--primary)]"
-          : "ring-1 ring-black/5"
+          ? "ring-2 ring-primary/30 shadow-[0_8px_28px_-10px_var(--primary)]"
+          : "ring-1 ring-border"
       )}
     >
       <button
@@ -52,15 +52,21 @@ export function StartOptionCard({
           {icon}
         </span>
         <span className="flex-1">
-          <span className="block text-lg font-bold text-foreground">{title}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-lg font-bold text-foreground">{title}</span>
+            {recommended && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+                Recommended
+              </span>
+            )}
+          </span>
           <span className="block text-sm text-muted-foreground">{subtitle}</span>
         </span>
-        <ChevronRight
-          className={cn(
-            "size-5 shrink-0 text-primary transition-transform",
-            expanded && "rotate-90"
-          )}
-        />
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+          <ChevronRight
+            className={cn("size-4 transition-transform", expanded && "rotate-90")}
+          />
+        </span>
       </button>
       {children}
     </div>

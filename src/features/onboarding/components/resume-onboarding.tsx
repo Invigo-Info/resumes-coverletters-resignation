@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Sparkles, ScanLine, FileUp, ChevronRight, X, Lock } from "lucide-react";
+import { Sparkles, ScanLine, FileUp, ChevronRight, ChevronLeft, X, Lock, ShieldCheck, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { LogoMark } from "@/components/common/brand/logo-mark";
 import { PageShell } from "@/components/layout/page-shell";
@@ -44,10 +44,13 @@ function hasSavedProgress(s: ResumeState): boolean {
 }
 
 /**
- * The resume creation onboarding ("How should we start?"). Rendered both as the
- * post-login home landing page (/) and the standalone /resume-creation-menu.
+ * The resume creation onboarding ("How should we start?"). Used at
+ * /resume-creation-menu. When `embedded` is set, the component drops its own
+ * full-page chrome (the absolute logo, the HelpPill, and the full-viewport
+ * height) so it can sit inside the DashboardShell sidebar layout, which already
+ * supplies the top bar, logo, and help affordance.
  */
-export function ResumeOnboarding() {
+export function ResumeOnboarding({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [phase, setPhase] = useState<UploadPhase | null>(null);
@@ -130,13 +133,15 @@ export function ResumeOnboarding() {
     }
   }
 
-  return (
-    <PageShell>
-      <div className="absolute left-6 top-6">
-        <Link href="/" aria-label="resumewriter.ai home">
-          <LogoMark />
-        </Link>
-      </div>
+  const body = (
+    <>
+      {!embedded && (
+        <div className="absolute left-6 top-6">
+          <Link href="/" aria-label="resumewriter.ai home">
+            <LogoMark />
+          </Link>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
@@ -150,50 +155,74 @@ export function ResumeOnboarding() {
         }}
       />
 
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center px-4 py-10">
-        {/* Heading + options stay optically centred; the resume-progress card is
-            anchored near the bottom, well clear of the two choices. */}
-        <div className="flex w-full flex-1 flex-col items-center justify-center">
-        <h1 className="mb-12 text-center font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-          {limitReached ? "Upgrade to keep building" : "How should we start?"}
-        </h1>
-
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-5xl flex-col justify-center px-4 py-16",
+          embedded ? "min-h-[calc(100vh-4rem)]" : "min-h-screen"
+        )}
+      >
         {limitReached ? (
-          <div className="w-full rounded-2xl bg-card p-8 text-center shadow-card ring-1 ring-border">
-            <span className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
-              <Lock className="size-6" aria-hidden />
-            </span>
-            <h2 className="mt-5 font-heading text-xl font-bold text-foreground">
-              You have used all {limit} free resumes
-            </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-              Subscribe to create unlimited resumes, keep editing the ones you
-              already have, and download without limits.
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push("/payment")}
-              className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <Sparkles className="size-4" />
-              Subscribe to continue
-            </button>
-            <div className="mt-4">
-              <Link
-                href="/"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          <div className="mx-auto w-full max-w-xl text-center">
+            <h1 className="mb-8 font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+              Upgrade to keep building
+            </h1>
+            <div className="w-full rounded-2xl bg-card p-8 text-center shadow-card ring-1 ring-border">
+              <span className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+                <Lock className="size-6" aria-hidden />
+              </span>
+              <h2 className="mt-5 font-heading text-xl font-bold text-foreground">
+                You have used all {limit} free resumes
+              </h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                Subscribe to create unlimited resumes, keep editing the ones you
+                already have, and download without limits.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push("/payment")}
+                className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
               >
-                Back to my resumes
-              </Link>
+                <Sparkles className="size-4" />
+                Subscribe to continue
+              </button>
+              <div className="mt-4">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Back to my resumes
+                </Link>
+              </div>
             </div>
           </div>
         ) : (
-        <div className="w-full space-y-5">
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-14">
+            {/* Left: heading + the two choices (and the save-progress card) */}
+            <div>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="mb-6 inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-3.5 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                <ChevronLeft className="size-4" />
+                Back
+              </button>
+              <div className="text-center lg:text-left">
+                <p className="eyebrow mb-2.5">New resume · step 1 of 2</p>
+                <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+                  How should we start?
+                </h1>
+                <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground sm:text-base lg:mx-0">
+                  Both paths land in the same editor - pick whichever fits.
+                </p>
+              </div>
+
+              <div className="mt-8 space-y-5">
           <StartOptionCard
             icon={<Sparkles className="size-6" />}
             iconClassName="bg-tile-strong"
             title="Start from scratch"
-            subtitle="Our AI helper will guide you"
+            subtitle="Our AI helper will guide you · about 15 minutes"
             recommended
             onClick={() => {
               reset();
@@ -205,7 +234,7 @@ export function ResumeOnboarding() {
             icon={<ScanLine className="size-6" />}
             iconClassName="bg-tile-soft"
             title="Upload your resume"
-            subtitle="Improve it with AI"
+            subtitle="Improve it with AI · PDF or DOCX"
             expanded={uploadOpen}
             onClick={() => setUploadOpen((v) => !v)}
           >
@@ -300,30 +329,112 @@ export function ResumeOnboarding() {
               </div>
             )}
           </StartOptionCard>
-        </div>
-        )}
-        </div>
+              </div>
 
-        {/* Save your progress - only for a returning user with an unfinished draft */}
-        {showSave && (
-          <div className="mt-16 flex w-full items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-card ring-1 ring-border">
-            <div className="flex-1">
-              <p className="font-bold text-foreground">Save your progress</p>
-              <p className="text-sm text-muted-foreground">Pick up where you left off</p>
+              {/* Save your progress - only for a returning user with an unfinished draft */}
+              {showSave && (
+                <div className="mt-6 flex w-full items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-card ring-1 ring-border">
+                  <div className="flex-1">
+                    <p className="font-bold text-foreground">Save your progress</p>
+                    <p className="text-sm text-muted-foreground">Pick up where you left off</p>
+                  </div>
+                  <button
+                    onClick={() => router.push("/resumes/write/personal")}
+                    className="inline-flex h-10 shrink-0 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    onClick={() => setDismissedSave(true)}
+                    aria-label="Dismiss"
+                    className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
             </div>
-            <button
-              onClick={() => router.push("/resumes/write/personal")}
-              className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-            >
-              Continue
-            </button>
-            <button
-              onClick={() => setDismissedSave(true)}
-              aria-label="Dismiss"
-              className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
-            >
-              <X className="size-4" />
-            </button>
+
+            {/* Right: what you'll get - a resume preview + value props. On mobile it
+                drops below the two choices (still useful, not hidden). */}
+            <aside>
+              <div className="rounded-2xl bg-secondary/60 p-6 ring-1 ring-border">
+                <svg
+                  viewBox="0 0 300 210"
+                  className="mx-auto h-auto w-full max-w-[260px]"
+                  role="img"
+                  aria-label="A resume scored against a job"
+                >
+                  <circle cx="150" cy="105" r="92" fill="var(--brand-blue-soft)" opacity="0.6" />
+                  <rect x="86" y="26" width="128" height="160" rx="12" fill="var(--card)" stroke="var(--border)" />
+                  <circle cx="110" cy="54" r="10" fill="var(--brand-blue)" />
+                  <rect x="128" y="48" width="56" height="6" rx="3" fill="var(--foreground)" />
+                  <rect x="128" y="60" width="38" height="5" rx="2.5" fill="var(--input)" />
+                  {[82, 96, 110, 124, 138, 152].map((y, i) => (
+                    <rect
+                      key={y}
+                      x="104"
+                      y={y}
+                      width={i % 2 === 0 ? 92 : 72}
+                      height="5"
+                      rx="2.5"
+                      fill="var(--border)"
+                    />
+                  ))}
+                  <g transform="translate(196 40)">
+                    <circle cx="0" cy="0" r="26" fill="var(--card)" />
+                    <circle cx="0" cy="0" r="21" fill="none" stroke="var(--input)" strokeWidth="5" />
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="21"
+                      fill="none"
+                      stroke="var(--brand-blue)"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray="132"
+                      strokeDashoffset="14"
+                      transform="rotate(-90)"
+                    />
+                    <text x="0" y="5" textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--brand-blue)">
+                      99
+                    </text>
+                  </g>
+                  <path
+                    d="M64 90 l2.6 6.6 6.6 2.6 -6.6 2.6 -2.6 6.6 -2.6 -6.6 -6.6 -2.6 6.6 -2.6 Z"
+                    fill="var(--brand-blue)"
+                    opacity="0.75"
+                  />
+                  <path
+                    d="M234 146 l1.8 4.6 4.6 1.8 -4.6 1.8 -1.8 4.6 -1.8 -4.6 -4.6 -1.8 4.6 -1.8 Z"
+                    fill="var(--brand-purple)"
+                    opacity="0.7"
+                  />
+                </svg>
+
+                <p className="eyebrow mt-5">What you&apos;ll get</p>
+                <ul className="mt-3 space-y-3">
+                  {[
+                    { icon: ShieldCheck, title: "ATS-friendly templates", sub: "Built to pass applicant tracking" },
+                    { icon: Sparkles, title: "AI writing help", sub: "Grounded in your real experience" },
+                    { icon: Trophy, title: "A match score on every job", sub: "Scored up to 99" },
+                  ].map((v) => {
+                    const Icon = v.icon;
+                    return (
+                      <li key={v.title} className="flex items-start gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <Icon className="size-4" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">{v.title}</p>
+                          <p className="text-xs text-muted-foreground">{v.sub}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </aside>
           </div>
         )}
       </div>
@@ -343,7 +454,11 @@ export function ResumeOnboarding() {
         onImported={() => router.push("/resumes/write/personal?source=linkedin")}
       />
 
-      <HelpPill />
-    </PageShell>
+      {!embedded && <HelpPill />}
+    </>
   );
+
+  // Standalone: wrap in the full-page shell. Embedded: return bare so the parent
+  // DashboardShell provides the page background, top bar, and sidebar.
+  return embedded ? body : <PageShell>{body}</PageShell>;
 }

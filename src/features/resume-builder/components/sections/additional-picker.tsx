@@ -40,16 +40,13 @@ function AddSectionCard({
       type="button"
       onClick={onAdd}
       aria-label={`Add ${label}`}
-      className="group flex items-center gap-3 rounded-xl bg-muted px-4 py-4 text-left outline-none transition-colors hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
+      // Same v9 add-button recipe as AddMoreButton / "Show additional details":
+      // no fill, blue outline + blue icon/label, light-blue accent fill on hover.
+      className="group flex items-center gap-3 rounded-[6px] border-[1.5px] border-primary/50 bg-transparent px-4 py-3.5 text-left text-primary outline-none transition-colors hover:border-primary hover:bg-accent hover:text-primary-strong focus-visible:ring-3 focus-visible:ring-ring/40"
     >
-      <Icon className="size-5 shrink-0 text-foreground" aria-hidden />
-      <span className="flex-1 font-medium text-foreground">{label}</span>
-      {/* The plus reads as "insert this section", so it strengthens on hover
-          rather than staying a passive decoration. */}
-      <Plus
-        className="size-5 text-muted-foreground transition-colors group-hover:text-foreground"
-        aria-hidden
-      />
+      <Icon className="size-5 shrink-0" aria-hidden />
+      <span className="flex-1 text-sm font-semibold">{label}</span>
+      <Plus className="size-4 shrink-0" aria-hidden />
     </button>
   );
 }

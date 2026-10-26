@@ -70,7 +70,7 @@ export function PaywallDialog({
 
           <button
             onClick={unlock}
-            className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
           >
             Continue to download
           </button>

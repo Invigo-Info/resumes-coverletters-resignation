@@ -139,7 +139,7 @@ function FieldControl({
             variant to win. */}
         <SelectTrigger
           id={id}
-          className="w-full rounded-xl bg-card data-[size=default]:h-12"
+          className="w-full rounded-[10px] bg-card data-[size=default]:h-12"
         >
           <SelectValue placeholder={field.placeholder} />
         </SelectTrigger>
@@ -180,7 +180,7 @@ function FieldControl({
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
       className={cn(
-        "h-12 rounded-xl bg-card",
+        "h-12 rounded-[10px] bg-card",
         invalid && "border-destructive focus-visible:ring-destructive/30"
       )}
     />

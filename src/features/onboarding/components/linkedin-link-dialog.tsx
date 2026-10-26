@@ -159,7 +159,7 @@ export function LinkedInLinkDialog({
             type="button"
             onClick={importProfile}
             disabled={busy}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:opacity-60"
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
             {busy ? "Importing…" : "Import my resume"}

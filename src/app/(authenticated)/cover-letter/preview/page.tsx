@@ -112,7 +112,7 @@ function CoverLetterPreviewContent() {
         <Link
           href="/"
           aria-label="Home"
-          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-card transition-colors hover:bg-primary/90"
+          className="grid size-10 shrink-0 place-items-center rounded-2xl bg-(--brand-blue) text-primary-foreground shadow-card transition-colors hover:bg-(--brand-blue)"
         >
           <Home className="size-4" />
         </Link>
@@ -159,7 +159,7 @@ function CoverLetterPreviewContent() {
         <button
           onClick={handleDownload}
           disabled={generating || downloading}
-          className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60 sm:ml-0"
+          className="ml-auto inline-flex h-11 shrink-0 items-center gap-2 rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:opacity-60 sm:ml-0"
         >
           {downloading ? (
             <Loader2 className="size-4 animate-spin" />

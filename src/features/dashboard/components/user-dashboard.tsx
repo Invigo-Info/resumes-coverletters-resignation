@@ -3,23 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   FileText,
   Mail,
   Send,
   Briefcase,
   MessageSquareText,
-  ChevronRight,
-  Plus,
-  Pencil,
-  Trash2,
+  Mic,
+  Upload,
+  Heart,
+  Trophy,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/common/dialog";
 import {
   fetchServerDocuments,
   type ServerDocument,
@@ -39,8 +36,12 @@ import {
 } from "@/features/resignation-letter/store/resignation-letter-documents-store";
 import { useInterviewPrepDocumentsStore } from "@/features/interview-prep/store/interview-prep-documents-store";
 import { useJobsStore } from "@/features/jobs/store/jobs-store";
+import { buildKeywordMatch, ringTheme } from "@/features/jobs/lib/keyword-match";
+import { ScoreRing } from "@/features/jobs/components/match-scoreboard";
+import type { ScoreResume } from "@/features/jobs/lib/scoreboard";
+import { generateJobs, type JobPosting } from "@/features/jobs/lib/job-search";
 import { cn } from "@/utilities/utils";
-import { useResumeStore } from "@/features/resume-builder/store/resume-store";
+import { useResumeStore, getProgress } from "@/features/resume-builder/store/resume-store";
 import { useCoverLetterStore } from "@/features/cover-letter/store/cover-letter-store";
 import { useResignationLetterStore } from "@/features/resignation-letter/store/resignation-letter-store";
 import type { LucideIcon } from "lucide-react";
@@ -63,6 +64,25 @@ const KIND_META: Record<Kind, { label: string; icon: LucideIcon }> = {
   job: { label: "Saved job", icon: Briefcase },
   interview: { label: "Interview prep", icon: MessageSquareText },
 };
+
+/** Real completion percent for a saved resume doc (getProgress reads only the
+ *  content fields ResumeDocData carries, so this is the same score the editor
+ *  meter shows). Returns 0 if the data can't be scored. */
+function resumeCompletion(data: unknown): number {
+  try {
+    return getProgress(data as Parameters<typeof getProgress>[0]);
+  } catch {
+    return 0;
+  }
+}
+
+/** Strip HTML tags to plain text (rich-text fields → matcher input). */
+function stripHtml(s: string): string {
+  return s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 /** "3 hr ago" / "5 Jun 2026" relative label. */
 function formatRelative(ts: number): string {
@@ -100,79 +120,39 @@ function mergeDocs(
   return [...byId.values()];
 }
 
-/**
- * One row in a dashboard list: an open-on-click title area plus explicit Edit
- * (opens the item in its write-mode editor / view) and Delete (opens a
- * confirmation dialog) buttons.
- */
-function ItemRow({
-  item,
-  onOpen,
-  onDelete,
+/** Outline-blue quick action in the page header. */
+function HeaderAction({
+  href,
+  icon: Icon,
+  label,
 }: {
-  item: Item;
-  onOpen: (i: Item) => void;
-  onDelete: (i: Item) => void;
+  href: string;
+  icon: LucideIcon;
+  label: string;
 }) {
-  const meta = KIND_META[item.kind];
-  const Icon = meta.icon;
-  const when = formatRelative(item.updatedAt);
   return (
-    <li className="flex items-center gap-2 rounded-2xl bg-card p-3 pl-4 shadow-card ring-1 ring-border transition-colors hover:ring-primary/40 sm:gap-3">
-      <button
-        type="button"
-        onClick={() => onOpen(item)}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-      >
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="size-5" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-foreground">
-            {item.title || "Untitled"}
-          </span>
-          <span className="block truncate text-xs text-muted-foreground">
-            {meta.label}
-            {item.sub ? ` · ${item.sub}` : ""}
-            {when ? ` · ${when}` : ""}
-          </span>
-        </span>
-      </button>
-
-      <div className="flex shrink-0 items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => onOpen(item)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-        >
-          <Pencil className="size-4" aria-hidden />
-          <span className="hidden sm:inline">Edit</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(item)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 hover:border-destructive/30 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-        >
-          <Trash2 className="size-4" aria-hidden />
-          <span className="hidden sm:inline">Delete</span>
-        </button>
-      </div>
-    </li>
+    <Link
+      href={href}
+      className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-primary/30 bg-card px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+    >
+      <Icon className="size-4" aria-hidden />
+      {label}
+    </Link>
   );
 }
 
 /**
- * A single overview of everything the signed-in user has stored: resumes, cover
- * letters, resignation letters, saved jobs and interview-prep sheets. Reads the
- * local stores for an instant view, then merges in the account's server copies
- * (cross-device) on mount. Each tile links to its section; each recent row opens
- * the item directly.
+ * The dashboard content: a greeting, at-a-glance stat cards, a guided "path to
+ * the offer", the most recent in-progress documents, saved jobs, and an AI
+ * tailoring prompt. Reads the local stores for an instant view, then merges the
+ * account's server copies (cross-device) on mount. Every metric shown is real -
+ * counts come from the stores and resume completion from the same getProgress
+ * the editor uses; nothing is fabricated.
  */
 export function UserDashboard() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
-  // Which category tile is expanded into a full list below (null = show Recent).
-  const [selected, setSelected] = useState<Kind | null>(null);
   const [server, setServer] =
     useState<Awaited<ReturnType<typeof fetchServerDocuments>>>(null);
   const [jobs, setJobs] =
@@ -187,15 +167,6 @@ export function UserDashboard() {
   const loadResume = useResumeStore((s) => s.loadDocument);
   const loadCover = useCoverLetterStore((s) => s.loadDocument);
   const loadResignation = useResignationLetterStore((s) => s.loadDocument);
-
-  const removeResume = useDocumentsStore((s) => s.removeResume);
-  const removeCover = useCoverLetterDocumentsStore((s) => s.removeLetter);
-  const removeResignation = useResignationLetterDocumentsStore((s) => s.removeLetter);
-  const removeSheet = useInterviewPrepDocumentsStore((s) => s.removeSheet);
-  const removeSavedJob = useJobsStore((s) => s.removeSaved);
-
-  // The item awaiting delete confirmation (null = dialog closed).
-  const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -242,7 +213,6 @@ export function UserDashboard() {
     }
     for (const sj of jobs ?? []) {
       const j = sj?.job;
-      // Skip malformed records with no id (would collide on key "job:undefined").
       if (!j?.id) continue;
       const ex = jobById.get(j.id);
       const at = sj.savedAt ?? 0;
@@ -266,33 +236,6 @@ export function UserDashboard() {
       jobItems: [...jobById.values()],
     };
   }, [resumes, coverLetters, resignations, prepSheets, savedJobsLocal, server, jobs]);
-
-  const sections: { kind: Kind; label: string; href: string; icon: LucideIcon; items: Item[] }[] =
-    [
-      { kind: "resume", label: "Resumes", href: "/", icon: FileText, items: cats.resumeItems },
-      { kind: "cover", label: "Cover letters", href: "/cover-letters", icon: Mail, items: cats.coverItems },
-      { kind: "resignation", label: "Resignation letters", href: "/resignation-letters", icon: Send, items: cats.resignationItems },
-      { kind: "job", label: "Saved jobs", href: "/jobs", icon: Briefcase, items: cats.jobItems },
-      { kind: "interview", label: "Interview prep", href: "/interview-prep/saved", icon: MessageSquareText, items: cats.prepItems },
-    ];
-
-  const recent = [
-    ...cats.resumeItems,
-    ...cats.coverItems,
-    ...cats.resignationItems,
-    ...cats.prepItems,
-    ...cats.jobItems,
-  ]
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, 8);
-
-  // When a tile is selected, show that whole category below; otherwise Recent.
-  const activeSection = selected
-    ? sections.find((s) => s.kind === selected) ?? null
-    : null;
-  const listItems = activeSection
-    ? [...activeSection.items].sort((a, b) => b.updatedAt - a.updatedAt)
-    : recent;
 
   // Open a saved item directly in the right editor / view.
   function open(item: Item) {
@@ -318,199 +261,585 @@ export function UserDashboard() {
     }
   }
 
-  // Delete the confirmed item from its store AND prune it from the fetched
-  // server snapshots, so the newest-wins merge can't resurrect it before a
-  // reload. The store removers also delete the server copy (best-effort).
-  function confirmDelete() {
-    const item = deleteTarget;
-    if (!item) return;
-    switch (item.kind) {
-      case "resume":
-        removeResume(item.id);
-        setServer((s) => (s ? { ...s, resumes: s.resumes.filter((r) => r.id !== item.id) } : s));
-        break;
-      case "cover":
-        removeCover(item.id);
-        setServer((s) =>
-          s ? { ...s, coverLetters: s.coverLetters.filter((r) => r.id !== item.id) } : s
-        );
-        break;
-      case "resignation":
-        removeResignation(item.id);
-        setServer((s) =>
-          s
-            ? { ...s, resignationLetters: s.resignationLetters.filter((r) => r.id !== item.id) }
-            : s
-        );
-        break;
-      case "interview":
-        removeSheet(item.id);
-        setServer((s) =>
-          s ? { ...s, interviewPrep: s.interviewPrep.filter((r) => r.id !== item.id) } : s
-        );
-        break;
-      case "job":
-        removeSavedJob(item.id);
-        setJobs((j) => (j ? j.filter((sj) => sj?.job?.id !== item.id) : j));
-        break;
-    }
-    setDeleteTarget(null);
-  }
+  // Derived, all-real metrics.
+  const resumeAvg = cats.resumeItems.length
+    ? Math.round(
+        cats.resumeItems.reduce((a, r) => a + resumeCompletion(r.data), 0) /
+          cats.resumeItems.length
+      )
+    : 0;
+
+  const pickUp = [...cats.resumeItems, ...cats.coverItems, ...cats.resignationItems]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 3);
+
+  // Build a ScoreResume from the user's most-complete resume (same shape the
+  // /jobs and interview-prep flows use), so saved jobs can be scored for real.
+  const scoreResume = useMemo<ScoreResume | null>(() => {
+    if (!cats.resumeItems.length) return null;
+    const best = [...cats.resumeItems].sort(
+      (a, b) => resumeCompletion(b.data) - resumeCompletion(a.data)
+    )[0];
+    const d = best.data as ResumeDocData;
+    const role =
+      d.personal?.jobTitle?.trim() ||
+      d.employment?.find((e) => e.jobTitle?.trim())?.jobTitle ||
+      "";
+    return {
+      role,
+      skills: (d.skills ?? []).map((s) => s.name).filter(Boolean),
+      summary: stripHtml(d.summary || ""),
+      location: d.contact?.location?.trim() || "",
+      experience: [
+        ...(d.employment ?? []).map(
+          (e) => `${e.jobTitle ?? ""} ${e.company ?? ""} ${stripHtml(e.description || "")}`
+        ),
+        ...(d.education ?? [])
+          .map((e) => `${e.degree ?? ""} ${e.institution ?? ""}`.trim())
+          .filter(Boolean),
+      ].join("\n"),
+    };
+  }, [cats.resumeItems]);
+
+  // Real keyword-match score per saved job (null when there's no resume to
+  // score against, or the posting can't be scored). Never fabricated.
+  const scoredJobs = useMemo(() => {
+    return cats.jobItems.map((item) => {
+      let score: number | null = null;
+      if (scoreResume) {
+        try {
+          score = buildKeywordMatch(item.data as JobPosting, scoreResume).score;
+        } catch {
+          score = null;
+        }
+      }
+      return { item, score };
+    });
+  }, [cats.jobItems, scoreResume]);
+
+  const topJobs = [...scoredJobs]
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+    .slice(0, 3);
+
+  const bestMatch = scoredJobs.reduce<{ score: number; company: string } | null>(
+    (best, cur) => {
+      if (cur.score == null) return best;
+      if (!best || cur.score > best.score) {
+        return { score: cur.score, company: cur.item.sub || cur.item.title };
+      }
+      return best;
+    },
+    null
+  );
+
+  const firstName = (
+    session?.user?.name?.trim() ||
+    session?.user?.email?.split("@")[0] ||
+    "there"
+  ).split(" ")[0];
+
+  const now = mounted ? new Date() : null;
+  const greeting = !now
+    ? "Welcome back"
+    : now.getHours() < 12
+      ? "Good morning"
+      : now.getHours() < 18
+        ? "Good afternoon"
+        : "Good evening";
+  const dateLabel = now
+    ? now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+    : "";
+
+  const stats: {
+    value: number | string;
+    label: string;
+    sub: string;
+    icon: LucideIcon;
+    tint: string;
+  }[] = [
+    {
+      value: cats.resumeItems.length,
+      label: "resumes",
+      sub: cats.resumeItems.length ? `${resumeAvg}% avg complete` : "None yet",
+      icon: FileText,
+      tint: "bg-primary/10 text-primary",
+    },
+    {
+      value: cats.coverItems.length,
+      label: "cover letters",
+      sub: cats.coverItems.length ? "Ready to send" : "None yet",
+      icon: Mail,
+      tint: "bg-ai-text/10 text-ai-text",
+    },
+    {
+      value: cats.jobItems.length,
+      label: "saved jobs",
+      sub: cats.jobItems.length ? "Ready to apply" : "None yet",
+      icon: Heart,
+      tint: "bg-destructive/10 text-destructive",
+    },
+    {
+      value: bestMatch ? bestMatch.score : "-",
+      label: "best match",
+      sub: bestMatch
+        ? bestMatch.company || "Top saved job"
+        : cats.jobItems.length
+          ? "Add a resume to score"
+          : "None yet",
+      icon: Trophy,
+      tint: "bg-progress-done/10 text-progress-done",
+    },
+  ];
+
+  const steps: { n: number; title: string; sub: string; href: string; icon: LucideIcon }[] = [
+    {
+      n: 1,
+      title: "Build your resume",
+      sub: `${cats.resumeItems.length} in your account`,
+      href: "/",
+      icon: FileText,
+    },
+    {
+      n: 2,
+      title: "Find & tailor jobs",
+      sub: `${cats.jobItems.length} saved`,
+      href: "/jobs",
+      icon: Briefcase,
+    },
+    {
+      n: 3,
+      title: "Write the letter",
+      sub: `${cats.coverItems.length} cover letter${cats.coverItems.length === 1 ? "" : "s"}`,
+      href: "/cover-letters",
+      icon: Mail,
+    },
+    {
+      n: 4,
+      title: "Ace the interview",
+      sub: "Questions from your resume",
+      href: "/interview-prep",
+      icon: Mic,
+    },
+  ];
 
   if (!mounted) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <div className="h-9 w-56 animate-pulse rounded-lg bg-secondary" />
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-secondary" />
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="h-9 w-64 animate-pulse rounded-lg bg-secondary" />
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-secondary" />
           ))}
+        </div>
+        <div className="mt-4 h-32 animate-pulse rounded-2xl bg-secondary" />
+      </div>
+    );
+  }
+
+  // Brand-new account (no resume and no cover letter yet): a focused onboarding
+  // dashboard - a four-step checklist, popular roles to explore (honestly
+  // unscored until a resume exists), and a starter banner. The full metrics
+  // dashboard appears the moment the user creates their first document.
+  const isFresh =
+    cats.resumeItems.length === 0 && cats.coverItems.length === 0;
+  if (isFresh) {
+    const checklist: {
+      icon: LucideIcon;
+      title: string;
+      sub: string;
+      cta: string;
+      href: string;
+      primary?: boolean;
+    }[] = [
+      {
+        icon: FileText,
+        title: "Create your first resume",
+        sub: "From scratch with AI, or upload one - about 15 minutes",
+        cta: "Start now",
+        href: "/resume-creation-menu",
+        primary: true,
+      },
+      {
+        icon: Briefcase,
+        title: "Find jobs and see your match score",
+        sub: "Every listing scored against your resume, up to 99",
+        cta: "Browse jobs",
+        href: "/jobs",
+      },
+      {
+        icon: Mail,
+        title: "Write a tailored cover letter",
+        sub: "AI drafts it section by section for the company",
+        cta: "Preview",
+        href: "/cover-letters",
+      },
+      {
+        icon: Mic,
+        title: "Prep for the interview",
+        sub: "Likely questions with model answers, built from your resume",
+        cta: "Take a look",
+        href: "/interview-prep",
+      },
+    ];
+    // The app's own job catalog (same generator the Jobs page falls back to),
+    // shown as explorable roles - never with a fabricated match score.
+    let exploreJobs: JobPosting[] = [];
+    try {
+      exploreJobs = generateJobs({
+        role: "Product Manager",
+        skills: [],
+        location: "",
+      }).slice(0, 3);
+    } catch {
+      exploreJobs = [];
+    }
+
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Welcome hero */}
+        <div className="text-center">
+          <p className="eyebrow">Welcome to Resumewriter.ai</p>
+          <h1 className="mt-2 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Let&apos;s land your next role, {firstName}
+          </h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+            Four steps from blank page to offer. The first one takes about 15
+            minutes.
+          </p>
+        </div>
+
+        {/* Getting-started checklist */}
+        <div className="mt-8 rounded-2xl bg-card px-5 shadow-card ring-1 ring-border sm:px-7">
+          {checklist.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.title}
+                className={cn(
+                  "flex flex-wrap items-center gap-4 py-5",
+                  i < checklist.length - 1 && "border-b border-border"
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold",
+                    i === 0
+                      ? "bg-(--brand-blue) text-primary-foreground"
+                      : "bg-primary/10 text-primary"
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1" style={{ minWidth: 220 }}>
+                  <p className="text-sm font-semibold text-foreground sm:text-base">
+                    {s.title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                    {s.sub}
+                  </p>
+                </div>
+                <Link
+                  href={s.href}
+                  className={cn(
+                    "inline-flex h-10 shrink-0 items-center rounded-[6px] px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                    s.primary
+                      ? "bg-(--brand-blue) text-primary-foreground shadow-sm hover:bg-primary"
+                      : "border-[1.5px] border-primary bg-card text-primary hover:bg-accent hover:text-primary-strong"
+                  )}
+                >
+                  {s.cta}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Popular roles to explore - honest: no scores until a resume exists */}
+        <div className="mt-6 rounded-2xl bg-card p-5 shadow-card ring-1 ring-border sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-bold text-foreground">
+              Popular roles to explore
+            </h2>
+            <Link
+              href="/jobs"
+              className="text-sm font-semibold text-primary hover:opacity-80"
+            >
+              View all
+            </Link>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Create a resume and we&apos;ll score every one of these against it.
+          </p>
+          <div className="mt-4 space-y-2.5">
+            {exploreJobs.map((j) => (
+              <Link
+                key={j.id}
+                href="/jobs"
+                className="flex items-center gap-3.5 rounded-xl bg-secondary/50 p-3 transition-colors hover:bg-secondary"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
+                  {(j.company || "?").charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {j.title}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {[j.company, j.mode, j.salaryLabel].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-[11px] font-bold text-muted-foreground ring-1 ring-border">
+                  Score after resume
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Starter banner */}
+        <div
+          className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl p-6 text-white"
+          style={{ backgroundImage: "linear-gradient(95deg, var(--brand-blue), var(--brand-purple))" }}
+        >
+          <Sparkles className="size-6 shrink-0" aria-hidden />
+          <div className="min-w-0 flex-1" style={{ minWidth: 240 }}>
+            <p className="text-base font-bold">
+              Your first resume takes about 15 minutes.
+            </p>
+            <p className="mt-0.5 text-sm text-white/85">
+              AI writes with you, formats for ATS, and unlocks match scores on
+              every job.
+            </p>
+          </div>
+          <Link
+            href="/resume-creation-menu"
+            className="inline-flex h-10 shrink-0 items-center rounded-[6px] bg-white px-5 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-white/90"
+          >
+            Create my resume
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-        Your dashboard
-      </h1>
-      <p className="mt-2 text-muted-foreground">
-        Everything you have created and saved, in one place.
-      </p>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header: greeting + quick actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {dateLabel ? `${dateLabel} · ` : ""}here&apos;s where your job hunt stands.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderAction href="/resume-creation-menu" icon={Upload} label="Upload" />
+          <HeaderAction href="/cover-letter/new" icon={Mail} label="New cover letter" />
+          <HeaderAction href="/resume-creation-menu" icon={FileText} label="New resume" />
+        </div>
+      </div>
 
-      {/* Category tiles: count + click to reveal that category's saved list. */}
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {sections.map((s) => {
+      {/* Stat cards */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => {
           const Icon = s.icon;
-          const isActive = selected === s.kind;
           return (
-            <button
-              key={s.kind}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() => setSelected(isActive ? null : s.kind)}
-              className={cn(
-                "group rounded-2xl bg-card p-5 text-left shadow-card ring-1 transition-all focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                isActive ? "ring-2 ring-primary" : "ring-border hover:ring-primary/40"
-              )}
+            <div
+              key={s.label}
+              className="flex items-center gap-4 rounded-2xl bg-card p-5 shadow-card ring-1 ring-border"
             >
-              <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="size-5" aria-hidden />
+              <span className={cn("grid size-12 shrink-0 place-items-center rounded-xl", s.tint)}>
+                <Icon className="size-6" aria-hidden />
               </span>
-              <p className="mt-4 text-3xl font-extrabold text-foreground">
-                {s.items.length}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                {s.label}
-                <ChevronRight
-                  className={cn(
-                    "size-3.5 transition-opacity",
-                    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                  )}
-                />
-              </p>
-            </button>
+              <div className="min-w-0">
+                <p className="text-2xl font-extrabold text-foreground">
+                  {s.value}{" "}
+                  <span className="text-sm font-semibold text-muted-foreground">{s.label}</span>
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{s.sub}</p>
+              </div>
+            </div>
           );
         })}
       </div>
 
-      {/* Selected category's full list, or Recent activity across everything. */}
-      <section className="mt-10">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-bold text-foreground">
-            {activeSection ? activeSection.label : "Recent"}
-          </h2>
-          {activeSection && (
-            <Link
-              href={activeSection.href}
-              className="text-sm font-semibold text-primary hover:opacity-80"
-            >
-              Open section
-            </Link>
+      {/* Path to the offer */}
+      <div className="mt-4 rounded-2xl bg-card p-5 shadow-card ring-1 ring-border">
+        <h2 className="text-base font-bold text-foreground">Your path to the offer</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((st) => {
+            const Icon = st.icon;
+            return (
+              <Link
+                key={st.n}
+                href={st.href}
+                className="flex items-start gap-3 rounded-xl bg-secondary/60 p-4 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {st.n}
+                </span>
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    {st.title}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{st.sub}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Pick up where you left off + Saved jobs */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl bg-card p-5 shadow-card ring-1 ring-border">
+          <h2 className="text-base font-bold text-foreground">Pick up where you left off</h2>
+          {pickUp.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Nothing in progress yet. Create a resume to get started.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {pickUp.map((item) => {
+                const meta = KIND_META[item.kind];
+                const Icon = meta.icon;
+                const pct = item.kind === "resume" ? resumeCompletion(item.data) : null;
+                const when = formatRelative(item.updatedAt);
+                return (
+                  <li
+                    key={`${item.kind}:${item.id}`}
+                    className="flex items-center gap-3 rounded-xl bg-secondary/50 p-3"
+                  >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-card text-primary ring-1 ring-border">
+                      <Icon className="size-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {item.title || "Untitled"}
+                      </p>
+                      {pct !== null ? (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-gradient-progress"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-muted-foreground">{pct}%</span>
+                        </div>
+                      ) : (
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {meta.label}
+                          {when ? ` · ${when}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => open(item)}
+                      className="inline-flex h-9 shrink-0 items-center rounded-[10px] bg-(--brand-blue) px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                    >
+                      Continue
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
-        {listItems.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              {activeSection
-                ? `No ${activeSection.label.toLowerCase()} yet.`
-                : "Nothing saved yet. Create a resume or save a job and it will show up here."}
-            </p>
-            {!activeSection && (
+        <div className="rounded-2xl bg-card p-5 shadow-card ring-1 ring-border">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-bold text-foreground">Top job matches</h2>
+            {topJobs.length > 0 && (
               <Link
-                href="/resume-creation-menu"
-                className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                href="/jobs?tab=saved"
+                className="text-sm font-semibold text-primary hover:opacity-80"
               >
-                <Plus className="size-4" />
-                Create a resume
+                View all
               </Link>
             )}
           </div>
-        ) : (
-          <ul className="mt-4 space-y-2.5">
-            {listItems.map((item) => (
-              <ItemRow
-                key={`${item.kind}:${item.id}`}
-                item={item}
-                onOpen={open}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+          {topJobs.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No saved jobs yet. Browse jobs and save the ones you like.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {topJobs.map(({ item, score }) => {
+                const posting = item.data as JobPosting | undefined;
+                const loc = posting?.locationLabel?.trim();
+                const secondary = [item.sub, loc].filter(Boolean).join(" · ") || "Saved role";
+                const theme = score != null ? ringTheme(score) : null;
+                const badge = (item.sub || item.title || "?").trim().charAt(0).toUpperCase();
+                return (
+                  <li
+                    key={`job:${item.id}`}
+                    className="flex items-center gap-3 rounded-xl bg-secondary/50 p-3"
+                  >
+                    {theme ? (
+                      <ScoreRing
+                        score={score as number}
+                        size={44}
+                        progressColor={theme.progress}
+                        numberColor={theme.number}
+                      />
+                    ) : (
+                      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
+                        {badge || "?"}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{secondary}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => open(item)}
+                      className="inline-flex h-9 shrink-0 items-center rounded-[10px] border border-primary/30 bg-card px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                    >
+                      Open
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
 
-      {/* Delete confirmation - shared by every row; copy adapts to the kind. */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
+      {/* AI tailoring banner */}
+      <div
+        className="mt-4 overflow-hidden rounded-2xl p-6 text-white"
+        style={{ backgroundImage: "linear-gradient(90deg, var(--primary), var(--ai-to))" }}
       >
-        <DialogContent className="rounded-2xl p-6 pt-8 sm:max-w-md">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <span
-              className="grid size-20 place-items-center rounded-full bg-destructive/10"
-              aria-hidden
-            >
-              <Trash2 className="size-8 text-destructive" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/15">
+              <Sparkles className="size-5" aria-hidden />
             </span>
-            <DialogTitle className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
-              {deleteTarget?.kind === "job"
-                ? "Remove this saved job?"
-                : `Delete this ${
-                    deleteTarget ? KIND_META[deleteTarget.kind].label.toLowerCase() : "item"
-                  }?`}
-            </DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground">
-              {deleteTarget?.title ? (
-                <span className="font-medium text-foreground">
-                  {deleteTarget.title}
-                </span>
-              ) : null}
-              {deleteTarget?.title ? " - " : ""}
-              You can&apos;t undo this action.
-            </DialogDescription>
+            <div className="min-w-0">
+              <p className="text-base font-bold">Tailor your resume to any job</p>
+              <p className="mt-0.5 text-sm text-white/85">
+                Weave the missing keywords into your resume and lift your match score in one click.
+              </p>
+            </div>
           </div>
-
-          <div className="mt-3 flex gap-3">
-            <button
-              type="button"
-              onClick={() => setDeleteTarget(null)}
-              className="flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmDelete}
-              className="flex-1 rounded-[10px] bg-destructive py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-destructive/90"
-            >
-              Delete
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          <Link
+            href="/jobs"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[10px] bg-white px-5 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-white/90"
+          >
+            Try AI tailoring
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

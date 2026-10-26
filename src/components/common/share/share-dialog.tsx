@@ -109,7 +109,7 @@ export function ShareDialog({
           <button
             type="button"
             onClick={copy}
-            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
           >
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
             {copied ? "Copied!" : "Copy link"}

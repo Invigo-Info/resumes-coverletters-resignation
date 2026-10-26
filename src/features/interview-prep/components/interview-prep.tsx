@@ -19,17 +19,20 @@ import {
   Download,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   ArrowRight,
   ArrowUpRight,
   Briefcase,
   Smile,
   Sparkles,
   Check,
+  MessageSquare,
   Globe,
   ExternalLink,
 } from "lucide-react";
 import { CompanyLogo } from "@/features/jobs/components/company-logo";
 import { PrepResumeUpload } from "@/features/interview-prep/components/prep-resume-upload";
+import { InterviewPrepDashboard } from "@/features/interview-prep/components/interview-prep-dashboard";
 import { cn } from "@/utilities/utils";
 import { useApplyStore } from "@/features/jobs/store/apply-store";
 import { useResumeStore } from "@/features/resume-builder/store/resume-store";
@@ -331,7 +334,6 @@ function StreamCard({
   q: PrepQuestion;
   onDone: () => void;
 }) {
-  const gradient = Q_GRADIENTS[index % Q_GRADIENTS.length];
   // Only the coaching tips type in line by line; the sample answer renders in its
   // own subtle box once the tips are done (matching the reference card format).
   const lines = useMemo(() => {
@@ -383,30 +385,41 @@ function StreamCard({
   }, [revealed, previewing, lines]);
 
   return (
-    <div className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ring-1 ring-primary/10 ${gradient}`}>
-      <p className="font-semibold text-foreground">{q.question}</p>
-      <div className="mt-3">
+    <div className="break-inside-avoid rounded-2xl bg-card p-6 shadow-card ring-1 ring-border transition-colors hover:ring-primary/40">
+      <div className="flex items-start gap-3.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
+          Q{index + 1}
+        </span>
+        <h3 className="flex-1 pt-0.5 text-lg font-bold leading-snug text-foreground">
+          {q.question}
+        </h3>
+      </div>
+      <div className="mt-4 space-y-2.5">
         {lines.map((ln, i) => {
           if (i > revealed) return null;
           const arriving = i === revealed && previewing;
+          if (arriving) return <SkeletonLine key={i} />;
           return (
             <div
               key={i}
-              className="border-t border-primary/15 py-2 first:border-t-0 first:pt-0"
+              className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground"
             >
-              {arriving ? (
-                <SkeletonLine />
-              ) : (
-                <p className="text-sm leading-relaxed text-foreground/80">{ln}</p>
-              )}
+              <span className="mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-full bg-accent">
+                <Check className="size-3 text-primary" strokeWidth={3} />
+              </span>
+              <span className="flex-1">{ln}</span>
             </div>
           );
         })}
       </div>
       {q.sample && revealed >= lines.length && (
-        <p className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-3 text-sm leading-relaxed text-foreground/90">
-          {q.sample}
-        </p>
+        <div className="mt-5 rounded-xl border border-primary/15 bg-accent/60 px-5 py-4">
+          <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-primary">
+            <Sparkles className="size-3" />
+            Sample answer
+          </div>
+          <p className="text-sm leading-relaxed text-foreground/90">{q.sample}</p>
+        </div>
       )}
     </div>
   );
@@ -570,7 +583,7 @@ function makeJob(company: string, description: string, role: string): JobPosting
  * Selecting either sets the active job, which advances the flow to the interview
  * type picker.
  */
-function PrepEntry({ onDone }: { onDone: () => void }) {
+function PrepEntry({ onDone, onBack }: { onDone: () => void; onBack?: () => void }) {
   const setJob = useApplyStore((s) => s.setJob);
   const currentJob = useApplyStore((s) => s.job);
   const setPractice = useApplyStore((s) => s.setPractice);
@@ -599,8 +612,21 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
     "w-full rounded-[10px] border border-border bg-card text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-primary/20";
 
   return (
-    <div className="mx-auto max-w-xl">
-      <h1 className="text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+    <div className="mx-auto max-w-3xl">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <ChevronLeft className="size-4" />
+          Back
+        </button>
+      )}
+      <p className="text-center text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+        Interview prep · Step 2 of 4
+      </p>
+      <h1 className="mt-2 text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
         What are you preparing for?
       </h1>
 
@@ -624,12 +650,13 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
                 Get company insights and know what to expect
               </span>
             </span>
-            <ChevronDown
-              className={cn(
-                "size-5 shrink-0 text-primary transition-transform",
-                !companyOpen && "-rotate-90"
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
+              {companyOpen ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
               )}
-            />
+            </span>
           </button>
 
           {companyOpen && (
@@ -670,7 +697,7 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
                 type="button"
                 onClick={startSpecific}
                 disabled={!company.trim()}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-[6px] bg-(--brand-blue) px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
               >
                 Continue
                 <ArrowRight className="size-4" />
@@ -696,7 +723,9 @@ function PrepEntry({ onDone }: { onDone: () => void }) {
               Get ready for any interview
             </span>
           </span>
-          <ChevronRight className="size-5 shrink-0 text-primary" />
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
+            <ChevronRight className="size-4" />
+          </span>
         </button>
       </div>
     </div>
@@ -733,6 +762,7 @@ export function InterviewPrepView({
   // A re-opened sheet carries its own job; otherwise use the active apply job.
   const job = initialSaved ? initialSaved.job : storeJob;
   const savedResumes = useDocumentsStore((s) => s.resumes);
+  const loadDocument = useResumeStore((s) => s.loadDocument);
   const activeRole = useResumeStore((s) => s.personal.jobTitle);
   const activeSkills = useResumeStore((s) => s.skills);
   const activeSummary = useResumeStore((s) => s.summary);
@@ -765,6 +795,11 @@ export function InterviewPrepView({
   // (saved or a new upload). A re-opened sheet already carries its resume, so it
   // skips this. Set once a resume is chosen, which advances to the entry screen.
   const [pickedResume, setPickedResume] = useState(Boolean(initialSaved));
+  // The /interview-prep landing shows the section dashboard first; `started`
+  // flips true once the user begins a prep session (Start button, a how-it-works
+  // step, quick practice, or a saved job), revealing the resume picker / funnel.
+  // Irrelevant on locked per-type routes and re-opened sheets (both skip it).
+  const [started, setStarted] = useState(false);
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [customText, setCustomText] = useState(initialSaved?.customDetail ?? "");
   const [prep, setPrep] = useState<InterviewPrep | null>(
@@ -980,18 +1015,77 @@ export function InterviewPrepView({
     return <div className="h-64 animate-pulse rounded-2xl bg-secondary" />;
   }
 
+  /* ----- Section dashboard (main page landing): greeting, stat tiles, how-it-works,
+          and shortcuts. Every action begins a prep session. Skipped on locked
+          per-type routes and re-opened sheets. */
+  if (!lockedType && !initialSaved && !started) {
+    return (
+      <InterviewPrepDashboard
+        onStart={() => setStarted(true)}
+        onQuickPractice={(t) => {
+          // Quick practice needs a resume to ground the questions; with none,
+          // begin the session so the user picks/uploads one first.
+          const first = savedResumes[0];
+          if (!first) {
+            setStarted(true);
+            return;
+          }
+          loadDocument(first.id, first.data);
+          setApplyResumeId(first.id);
+          setApplyPractice(true);
+          setApplyJob(
+            makeJob(
+              "your target company",
+              "",
+              first.data.personal?.jobTitle || activeRole || ""
+            )
+          );
+          router.push(TYPE_ROUTE[t]);
+        }}
+        onPrepSavedJob={(savedJob) => {
+          const first = savedResumes[0];
+          if (!first) {
+            setStarted(true);
+            return;
+          }
+          loadDocument(first.id, first.data);
+          setApplyResumeId(first.id);
+          setApplyPractice(false);
+          setApplyJob(savedJob);
+          // Skip the resume picker + entry: land on the interview-type picker
+          // (Step 3) for this job.
+          setPickedResume(true);
+          setEntered(true);
+          setStarted(true);
+        }}
+      />
+    );
+  }
+
   /* ----- "Start with your resume" (main picker page only): choose a saved resume
           or upload a new one. Picking either advances to the entry screen. On a
           locked route the active resume is used directly, so this is skipped. */
   if (!lockedType && !initialSaved && !pickedResume) {
-    return <PrepResumeUpload onPicked={() => setPickedResume(true)} />;
+    return (
+      <PrepResumeUpload
+        onPicked={() => setPickedResume(true)}
+        onBack={() => setStarted(false)}
+      />
+    );
   }
 
   /* ----- The "What are you preparing for?" entry screen. On the main picker page
           (no locked type) it always shows first until the user chooses; on the
           dedicated routes it only appears as a fallback when no job exists yet. */
   if ((!lockedType && !entered) || !job) {
-    return <PrepEntry onDone={() => setEntered(true)} />;
+    return (
+      <PrepEntry
+        onDone={() => setEntered(true)}
+        // Back returns to Step 1 (resume picker) on the main funnel; on a locked
+        // per-type route there is no Step 1, so it exits to the previous page.
+        onBack={lockedType ? () => router.back() : () => setPickedResume(false)}
+      />
+    );
   }
 
   // "Just practicing" (flag) OR the generic sentinel job renders the compact
@@ -1055,7 +1149,7 @@ export function InterviewPrepView({
             type="button"
             disabled={!customText.trim()}
             onClick={() => generate("other", customText)}
-            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40"
           >
             Continue
             <ArrowRight className="size-4" />
@@ -1069,13 +1163,24 @@ export function InterviewPrepView({
   if (!prep) {
     return (
       <div className="mx-auto max-w-2xl">
+        <button
+          type="button"
+          onClick={() => setEntered(false)}
+          className="mb-6 inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <ChevronLeft className="size-4" />
+          Back
+        </button>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          Interview prep · Step 3 of 4
+        </p>
         {job && (
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{job.title}</span> at{" "}
             {job.company}
           </p>
         )}
-        <h1 className="mt-2 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-1.5 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
           Choose your interview type
         </h1>
         <p className="mt-2 text-muted-foreground">
@@ -1098,16 +1203,13 @@ export function InterviewPrepView({
                     {t.subtitle}
                   </span>
                 </span>
-                {isOther ? (
-                  <ChevronDown
-                    className={cn(
-                      "size-5 shrink-0 text-primary transition-transform",
-                      !otherExpanded && "-rotate-90"
-                    )}
-                  />
-                ) : (
-                  <ChevronRight className="size-5 shrink-0 text-primary" />
-                )}
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
+                  {isOther && otherExpanded ? (
+                    <ChevronDown className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
+                </span>
               </span>
             );
 
@@ -1152,7 +1254,7 @@ export function InterviewPrepView({
                       type="button"
                       disabled={!customText.trim()}
                       onClick={() => generate("other", customText)}
-                      className="mt-4 inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
+                      className="mt-4 inline-flex h-11 cursor-pointer items-center gap-2 rounded-[6px] bg-(--brand-blue) px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:bg-muted-foreground disabled:opacity-60 disabled:shadow-none"
                     >
                       Continue
                       <ArrowRight className="size-4" />
@@ -1338,25 +1440,41 @@ export function InterviewPrepView({
             {prep.questions.map((q, i) => (
               <div
                 key={i}
-                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-5 shadow-card ring-1 ring-primary/10 ${Q_GRADIENTS[i % Q_GRADIENTS.length]}`}
+                className="break-inside-avoid rounded-2xl bg-card p-6 shadow-card ring-1 ring-border transition-colors hover:ring-primary/40"
               >
-                <p className="font-semibold text-foreground">{q.question}</p>
+                <div className="flex items-start gap-3.5">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
+                    Q{i + 1}
+                  </span>
+                  <h3 className="flex-1 pt-0.5 text-lg font-bold leading-snug text-foreground">
+                    {q.question}
+                  </h3>
+                </div>
                 {q.guidance.length > 0 && (
-                  <div className="mt-3">
+                  <div className="mt-4 space-y-2.5">
                     {q.guidance.map((g, j) => (
-                      <p
+                      <div
                         key={j}
-                        className="border-t border-primary/15 py-2 text-sm leading-relaxed text-foreground/80 first:border-t-0 first:pt-0"
+                        className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground"
                       >
-                        {g}
-                      </p>
+                        <span className="mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-full bg-accent">
+                          <Check className="size-3 text-primary" strokeWidth={3} />
+                        </span>
+                        <span className="flex-1">{g}</span>
+                      </div>
                     ))}
                   </div>
                 )}
                 {q.sample && (
-                  <p className="mt-3 rounded-xl border border-primary/15 bg-primary/10 p-3 text-sm leading-relaxed text-foreground/90">
-                    {q.sample}
-                  </p>
+                  <div className="mt-5 rounded-xl border border-primary/15 bg-accent/60 px-5 py-4">
+                    <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-primary">
+                      <Sparkles className="size-3" />
+                      Sample answer
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground/90">
+                      {q.sample}
+                    </p>
+                  </div>
                 )}
               </div>
             ))}
@@ -1397,9 +1515,12 @@ export function InterviewPrepView({
             {prep.candidateQuestions.map((q, i) => (
               <div
                 key={i}
-                className={`break-inside-avoid rounded-2xl bg-linear-to-br p-4 shadow-card ring-1 ring-primary/10 ${CQ_GRADIENTS[i % CQ_GRADIENTS.length]}`}
+                className="break-inside-avoid flex items-center gap-3.5 rounded-2xl bg-card p-4 shadow-card ring-1 ring-border transition-colors hover:ring-primary/40"
               >
-                <p className="font-semibold text-foreground">{q}</p>
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-(--ai-from)/10 text-(--ai-text)">
+                  <MessageSquare className="size-4" />
+                </span>
+                <p className="flex-1 font-semibold text-foreground">{q}</p>
               </div>
             ))}
           </div>
@@ -1468,17 +1589,20 @@ export function InterviewPrepView({
       {/* Practice mode opens straight at the questions section, so the page title
           and the job subtitle are shown only in the company-specific flow. */}
       {!practice && (
-        <>
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            Interview prep · Step 4 of 4
+          </p>
           {job && (
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="mt-2.5 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{job.title}</span> at{" "}
               {job.company}
             </p>
           )}
-          <h1 className="text-center font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          <h1 className="mt-2 font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Everything you need to ace your interview
           </h1>
-        </>
+        </div>
       )}
 
       {/* Practice hides its on-screen title, so give the printed PDF a heading

@@ -110,8 +110,8 @@ export function TemplateGallery() {
                 "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
                 "outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground shadow-card hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-card text-muted-foreground ring-1 ring-border hover:text-foreground hover:ring-primary/30"
               )}
             >
               <Icon className="size-4" aria-hidden />
@@ -182,7 +182,7 @@ function TemplateCard({
               "group-hover:opacity-100 group-focus-within:opacity-100"
             )}
           >
-            <span className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg">
+            <span className="rounded-[6px] bg-(--brand-blue) px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg">
               Use this template
             </span>
           </span>
@@ -196,7 +196,13 @@ function TemplateCard({
             </span>
           )}
           {isAtsFriendly(t) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#ecfdf5] px-2.5 py-1 text-xs font-semibold text-[#065f46] shadow-sm">
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm"
+              style={{
+                backgroundColor: "var(--success-soft)",
+                color: "color-mix(in oklab, var(--progress-done), black 42%)",
+              }}
+            >
               <ShieldCheck className="size-3.5" aria-hidden />
               ATS-friendly
             </span>
@@ -275,8 +281,9 @@ function PreviewModal({
             <button
               type="button"
               onClick={() => onUse(t)}
-              className="mt-2 h-12 w-full rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
             >
+              <Check className="size-4" aria-hidden />
               Use this template
             </button>
           </>

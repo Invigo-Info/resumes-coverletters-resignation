@@ -72,7 +72,10 @@ export function Field({
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
-          className={cn("h-12 rounded-xl bg-card", icon && "pl-10")}
+          // v9 field: a soft resting tint that turns white on focus (from the
+          // Input primitive), taller (h-12) and a 10px radius to match the
+          // reference editor field (.ed-inp) and the date/month pickers.
+          className={cn("h-12 rounded-[10px] bg-(--field-resting)", icon && "pl-10")}
         />
       </div>
       {error ? (

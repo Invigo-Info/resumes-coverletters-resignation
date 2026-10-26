@@ -114,7 +114,10 @@ export function LoginForm({
         }
       }
       const ok = await credentialsSignIn();
-      if (ok) window.location.assign("/");
+      // Everyone lands on the main dashboard - which shows the new-user
+      // onboarding checklist for a brand-new account, or the full metrics
+      // dashboard once the user has created their first document.
+      if (ok) window.location.assign("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -130,7 +133,7 @@ export function LoginForm({
       return;
     }
     setGoogleLoading(true);
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: "/dashboard" });
   }
 
   return (
@@ -200,7 +203,7 @@ export function LoginForm({
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-(--brand-blue) text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:opacity-60"
         >
           {loading && <Loader2 className="size-4 animate-spin" />}
           {isSignup ? "Create account" : "Sign in"}

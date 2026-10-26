@@ -154,7 +154,7 @@ export default function ApplyGatewayPage() {
           </p>
           <Link
             href="/jobs"
-            className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="mt-6 inline-flex h-11 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
           >
             Browse jobs
           </Link>

@@ -88,7 +88,7 @@ export function SavedInterviewPrepList() {
           </p>
           <Link
             href="/interview-prep"
-            className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-(--brand-blue) focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             Start interview prep
             <ArrowRight className="size-4" aria-hidden />

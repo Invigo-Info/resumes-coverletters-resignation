@@ -18,11 +18,13 @@ export default function TemplateGalleryPage() {
 
       <div className="mx-auto max-w-6xl px-4 pb-20 pt-24 sm:px-6">
         <header className="mb-10 text-center">
-          <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground">
-            Select an ATS-friendly resume template
+          <p className="eyebrow mb-2.5">New resume · step 2 of 2</p>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Choose your resume template
           </h1>
-          <p className="mt-3 text-muted-foreground">
-            Choose the design that fits your style. You can change it later.
+          <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+            Clean, ATS-friendly layouts. Pick one to start - you can switch
+            anytime.
           </p>
         </header>
 

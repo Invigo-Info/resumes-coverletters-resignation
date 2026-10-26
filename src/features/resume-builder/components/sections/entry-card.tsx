@@ -125,7 +125,7 @@ export function EntryCard({
       <div
         ref={cardRef}
         className={cn(
-          "min-w-0 flex-1 rounded-xl border border-border bg-card transition-all duration-200",
+          "min-w-0 flex-1 rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40",
           drag?.over && !drag.dragging && "border-primary ring-2 ring-primary/20"
         )}
       >
@@ -182,9 +182,13 @@ export function AddMoreButton({
   return (
     <button
       onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-muted px-5 py-4 text-left font-semibold text-foreground outline-none transition-colors hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/40"
+      // v9 add-action: no fill, a blue outline and blue label at rest; on hover
+      // it highlights with the light-blue accent (text darkens to primary-strong
+      // so it stays AA on the tint). Used by every "Add another / Add one more"
+      // across the editor sections.
+      className="flex w-full cursor-pointer items-center gap-2 rounded-[6px] border-[1.5px] border-primary/50 bg-transparent px-4 py-2.5 text-left text-sm font-semibold text-primary outline-none transition-colors hover:border-primary hover:bg-accent hover:text-primary-strong focus-visible:ring-3 focus-visible:ring-ring/40"
     >
-      <span className="text-lg leading-none">+</span>
+      <span className="text-base leading-none">+</span>
       {label}
     </button>
   );

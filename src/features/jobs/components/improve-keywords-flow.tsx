@@ -444,7 +444,7 @@ export function ImproveKeywordsFlow({
                 type="button"
                 onClick={() => onContinue([...selected], note.trim())}
                 disabled={selected.size === 0}
-                className="inline-flex h-12 items-center rounded-full bg-primary px-9 text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex h-12 items-center rounded-[6px] bg-(--brand-blue) px-9 text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:pointer-events-none disabled:opacity-50"
               >
                 Continue
               </button>

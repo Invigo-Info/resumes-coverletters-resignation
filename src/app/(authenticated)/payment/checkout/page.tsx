@@ -76,7 +76,7 @@ function PaymentCard({ plan, next }: { plan: string; next: string }) {
         {process.env.NODE_ENV !== "production" && (
           <Link
             href={`/payment/success${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-            className="mt-2 inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="mt-2 inline-flex h-10 items-center justify-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
           >
             Simulate subscription (dev only)
           </Link>

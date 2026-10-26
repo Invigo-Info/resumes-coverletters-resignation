@@ -420,14 +420,14 @@ export function SkillsForm() {
               aria-invalid={draftDuplicate || undefined}
               aria-describedby={draftDuplicate ? "custom-skill-error" : undefined}
               placeholder="Time Management"
-              className="h-14 rounded-xl bg-card pr-14"
+              className="h-14 rounded-[10px] bg-card pr-14"
             />
             <button
               type="button"
               onClick={commitOwn}
               disabled={!draftClean || draftDuplicate}
               aria-label="Add skill"
-              className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-primary text-primary-foreground outline-none transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/35 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-(--brand-blue) text-primary-foreground outline-none transition-colors hover:bg-(--brand-blue) disabled:cursor-not-allowed disabled:bg-primary/35 focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <Plus className="size-4" />
             </button>

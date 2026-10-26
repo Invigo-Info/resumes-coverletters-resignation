@@ -7,21 +7,21 @@ import { cn } from "@/utilities/utils";
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap " +
+  "inline-flex items-center justify-center gap-2 rounded-[6px] font-semibold whitespace-nowrap " +
   "transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 " +
   // Subtle hover lift on every standard button (paired with each variant's
   // active press). motion-safe so reduced-motion users get no movement.
   "motion-safe:hover:-translate-y-px " +
   "focus-visible:ring-3 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
-/** Primary blue pill CTA - the strongest action (Download, Next, Create). */
+/** Primary blue CTA (6px) - the strongest action (Download, Next, Create). */
 export const PrimaryButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button
       ref={ref}
       className={cn(
         base,
-        "h-11 px-5 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:translate-y-px [&_svg]:size-4",
+        "h-11 px-5 bg-(--brand-blue) text-primary-foreground shadow-sm hover:bg-(--brand-blue) active:translate-y-px [&_svg]:size-4",
         className
       )}
       {...props}
@@ -32,7 +32,7 @@ export const PrimaryButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 PrimaryButton.displayName = "PrimaryButton";
 
-/** Quiet gray pill - secondary actions (Back, Reorder, Share). */
+/** Quiet gray button (6px) - secondary actions (Back, Reorder, Share). */
 export const GhostButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button
@@ -50,7 +50,7 @@ export const GhostButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 GhostButton.displayName = "GhostButton";
 
-/** Purple→fuchsia gradient pill with a sparkle - the "Write with AI" action. */
+/** Purple→fuchsia gradient button (6px) with a sparkle - the "Write with AI" action. */
 export const AiButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, children, ...props }, ref) => (
     <button

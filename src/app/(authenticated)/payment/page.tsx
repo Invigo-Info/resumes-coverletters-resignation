@@ -163,7 +163,7 @@ function PaymentPageInner() {
             <button
               type="button"
               onClick={onContinue}
-              className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              className="h-14 w-full rounded-[6px] bg-(--brand-blue) text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
             >
               Continue
             </button>

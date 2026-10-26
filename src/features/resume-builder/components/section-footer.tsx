@@ -7,7 +7,7 @@ import {
   isSectionComplete,
   type SectionKey,
 } from "@/features/resume-builder/store/resume-store";
-import { GhostButton, PrimaryButton } from "@/components/common/brand/brand-buttons";
+import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { cn } from "@/utilities/utils";
 import { SECTION_META } from "./section-nav";
 
@@ -36,10 +36,14 @@ export function EditorFooter({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           {onBack && (
-            <GhostButton onClick={onBack}>
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 rounded-[6px] border-[1.5px] border-primary bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
               <ChevronLeft className="size-4" />
               Back
-            </GhostButton>
+            </button>
           )}
         </div>
 
@@ -51,7 +55,7 @@ export function EditorFooter({
 
         <div className="flex min-w-0 flex-1 justify-end">
           {onNext && (
-            <PrimaryButton onClick={onNext}>
+            <PrimaryButton onClick={onNext} className="rounded-[6px]">
               {nextLabel}
               <ChevronRight className="size-4" />
             </PrimaryButton>

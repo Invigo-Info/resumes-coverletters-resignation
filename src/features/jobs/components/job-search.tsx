@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ChevronDown, ArrowUpDown, FileText, Undo2, Heart } from "lucide-react";
+import { ChevronDown, ArrowUpDown, Undo2, Heart } from "lucide-react";
 import { cn } from "@/utilities/utils";
 import {
   DropdownMenu,
@@ -32,6 +32,7 @@ import {
   DATE_POSTED_DAYS,
   type JobPosting,
   type ResumeProfile,
+  type JobFilters,
 } from "@/features/jobs/lib/job-search";
 import { buildKeywordMatch } from "@/features/jobs/lib/keyword-match";
 import type { ScoreResume } from "@/features/jobs/lib/scoreboard";
@@ -41,6 +42,17 @@ import { FilterChips } from "./filter-chips";
 import { EditFiltersModal } from "./edit-filters-modal";
 import { JobsLoading } from "./jobs-loading";
 import { SavedEmptyState } from "./saved-empty-state";
+import { JobsLanding } from "./jobs-landing";
+import { JobsEmptyState } from "./jobs-empty-state";
+
+/** Static, common role suggestions for the landing's "Trending" chips. */
+const TRENDING_TITLES = [
+  "Product Manager",
+  "Software Engineer",
+  "Data Analyst",
+  "UX Designer",
+  "Marketing Manager",
+];
 
 /* ------------------------------------------------------------------ */
 /* Resume -> profile                                                  */
@@ -294,11 +306,16 @@ export function JobSearch() {
   }, []);
 
   const [tab, setTab] = useState<Tab>("recommended");
+  // The section opens on the search landing (v9); the first search reveals the
+  // master/detail results. A ?tab=saved deep link (e.g. from the dashboard's
+  // Saved jobs list) skips the landing straight into the Saved results.
+  const [started, setStarted] = useState(false);
   // Honor a deep link into the Saved tab (e.g. the dashboard's Saved jobs list).
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (new URLSearchParams(window.location.search).get("tab") === "saved") {
       setTab("saved");
+      setStarted(true);
     }
   }, []);
   const [sortMode, setSortMode] = useState<SortMode>("match");
@@ -557,28 +574,9 @@ export function JobSearch() {
     setSelectedId(null);
   };
 
-  /* ----- No resume ----- */
+  /* ----- No resume: the new-user job-search dashboard ----- */
   if (mounted && profiles.length === 0) {
-    return (
-      <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
-        <span className="grid size-12 place-items-center rounded-full bg-secondary">
-          <FileText className="size-6 text-muted-foreground" />
-        </span>
-        <h2 className="mt-4 text-lg font-semibold text-foreground">
-          Add a resume to see job matches
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Your job recommendations are matched to your resume - its role, skills,
-          and location. Create or upload a resume to get started.
-        </p>
-        <Link
-          href="/resume-creation-menu"
-          className="mt-5 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        >
-          Create a resume
-        </Link>
-      </div>
-    );
+    return <JobsEmptyState />;
   }
 
   /* ----- Pre-mount skeleton ----- */
@@ -607,6 +605,31 @@ export function JobSearch() {
 
   const selectedRec = recommended.find((j) => j.id === selectedId) ?? null;
   const selectedSaved = savedJobs.find((j) => j.id === savedSelectedId) ?? null;
+
+  // Job-search section dashboard (v9 hero) - shown until the user runs a search.
+  // The search hands a full JobFilters to the store, then reveals the existing
+  // master/detail results below (which read the very same filters).
+  if (!started) {
+    const scored = [...recommended, ...savedJobs];
+    const bestMatch = scored.length
+      ? Math.max(...scored.map((j) => scoreOf(j)))
+      : null;
+    return (
+      <JobsLanding
+        defaultTitle={role}
+        trending={[role, ...TRENDING_TITLES].filter(Boolean).filter(
+          (t, i, a) => a.findIndex((x) => x.toLowerCase() === t.toLowerCase()) === i
+        )}
+        resumeCount={profiles.length}
+        savedCount={savedJobs.length}
+        bestMatch={bestMatch}
+        onSearch={(f: JobFilters) => {
+          setFilters(f);
+          setStarted(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div>
@@ -784,7 +807,7 @@ function RecommendedView({
                   <button
                     type="button"
                     onClick={onEditFilters}
-                    className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                    className="inline-flex h-10 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
                   >
                     Edit filters
                   </button>

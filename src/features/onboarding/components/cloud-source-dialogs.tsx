@@ -13,7 +13,7 @@ import { LinkedInIcon } from "@/components/common/brand/source-icons";
 const cancelBtn =
   "flex-1 rounded-[10px] bg-muted py-3.5 text-sm font-bold text-foreground transition-colors hover:bg-muted/70";
 const primaryBtn =
-  "flex-1 rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50";
+  "flex-1 rounded-[6px] bg-(--brand-blue) py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:opacity-50";
 
 /**
  * Google Drive consent gate ("Your privacy matters"). On consent the caller

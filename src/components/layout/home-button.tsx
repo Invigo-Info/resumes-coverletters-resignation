@@ -23,7 +23,7 @@ export function HomeButton({
       href={href}
       aria-label="Go to home"
       className={cn(
-        "grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90",
+        "grid size-12 shrink-0 place-items-center rounded-2xl bg-(--brand-blue) text-primary-foreground shadow-sm transition-colors hover:bg-primary",
         className
       )}
     >

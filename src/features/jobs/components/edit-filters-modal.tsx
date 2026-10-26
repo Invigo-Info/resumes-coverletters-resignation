@@ -277,7 +277,7 @@ export function EditFiltersModal({
             type="button"
             disabled={!dirty}
             onClick={applyAndClose}
-            className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex h-10 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue) disabled:pointer-events-none disabled:opacity-40"
           >
             Apply filters
           </button>
@@ -338,7 +338,7 @@ export function EditFiltersModal({
                 <button
                   type="button"
                   onClick={applyAndClose}
-                  className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  className="inline-flex h-11 items-center rounded-[6px] bg-(--brand-blue) px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-(--brand-blue)"
                 >
                   Apply new
                 </button>

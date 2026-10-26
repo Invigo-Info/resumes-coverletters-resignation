@@ -25,7 +25,7 @@ import {
 type ActionVariant = "primary" | "secondary" | "quiet" | "danger";
 
 const ACTION_VARIANTS: Record<ActionVariant, string> = {
-  primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+  primary: "bg-(--brand-blue) text-primary-foreground shadow-sm hover:bg-(--brand-blue)",
   secondary:
     "bg-secondary text-foreground hover:bg-[color-mix(in_oklab,var(--secondary),black_4%)]",
   quiet: "text-muted-foreground ring-1 ring-border hover:bg-secondary hover:text-foreground",

@@ -198,14 +198,18 @@ export function SectionNav({
                   !unlocked
                     ? "cursor-not-allowed text-foreground/40"
                     : isActive
-                      ? "bg-muted text-foreground"
+                      ? "bg-accent text-accent-foreground"
                       : "text-foreground/80 hover:bg-muted/60"
                 )}
               >
                 <Icon
                   className={cn(
                     "size-4 shrink-0",
-                    unlocked ? "text-muted-foreground" : "text-foreground/30"
+                    !unlocked
+                      ? "text-foreground/30"
+                      : isActive
+                        ? "text-accent-foreground"
+                        : "text-muted-foreground"
                   )}
                 />
                 {/* The right padding reserves room for the status dot / drag
@@ -236,7 +240,7 @@ export function SectionNav({
                 className={cn(
                   "pointer-events-none absolute right-3 top-1/2 z-10 size-2.5 -translate-y-1/2 rounded-full transition-all",
                   isActive
-                    ? "bg-foreground"
+                    ? "bg-primary"
                     : unlocked && complete
                       ? "bg-progress-done"
                       : "border-2 border-muted-foreground/30 bg-card",

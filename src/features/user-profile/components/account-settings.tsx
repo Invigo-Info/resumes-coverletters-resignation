@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { Send, Loader2, UserRoundX, SlidersHorizontal, Check } from "lucide-react";
+import { Send, Loader2, UserRoundX, SlidersHorizontal, Check, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utilities/utils";
 import { Input } from "@/components/forms/input";
@@ -144,6 +144,7 @@ export function AccountSettings() {
   const [saving, setSaving] = useState(false);
   const [emails, setEmails] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -180,6 +181,23 @@ export function AccountSettings() {
       });
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Sign out of this device but keep the account: end the NextAuth session and
+   *  return to the Sign in page. Local documents are NOT cleared (unlike delete),
+   *  so they resync on the next sign-in. Guards against double clicks. */
+  async function signOutOfDevice() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut({ redirect: false });
+      router.replace("/login");
+    } catch {
+      setSigningOut(false);
+      toast.error("Couldn't sign out", {
+        description: "Please try again in a moment.",
+      });
     }
   }
 
@@ -330,6 +348,31 @@ export function AccountSettings() {
               label="Subscribe to career tips and news"
             />
           </div>
+        </SectionCard>
+
+        {/* Sign out - a neutral session action, kept separate from the
+            destructive delete below. Your saved documents stay in the account. */}
+        <SectionCard className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-foreground">Sign out</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sign out of this device. Your resumes and letters stay safely in your
+              account.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={signOutOfDevice}
+            disabled={signingOut}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[10px] border-[1.5px] border-primary bg-card px-4 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-strong focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
+          >
+            {signingOut ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <LogOut className="size-4" />
+            )}
+            Sign out
+          </button>
         </SectionCard>
 
         {/* Delete account - visually separated from the settings cards above and
