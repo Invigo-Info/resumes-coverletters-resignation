@@ -1,0 +1,620 @@
+<title>Resumewriter Launch Audit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#f6f8fb; --surface:#ffffff; --surface-2:#eef2f8;
+    --ink:#0f1726; --ink-2:#36435a; --muted:#64718a;
+    --accent:#1170cd; --accent-soft:#e7f0fb; --border:#dfe5ee; --rule:#eaeff6;
+    --crit:#b81f38; --crit-bg:#fdeef0;
+    --high:#b4600d; --high-bg:#fdf2e5;
+    --med:#7d6a10; --med-bg:#faf5e2;
+    --low:#5a6a84; --low-bg:#eef1f6;
+    --pass:#15724a; --pass-bg:#e7f4ed;
+    --block:#5b4b8a; --block-bg:#f0edf8;
+    --shadow:0 1px 2px rgba(15,23,38,.05), 0 8px 24px -12px rgba(15,23,38,.14);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0d1320; --surface:#151d2c; --surface-2:#1c2636;
+      --ink:#e9eef6; --ink-2:#c2cddd; --muted:#8f9db4;
+      --accent:#5ca8f5; --accent-soft:#17283d; --border:#263247; --rule:#243049;
+      --crit:#ff8197; --crit-bg:#2d1620;
+      --high:#f0ac5e; --high-bg:#2b2014;
+      --med:#ddc96a; --med-bg:#26230f;
+      --low:#9fb0c8; --low-bg:#1b2434;
+      --pass:#5fd39a; --pass-bg:#10281e;
+      --block:#b9a6ea; --block-bg:#201a33;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0d1320; --surface:#151d2c; --surface-2:#1c2636;
+    --ink:#e9eef6; --ink-2:#c2cddd; --muted:#8f9db4;
+    --accent:#5ca8f5; --accent-soft:#17283d; --border:#263247; --rule:#243049;
+    --crit:#ff8197; --crit-bg:#2d1620;
+    --high:#f0ac5e; --high-bg:#2b2014;
+    --med:#ddc96a; --med-bg:#26230f;
+    --low:#9fb0c8; --low-bg:#1b2434;
+    --pass:#5fd39a; --pass-bg:#10281e;
+    --block:#b9a6ea; --block-bg:#201a33;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font:400 16.5px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 24px 96px}
+  h1,h2,h3,h4{font-family:Gabarito,Inter,sans-serif; text-wrap:balance; margin:0}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  code{font-size:.88em}
+
+  header.mast{padding:56px 0 28px; border-bottom:1px solid var(--border)}
+  .eyebrow{
+    font:500 11.5px/1 "JetBrains Mono",monospace; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:18px;
+  }
+  h1{font-size:clamp(34px,5.2vw,52px); font-weight:700; letter-spacing:-.02em; line-height:1.05}
+  .sub{margin-top:14px; max-width:62ch; color:var(--ink-2); font-size:17.5px}
+  .meta{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+    gap:1px; margin-top:32px; background:var(--border);
+    border:1px solid var(--border); border-radius:10px; overflow:hidden;
+  }
+  .meta div{background:var(--surface); padding:13px 16px}
+  .meta dt{font:500 10.5px/1 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 6px}
+  .meta dd{margin:0; font-size:14.5px; font-weight:500; color:var(--ink)}
+
+  .verdict{
+    margin:34px 0 0; padding:24px 26px; border-radius:12px;
+    background:var(--crit-bg); border:1px solid var(--crit);
+    display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;
+  }
+  .verdict .stamp{
+    font-family:Gabarito,sans-serif; font-weight:700; font-size:15px;
+    letter-spacing:.06em; color:var(--crit); white-space:nowrap;
+    border:1.5px solid var(--crit); border-radius:6px; padding:7px 12px; flex:none;
+  }
+  .verdict .vbody{flex:1 1 420px}
+  .verdict p{margin:0; color:var(--ink); font-size:16px}
+  .verdict p + p{margin-top:10px}
+
+  section{margin-top:64px}
+  h2{font-size:27px; font-weight:600; letter-spacing:-.01em;
+    padding-bottom:12px; border-bottom:2px solid var(--ink); display:inline-block}
+  .lede{margin:18px 0 0; max-width:70ch; color:var(--ink-2)}
+
+  .gates{display:grid; grid-template-columns:repeat(auto-fit,minmax(196px,1fr)); gap:14px; margin-top:26px}
+  .gate{background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:16px 18px; box-shadow:var(--shadow)}
+  .gate .k{font:500 10.5px/1 "JetBrains Mono",monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted)}
+  .gate .v{font-family:Gabarito,sans-serif; font-weight:700; font-size:26px;
+    margin-top:9px; font-variant-numeric:tabular-nums}
+  .gate .n{font-size:13px; color:var(--muted); margin-top:3px}
+  .gate.ok .v{color:var(--pass)}
+  .gate.bad .v{color:var(--crit)}
+
+  .pill{display:inline-flex; align-items:center; border-radius:999px;
+    padding:3px 10px; font:500 11.5px/1.5 "JetBrains Mono",monospace;
+    letter-spacing:.04em; text-transform:uppercase; white-space:nowrap}
+  .p-crit{background:var(--crit-bg); color:var(--crit)}
+  .p-high{background:var(--high-bg); color:var(--high)}
+  .p-med{background:var(--med-bg); color:var(--med)}
+  .p-low{background:var(--low-bg); color:var(--low)}
+  .p-pass{background:var(--pass-bg); color:var(--pass)}
+  .p-block{background:var(--block-bg); color:var(--block)}
+
+  .finds{display:flex; flex-direction:column; gap:16px; margin-top:26px}
+  .find{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    border-left:4px solid var(--low); padding:20px 22px; box-shadow:var(--shadow)}
+  .find.crit{border-left-color:var(--crit)}
+  .find.high{border-left-color:var(--high)}
+  .find-top{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px}
+  .fid{font:500 12px/1 "JetBrains Mono",monospace; color:var(--muted)}
+  .find h3{font-size:19.5px; font-weight:600; flex-basis:100%; line-height:1.3}
+  .find p{margin:10px 0 0; color:var(--ink-2); font-size:15.5px}
+  .find .impact{color:var(--ink)}
+  .ev{margin-top:14px; background:var(--surface-2); border-radius:8px; padding:12px 14px;
+    font-family:"JetBrains Mono",monospace; font-size:12.5px; line-height:1.75;
+    color:var(--ink-2); overflow-x:auto}
+  .ev b{color:var(--ink); font-weight:500}
+  .fix{margin-top:14px; padding-top:13px; border-top:1px dashed var(--rule); font-size:15px; color:var(--ink-2)}
+  .fix strong{font-family:Gabarito,sans-serif; color:var(--accent); font-size:13px;
+    letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:5px}
+
+  .tw{overflow-x:auto; margin-top:26px; border:1px solid var(--border);
+    border-radius:11px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:580px; font-size:15px}
+  th{text-align:left; font:500 10.5px/1.4 "JetBrains Mono",monospace;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+    padding:13px 16px; border-bottom:1px solid var(--border); white-space:nowrap}
+  td{padding:12px 16px; border-bottom:1px solid var(--rule); color:var(--ink-2); vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:first-child{color:var(--ink); font-weight:500; white-space:nowrap}
+
+  ul.clean{margin:18px 0 0; padding-left:20px; color:var(--ink-2)}
+  ul.clean li{margin-bottom:9px}
+  ul.clean li::marker{color:var(--accent)}
+  ul.clean strong{color:var(--ink); font-weight:600}
+
+  .plan{display:flex; flex-direction:column; gap:14px; margin-top:26px; counter-reset:step}
+  .step{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:18px 22px; display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start;
+    box-shadow:var(--shadow)}
+  .step::before{counter-increment:step; content:counter(step);
+    font-family:Gabarito,sans-serif; font-weight:700; font-size:19px; color:var(--accent);
+    background:var(--accent-soft); width:38px; height:38px; border-radius:9px;
+    display:grid; place-items:center; font-variant-numeric:tabular-nums}
+  .step h4{font-size:17px; font-weight:600; margin-bottom:5px}
+  .step p{margin:0; color:var(--ink-2); font-size:15px}
+  .step .gate-note{margin-top:9px; font-size:13.5px; color:var(--muted)}
+
+  footer{margin-top:72px; padding-top:22px; border-top:1px solid var(--border);
+    color:var(--muted); font-size:13.5px}
+  footer p + p{margin-top:10px}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <div class="eyebrow">Stage 2 &middot; Production Readiness Report</div>
+  <h1>Resumewriter Launch Audit</h1>
+  <p class="sub">A read-only, evidence-based assessment of the <code>resume-co</code> codebase against the
+  Universal Production Launch procedure. Every claim below is labelled with how it was verified &mdash;
+  nothing is marked passing because the code for it merely exists.</p>
+  <dl class="meta">
+    <div><dt>Audit date</dt><dd>26 Oct 2026</dd></div>
+    <div><dt>Branch</dt><dd>stitch-design</dd></div>
+    <div><dt>Commit</dt><dd class="mono">e19a76e</dd></div>
+    <div><dt>App state</dt><dd>Local only &mdash; never deployed</dd></div>
+    <div><dt>Scope</dt><dd>Stages 1 &ndash; 1P, static</dd></div>
+    <div><dt>Working tree</dt><dd>64 modified, 48 untracked</dd></div>
+  </dl>
+</header>
+
+<div class="verdict">
+  <div class="stamp">NO-GO</div>
+  <div class="vbody">
+    <p><strong>This application must not be launched in its current state.</strong> The engineering
+    foundation is genuinely strong &mdash; clean typecheck, 113 passing tests, a correct Stripe webhook,
+    parameterised SQL, real security headers and disciplined per-account data scoping. The blockers are not
+    sloppiness; they are five load-bearing gaps that each defeat a core business or legal guarantee.</p>
+    <p>The paywall cannot hold, account deletion does not delete, a user who forgets their password is
+    locked out forever, the checkout screen shows a price Stripe is never asked to charge, and there is no
+    migration path to a production database. Five critical and eight high findings follow, each with its
+    evidence and the smallest safe fix.</p>
+  </div>
+</div>
+
+<section>
+  <h2>Verified gates</h2>
+  <p class="lede">Executed on this machine against the current working tree &mdash; not inferred from
+  configuration.</p>
+  <div class="gates">
+    <div class="gate ok"><div class="k">Typecheck</div><div class="v">PASS</div>
+      <div class="n">tsc --noEmit, 0 errors</div></div>
+    <div class="gate ok"><div class="k">Test suite</div><div class="v">113</div>
+      <div class="n">16 files, all passing in 7.1s</div></div>
+    <div class="gate ok"><div class="k">Production build</div><div class="v">PASS</div>
+      <div class="n">next build, 34 routes emitted</div></div>
+    <div class="gate bad"><div class="k">ESLint</div><div class="v">189</div>
+      <div class="n">errors &mdash; the CI lint job is red</div></div>
+    <div class="gate bad"><div class="k">E2E coverage</div><div class="v">0</div>
+      <div class="n">tests/end-to-end is empty</div></div>
+    <div class="gate ok"><div class="k">Tracked secrets</div><div class="v">0</div>
+      <div class="n">git ls-files clean, .env* ignored</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Critical &mdash; launch blockers</h2>
+  <p class="lede">Each of these breaks a promise the product makes to its users, its payers, or the law.
+  None can be deferred past launch.</p>
+
+  <div class="finds">
+    <article class="find crit">
+      <div class="find-top"><span class="pill p-crit">Critical</span><span class="pill p-low">Static</span>
+        <span class="fid">C1 &middot; Payments / entitlement</span></div>
+      <h3>The paywall is client-side only &mdash; every paid feature is free</h3>
+      <p>Premium state lives in a Zustand store persisted to <code>localStorage</code> under the key
+      <code>resume-co:paywall</code>. Editing that value, or calling
+      <code>usePaywall.setState({premium:true})</code> from the browser console, unlocks every gated action.
+      The server reconciliation only corrects the flag when the entitlement API answers
+      <code>source === "server"</code>, and even then it writes into that same client store.</p>
+      <p class="impact">Compounding this: PDF export runs entirely in the browser via <code>jspdf</code> and
+      <code>html2canvas-pro</code>. There is no server step in the download path to gate, so no server-side
+      check can rescue it. The monetisation model is currently unenforceable.</p>
+      <div class="ev"><b>src/features/cover-letter/lib/paywall.ts</b> &mdash; persist({ name:"resume-co:paywall", partialize: s =&gt; ({ premium: s.premium }) })<br>
+      <b>unlock()</b> &rarr; set({ premium:true }) &mdash; called on checkout return, never re-validated<br>
+      <b>src/services/storage/pdf-export.ts</b>, <b>download-pdf.ts</b> &mdash; client-side render, no API call</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Move the gated download to a server route that
+      calls <code>isPremium(session.user.email)</code> before returning the file, and treat the client flag
+      as presentation only. Until that route exists, the free tier is in practice whatever the app can do
+      &mdash; so the alternative is to redefine the free tier as what you accept giving away.</div>
+    </article>
+
+    <article class="find crit">
+      <div class="find-top"><span class="pill p-crit">Critical</span><span class="pill p-low">Static</span>
+        <span class="fid">C2 &middot; Privacy / GDPR</span></div>
+      <h3>&ldquo;Delete my account&rdquo; leaves every piece of personal data behind</h3>
+      <p><code>pgDeleteUser</code> runs exactly one statement &mdash; <code>delete from users</code> &mdash;
+      and its comment states that documents are removed &ldquo;by the ON DELETE CASCADE on
+      documents.email&rdquo;. That cascade does not exist: <code>schema.sql</code> deliberately drops the
+      foreign key so that OAuth accounts can own documents. Nothing cascades.</p>
+      <p class="impact">What survives deletion indefinitely: <code>documents</code> (full resumes &mdash;
+      legal name, address, phone number, employment history), <code>saved_jobs</code>,
+      <code>dismissed_jobs</code>, <code>tailoring_sessions</code> and <code>subscriptions</code>. Worse, a
+      Google-only account has no <code>users</code> row at all, so for those users the delete is a complete
+      no-op while the UI reports success. Your published privacy policy states &ldquo;We keep your account
+      and content until you delete them.&rdquo;</p>
+      <div class="ev"><b>src/services/database/users.ts:185</b> &mdash; pgDeleteUser(): delete from users where email = $1<br>
+      <b>database/schema.sql</b> &mdash; alter table documents drop constraint if exists documents_email_fkey<br>
+      <b>src/app/(public)/privacy/page.tsx</b> &mdash; "We keep your account and content until you delete them."</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Delete from all six tables in one transaction keyed
+      on the normalised email, independent of whether a <code>users</code> row exists. Add a security test
+      that seeds rows in every table, deletes the account, and asserts zero rows remain.</div>
+    </article>
+
+    <article class="find crit">
+      <div class="find-top"><span class="pill p-crit">Critical</span><span class="pill p-low">Static</span>
+        <span class="fid">C3 &middot; Authentication</span></div>
+      <h3>No password reset, no email verification, and dangerous account linking enabled</h3>
+      <p>There is no forgot-password route, page, or token flow anywhere in <code>src</code>, and no email
+      verification. A user who forgets their password is permanently locked out of their resumes with no
+      self-service recovery &mdash; on a paid product, that is a support and refund problem from day one.</p>
+      <p class="impact">The combination is also an account-takeover path. Google sign-in sets
+      <code>allowDangerousEmailAccountLinking: true</code> while credential signup never verifies the
+      address. An attacker can register a password account for <code>victim@gmail.com</code>; when the
+      victim later signs in with Google the accounts link, and the attacker's password now opens the
+      victim's account.</p>
+      <div class="ev"><b>grep -rliE "forgot.?password|reset.?password|verif(y|ication).?(email|token)" src</b> &rarr; no matches<br>
+      <b>src/features/authentication/auth.ts</b> &mdash; Google({ allowDangerousEmailAccountLinking: true })<br>
+      <b>src/services/email/email.ts</b> &mdash; only sendWelcomeEmail + sendReceiptEmail exist</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Ship a token-based reset flow (Resend is already
+      wired) and verify the email address on credential signup. Until verification exists, set
+      <code>allowDangerousEmailAccountLinking: false</code>.</div>
+    </article>
+
+    <article class="find crit">
+      <div class="find-top"><span class="pill p-crit">Critical</span><span class="pill p-low">Static</span>
+        <span class="fid">C4 &middot; Billing disclosure</span></div>
+      <h3>Checkout shows &ldquo;$1.95 due&rdquo; but Stripe is never asked to charge $1.95</h3>
+      <p>The trial plan advertises <code>priceLabel: "$1.95"</code> and
+      <code>summaryAmount: "$1.95"</code> on the payment and checkout pages. The Stripe payload for that
+      same plan is <code>unitAmount: 2995</code> with <code>trial_period_days: 7</code>. The customer is
+      therefore charged <strong>$0.00 today</strong> and <strong>$29.95 in seven days</strong>. The figure
+      $1.95 appears nowhere in the Stripe request.</p>
+      <p class="impact">A displayed price that does not match the amount charged invites chargebacks and
+      breaches consumer-disclosure rules in the EU, the UK and several US states. It is also a common
+      trigger for Stripe account review and Google Ads disapproval.</p>
+      <div class="ev"><b>src/services/payments/plans.ts</b> &mdash; trial: { priceLabel:"$1.95", summaryAmount:"$1.95",<br>
+      &nbsp;&nbsp;stripe:{ unitAmount:2995, interval:"month", trialDays:7 } }</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Decide which product you are actually selling: a
+      genuinely paid $1.95 trial (add a one-off $1.95 line item and drop the free trial days) or a free
+      7-day trial (change every label to &ldquo;$0.00 today, then $29.95/month&rdquo;). Either way, derive
+      the summary from the same plan object the Stripe call uses instead of hand-writing it.</div>
+    </article>
+
+    <article class="find crit">
+      <div class="find-top"><span class="pill p-crit">Critical</span><span class="pill p-low">Static</span>
+        <span class="fid">C5 &middot; Database operations</span></div>
+      <h3>No migration path to production &mdash; schema changes are a manual paste</h3>
+      <p><code>database/migrations/</code>, <code>policies/</code>, <code>functions/</code> and
+      <code>seed/</code> are all empty. The entire schema is a single 105-line <code>schema.sql</code>
+      applied by hand, and it already contains evidence of drift being patched in place:
+      <code>drop constraint if exists</code> blocks that repair databases created by earlier runs.</p>
+      <p class="impact">With no versioned, forward-only migrations there is no way to know what a production
+      database actually contains, no rollback, and no CI check that the code matches the schema. The first
+      schema change after launch would be an unrehearsed manual edit against live user data.</p>
+      <div class="ev"><b>ls database/migrations database/policies database/functions database/seed</b> &rarr; all empty<br>
+      <b>database/schema.sql:5</b> &mdash; "Apply once: node scripts/db-setup.mjs (or paste into the Neon SQL console)"<br>
+      <b>database/schema.sql:97-105</b> &mdash; in-place constraint repair for pre-existing databases</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Freeze the current schema as
+      <code>migrations/0001_init.sql</code>, add a <code>schema_migrations</code> ledger table, and make the
+      runner idempotent. Apply it to a fresh staging database and diff the result against
+      <code>schema.sql</code>.</div>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h2>High &mdash; fix before real users arrive</h2>
+  <div class="finds">
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-low">Static</span>
+        <span class="fid">H1 &middot; Abuse / cost</span></div>
+      <h3>Every IP-based rate limit is bypassable with one header</h3>
+      <p><code>clientIp()</code> returns the <em>first</em> entry of <code>X-Forwarded-For</code>, which the
+      caller supplies. Rotating that header per request defeats the limit entirely. The AI endpoint accepts
+      anonymous requests and is keyed on exactly this value.</p>
+      <div class="ev"><b>src/permissions/rate-limit.ts:155</b> &mdash; const xff = req.headers.get("x-forwarded-for"); if (xff) return xff.split(",")[0]<br>
+      Affects <b>/api/ai</b> (Gemini spend, 300/day default), <b>/api/jobs</b> (Adzuna quota), <b>/api/register</b> (signup spam)</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Trust only the platform-provided client address (on
+      Vercel, the last hop rather than the first), and require a session for the AI endpoint &mdash; or give
+      anonymous callers a much smaller, separately-keyed budget.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-low">Static</span>
+        <span class="fid">H2 &middot; Payments</span></div>
+      <h3>Checkout works while signed out, and entitlement is keyed on a payer-typed email</h3>
+      <p><code>auth()</code> is read but never required, so <code>client_reference_id</code> and the
+      subscription metadata are simply omitted for anonymous buyers. The webhook then falls back to
+      <code>customer_details.email</code> &mdash; the address the payer typed into Stripe's own form &mdash;
+      and grants premium to it.</p>
+      <p class="impact">A payer who mistypes their email pays and receives nothing, with no record linking
+      the subscription to any account. A payer who types someone else's address grants premium to that
+      account instead. Entitlement is keyed on a mutable identifier rather than a user id.</p>
+      <div class="ev"><b>src/app/api/checkout/session/route.ts</b> &mdash; const email = session?.user?.email ?? undefined<br>
+      <b>src/app/api/stripe/webhook/route.ts</b> &mdash; email = s.client_reference_id || s.customer_details?.email || s.customer_email</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Return 401 from the checkout route when there is no
+      session, and have the webhook accept only the <code>client_reference_id</code> and subscription
+      metadata your own server set.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-low">Static</span>
+        <span class="fid">H3 &middot; Payments</span></div>
+      <h3>The webhook has no idempotency ledger and ignores event ordering</h3>
+      <p>Signature verification and retry semantics are correct, but no <code>event.id</code> is recorded,
+      so Stripe's at-least-once delivery can send a duplicate receipt email. Entitlement writes stamp
+      <code>Date.now()</code> rather than the event's own timestamp, so a
+      <code>customer.subscription.updated</code> event that arrives after
+      <code>customer.subscription.deleted</code> can silently restore cancelled access.</p>
+      <div class="ev"><b>src/app/api/stripe/webhook/route.ts</b> &mdash; const now = Date.now(); &hellip; setEntitlementByCustomer(customerId, sub.status, end, now)<br>
+      No <b>processed_events</b> table; no comparison against the stored updated_at</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Insert <code>event.id</code> into a
+      <code>processed_events</code> table and return early on conflict; use <code>event.created</code> as
+      the write timestamp and refuse writes older than the stored one.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-pass">Executed</span>
+        <span class="fid">H4 &middot; CI / release process</span></div>
+      <h3>The CI quality gate is red today, so it protects nothing</h3>
+      <p><code>npm run lint</code> exits non-zero with 189 errors and 1,525 warnings. The
+      <code>quality</code> job runs lint without <code>continue-on-error</code>, so any push to
+      <code>main</code> and any pull request fails CI right now.</p>
+      <p class="impact">Most of the volume is not application code &mdash; ESLint is reading
+      <code>ds-bundle/_preview</code>, <code>ds-bundle/_vendor</code>, <code>design-ref</code>,
+      <code>.ds-sync</code> and <code>agent-skills</code>, including a minified bundle (1,204
+      <code>no-unused-expressions</code>). Linting <code>src</code> alone yields 62 errors, and those do
+      include real React-correctness problems: one <code>rules-of-hooks</code> violation and 38
+      <code>set-state-in-effect</code>.</p>
+      <div class="ev"><b>npm run lint</b> &rarr; 1714 problems (189 errors, 1525 warnings)<br>
+      <b>npx eslint src</b> &rarr; 73 problems (62 errors, 11 warnings)<br>
+      <b>eslint.config.mjs</b> &mdash; globalIgnores covers only .next, out, build, next-env.d.ts</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Add the design-reference directories to
+      <code>globalIgnores</code>, then fix the 62 real errors in <code>src</code> &mdash; the
+      <code>rules-of-hooks</code> one first, since that is a genuine runtime hazard rather than a style
+      complaint.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-low">Static</span>
+        <span class="fid">H5 &middot; Legal / third party</span></div>
+      <h3>An unauthenticated LinkedIn scraping endpoint is live in the app</h3>
+      <p><code>POST /api/linkedin</code> fetches a LinkedIn profile page server-side and returns its text.
+      It requires no session and has no rate limit, so anyone on the internet can use your deployment as a
+      scraping proxy &mdash; from your IP, under your platform account. Server-side scraping of profile
+      pages also conflicts with LinkedIn's terms of service.</p>
+      <div class="ev"><b>src/app/api/linkedin/route.ts</b> &mdash; export async function POST: no auth(), no limit()<br>
+      The URL is constrained by <b>PROFILE_RE</b> (anchored, linkedin.com/in/ only) &mdash; SSRF is contained; abuse is not</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Remove the route from the launch build. The project
+      notes already record this feature as held pending a real LinkedIn API key &mdash; the endpoint should
+      be held along with it.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-block">Blocked</span>
+        <span class="fid">H6 &middot; Infrastructure</span></div>
+      <h3>Rate limiting silently degrades to per-instance memory</h3>
+      <p>Without <code>UPSTASH_REDIS_REST_URL</code> and <code>UPSTASH_REDIS_REST_TOKEN</code> every limiter
+      falls back to an in-process <code>Map</code>. On serverless each invocation may get a fresh instance,
+      which makes the login brute-force brake and the AI daily quota close to meaningless.</p>
+      <p class="impact">Whether this actually bites depends on production environment variables, which I
+      cannot see. Recorded as BLOCKED, not PASS.</p>
+      <div class="ev"><b>src/permissions/rate-limit.ts:30</b> &mdash; const buckets = new Map&lt;string, Bucket&gt;()<br>
+      <b>isSharedRateLimit()</b> is already exposed by <b>/api/health</b> &mdash; assert it from a monitor</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Treat Upstash as required in production: fail the
+      deploy, or at minimum alert, when <code>/api/health</code> reports
+      <code>sharedRateLimit: false</code>.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-pass">Executed</span>
+        <span class="fid">H7 &middot; Testing</span></div>
+      <h3>No end-to-end test covers a single user journey</h3>
+      <p>The 113 passing tests are unit and isolation tests &mdash; valuable, and the tenancy-isolation set
+      is genuinely good. But <code>tests/end-to-end/</code> and <code>tests/integration/</code> are empty,
+      and Playwright is installed and unused. Not one of signup, login, build-a-resume, download, checkout
+      or delete-account has ever been verified as a flow.</p>
+      <div class="ev"><b>ls tests/end-to-end tests/integration</b> &rarr; empty<br>
+      <b>playwright@1.61.1</b> present in devDependencies; no spec files, no CI job</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Six Playwright specs covering those journeys, run
+      against the dev server in CI. This is also the only thing that keeps C1 and C2 fixed once they are
+      fixed.</div>
+    </article>
+
+    <article class="find high">
+      <div class="find-top"><span class="pill p-high">High</span><span class="pill p-pass">Executed</span>
+        <span class="fid">H8 &middot; Release process</span></div>
+      <h3>There is no committed release candidate</h3>
+      <p>The intended launch code is 64 modified files (+2,107 / &minus;811) plus 48 untracked files sitting
+      uncommitted on <code>stitch-design</code>, across seven local branches, with <code>main</code> behind.
+      Nothing reviewable, taggable or revertable exists.</p>
+      <div class="ev"><b>git status --porcelain</b> &rarr; 64 M, 48 ??<br>
+      <b>git diff --stat</b> &rarr; 64 files changed, 2107 insertions(+), 811 deletions(-)<br>
+      Branches: main, staging, restructure, redesign-blue-white, stitch-design, feat/tailoring-interview-upload, _held-linkedin-backup</div>
+      <div class="fix"><strong>Smallest safe fix</strong>Commit the UI work in reviewable chunks, open a PR
+      into <code>main</code>, make CI green, then tag. Deploy from a tag, never from a working tree.</div>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h2>Medium and low</h2>
+  <div class="tw">
+  <table>
+    <thead><tr><th>ID</th><th>Finding</th><th>Area</th><th>Sev</th></tr></thead>
+    <tbody>
+      <tr><td>M1</td><td>The Next 16 <code>proxy.ts</code> route gate checks only for the <em>presence</em> of a session cookie, not a valid JWT. A forged cookie reaches the app shells. No data leaks, because every API handler calls <code>auth()</code> and the pages are static shells &mdash; but &ldquo;protected&rdquo; is weaker than it reads.</td><td>Auth</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M2</td><td><code>PUT /api/documents</code> stores an arbitrary <code>record.data</code> blob as <code>jsonb</code> with no size cap, and no document-count cap outside resumes. One account can fill the database.</td><td>Data</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M3</td><td>No cookie consent anywhere. PostHog and Sentry initialise unconditionally, which is an ePrivacy/GDPR problem the moment an EU visitor loads the page.</td><td>Privacy</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M4</td><td>The privacy policy (147 lines) names Stripe, Gemini, Google and Adzuna but omits Resend, PostHog, Sentry, Dropbox and Upstash, and states no retention period, legal basis, or contact route.</td><td>Privacy</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M5</td><td>Only two transactional emails exist (welcome, receipt). Missing: payment failed, trial ending, subscription cancelled, account-deletion confirmation. <code>EMAIL_FROM</code> is read by the code but documented in neither env example.</td><td>Email</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M6</td><td>No <code>script-src</code> CSP. This is a documented, reasoned trade-off in <code>next.config.ts</code> (nonces need middleware), and <code>frame-ancestors 'none'</code> plus HSTS are in place. Tracked, not ignored.</td><td>Security</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M7</td><td>Node version drift: CI pins 20, this machine runs 22.22.3, the hosting runtime is unset. The lockfile is already known to resolve differently across platforms &mdash; CI works around it with <code>npm install</code> instead of <code>npm ci</code>.</td><td>Infra</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M8</td><td>Only four public pages (home, login, privacy, terms). No About, Contact, refund policy or content pages &mdash; thin for AdSense review and weak for organic acquisition.</td><td>SEO / Ads</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>M9</td><td>No backup or restore plan is documented, and no restore has ever been rehearsed. Provider defaults unverified.</td><td>DR</td><td><span class="pill p-med">Med</span></td></tr>
+      <tr><td>L1</td><td><code>/api/health</code> is public and reveals which integrations are configured. Deliberately cheap and non-database-touching; mild information disclosure only.</td><td>Infra</td><td><span class="pill p-low">Low</span></td></tr>
+      <tr><td>L2</td><td>1,525 lint warnings, mostly unused variables and unused expressions inside design-reference bundles.</td><td>Quality</td><td><span class="pill p-low">Low</span></td></tr>
+      <tr><td>L3</td><td><code>format:check</code> is <code>continue-on-error</code> in CI, so formatting is not actually enforced.</td><td>Quality</td><td><span class="pill p-low">Low</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>What is already right</h2>
+  <p class="lede">Recorded so that the plan does not disturb it. Static inspection unless noted.</p>
+  <ul class="clean">
+    <li><strong>Stripe webhook construction is correct</strong> &mdash; the raw body is read before any
+    parsing, the signature is verified asynchronously, <code>runtime = "nodejs"</code> is pinned, handler
+    errors return 500 so Stripe retries, and the receipt email is wrapped locally so an email failure can
+    never fail the event.</li>
+    <li><strong>SQL is parameterised throughout</strong> via <code>postgres.js</code> tagged templates. I
+    found no string-concatenated query anywhere.</li>
+    <li><strong>Per-account data scoping is consistent</strong> &mdash; documents, saved jobs, dismissed jobs
+    and tailoring sessions all key on the session email, and four isolation tests assert it.</li>
+    <li><strong>The AI endpoint is well defended</strong> &mdash; Zod validation at the trust boundary, an
+    upload MIME allowlist, a decoded-size cap, and both per-minute and per-day quotas. Only the identity it
+    keys on is weak (H1).</li>
+    <li><strong>Account deletion cancels Stripe subscriptions first</strong> and refuses to delete if that
+    fails, returning a distinct 502 &mdash; exactly the right ordering. It is the deletion itself that is
+    incomplete (C2).</li>
+    <li><strong>Login has a real brute-force brake</strong>, keyed on email, counting only failures and
+    resetting on success.</li>
+    <li><strong>Security headers are present</strong> &mdash; nosniff, DENY framing, strict-origin referrer,
+    a Permissions-Policy, and two-year HSTS with preload.</li>
+    <li><strong>robots.txt and sitemap.xml are correct</strong> &mdash; every per-account surface is
+    disallowed and only the four public routes are listed.</li>
+    <li><strong>Secret hygiene is clean</strong> (executed) &mdash; <code>.env*</code> is ignored and
+    <code>git ls-files</code> returns no env file. No secret value was read or displayed during this
+    audit.</li>
+    <li><strong>Sentry and PostHog are wired</strong> through <code>instrumentation.ts</code> and
+    <code>instrumentation-client.ts</code>, and <code>/api/health</code> is a well-designed liveness
+    probe.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Readiness matrix</h2>
+  <div class="tw">
+  <table>
+    <thead><tr><th>Stage</th><th>Area</th><th>Status</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Codebase &amp; architecture</td><td><span class="pill p-pass">Pass</span></td><td>Executed &mdash; typecheck, tests, build</td></tr>
+      <tr><td>1A</td><td>Pages &amp; journeys</td><td><span class="pill p-high">Partial</span></td><td>Static &mdash; 34 routes inventoried, none journey-tested</td></tr>
+      <tr><td>1B</td><td>Database</td><td><span class="pill p-crit">Fail</span></td><td>Static &mdash; C5; live database not inspected</td></tr>
+      <tr><td>1C</td><td>Auth &amp; account lifecycle</td><td><span class="pill p-crit">Fail</span></td><td>Static &mdash; C3, M1</td></tr>
+      <tr><td>1D</td><td>Email</td><td><span class="pill p-crit">Fail</span></td><td>Static &mdash; M5; delivery and SPF/DKIM/DMARC blocked</td></tr>
+      <tr><td>1E</td><td>APIs &amp; third parties</td><td><span class="pill p-high">Partial</span></td><td>Static &mdash; H1, H5</td></tr>
+      <tr><td>1F</td><td>Payments &amp; entitlements</td><td><span class="pill p-crit">Fail</span></td><td>Static &mdash; C1, C4, H2, H3</td></tr>
+      <tr><td>1G</td><td>Upload &amp; storage</td><td><span class="pill p-pass">Pass</span></td><td>Static &mdash; type and size caps enforced server-side; no object store in use</td></tr>
+      <tr><td>1H</td><td>Privacy &amp; deletion</td><td><span class="pill p-crit">Fail</span></td><td>Static &mdash; C2, M3, M4</td></tr>
+      <tr><td>1I</td><td>Security &amp; threat model</td><td><span class="pill p-high">Partial</span></td><td>Static &mdash; headers good; H1, M1, M2, M6</td></tr>
+      <tr><td>1J</td><td>Technical SEO</td><td><span class="pill p-pass">Pass</span></td><td>Static &mdash; metadata, robots, sitemap correct</td></tr>
+      <tr><td>1K</td><td>AdSense / paid ads</td><td><span class="pill p-med">Not ready</span></td><td>Static &mdash; M8 thin content; C4 would fail ad review</td></tr>
+      <tr><td>1L</td><td>UX, mobile, accessibility</td><td><span class="pill p-block">Not tested</span></td><td>No rendered audit performed at this stage</td></tr>
+      <tr><td>1M</td><td>Performance &amp; scalability</td><td><span class="pill p-block">Not tested</span></td><td>Build output only; no Lighthouse or load test</td></tr>
+      <tr><td>1N</td><td>Hosting &amp; environments</td><td><span class="pill p-block">Blocked</span></td><td>No deployment exists; hosting project not inspected</td></tr>
+      <tr><td>1O</td><td>Backups &amp; disaster recovery</td><td><span class="pill p-crit">Fail</span></td><td>M9 &mdash; nothing documented, nothing rehearsed</td></tr>
+      <tr><td>1P</td><td>Monitoring &amp; incident response</td><td><span class="pill p-high">Partial</span></td><td>Static &mdash; Sentry and health probe present; no alerts, runbook, or on-call</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="lede"><strong>Blocked for lack of access &mdash; not assessed as passing:</strong> production
+  environment variables and domains, the live Postgres schema (<code>psql</code> is not installed here),
+  Stripe dashboard configuration including test-vs-live mode and the webhook endpoint, Resend sending-domain
+  DNS, GitHub branch protection (<code>gh</code> is not installed), provider backup retention, and all live
+  performance and accessibility measurement.</p>
+</section>
+
+<section>
+  <h2>Implementation plan</h2>
+  <p class="lede">Ordered so that each step is verifiable before the next begins. Steps 1&ndash;4 are the
+  minimum to move the verdict off NO-GO. Nothing here starts without your approval, and every Stage 3 change
+  comes to you as a reviewable diff.</p>
+  <div class="plan">
+    <div class="step"><div>
+      <h4>Stop the bleeding in billing and privacy</h4>
+      <p>C2 (complete the deletion), C4 (make the displayed price the charged price), H2 (require a session
+      at checkout), H3 (event ledger plus event timestamps).</p>
+      <p class="gate-note">Gate: a security test proving zero rows survive deletion, and a test-mode
+      checkout whose charged amount matches the on-screen summary.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Decide and enforce the paywall</h4>
+      <p>C1. This is a product decision before it is a code change: either the download moves server-side
+      behind an entitlement check, or the free tier is redefined as what you accept giving away. I will
+      bring you both options rather than choose for you.</p>
+      <p class="gate-note">Gate: with <code>localStorage</code> hand-edited to premium, a gated download
+      still fails.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Close the account-recovery hole</h4>
+      <p>C3. A token-based password reset over Resend, email verification on credential signup, and
+      <code>allowDangerousEmailAccountLinking</code> switched off until verification ships.</p>
+      <p class="gate-note">Gate: a real reset email delivered to a real inbox, end to end.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Make the release process real</h4>
+      <p>H8 (commit and PR the UI work), H4 (ESLint ignores plus the 62 real errors in <code>src</code>),
+      C5 (freeze <code>0001_init.sql</code> and add a migration ledger).</p>
+      <p class="gate-note">Gate: CI green on a PR into <code>main</code>, and migrations applied cleanly to
+      a fresh staging database.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Harden the abuse surface</h4>
+      <p>H1 (platform-trusted client IP, session required for AI), H5 (remove the LinkedIn route), H6
+      (require Upstash in production), M2 (cap the document blob).</p>
+      <p class="gate-note">Gate: header rotation no longer defeats the AI quota.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Prove the journeys</h4>
+      <p>H7. Playwright specs for signup, login, build-and-download, checkout, entitlement revocation and
+      account deletion, wired into CI.</p>
+      <p class="gate-note">Gate: six specs green in CI against the dev server.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Legal, consent and customer comms</h4>
+      <p>M3 (a consent gate before PostHog and Sentry), M4 (rewrite the privacy policy to match reality,
+      naming every processor), M5 (the four missing lifecycle emails, plus <code>EMAIL_FROM</code> in the
+      env examples).</p>
+      <p class="gate-note">Gate: no analytics request fires before consent is given.</p>
+    </div></div>
+    <div class="step"><div>
+      <h4>Stage 5 &mdash; staging, then operations</h4>
+      <p>Stand up a staging deployment with its own database and Stripe test keys, verify SPF, DKIM and
+      DMARC on the sending domain, document and rehearse a restore (M9), then set alerts on the health probe
+      and write the rollback runbook (1P).</p>
+      <p class="gate-note">Gate: a restore actually performed, and a Go/No-Go re-run against Stage 6.</p>
+    </div></div>
+  </div>
+</section>
+
+<footer>
+  <p>Stage 2 report &middot; 26 Oct 2026 &middot; <code>resume-co</code> at <code>e19a76e</code>
+  (stitch-design, uncommitted). Read-only audit: no application file was created, modified or deleted, no
+  deployment was performed, and no secret value was read or displayed.</p>
+  <p>Findings are labelled STATIC (source and configuration inspection), EXECUTED (run on this machine) or
+  BLOCKED (access unavailable). No check in this report is marked passing on the grounds that code for it
+  exists. Next approval required: Stage 3 controlled implementation, beginning with step 1.</p>
+</footer>
+</div>
