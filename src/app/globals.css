@@ -2,6 +2,13 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Keep the extracted design-system reference docs out of Tailwind's automatic
+   source detection. They quote utility class names in prose and in example
+   CSS, which would otherwise generate real utilities and grow the shipped
+   bundle (measured: +2,076 bytes) for classes nothing renders. Those files are
+   documentation, not source. */
+@source not "../../design-system";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

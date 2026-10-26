@@ -1,0 +1,164 @@
+/* ==========================================================================
+   resume-co design system - Tailwind theme (v4 syntax)
+   Extracted 26 Oct 2026, commit e33d287. Harness MODE = EXTRACT.
+
+   TAILWIND VERSION: v4 (tailwindcss ^4, @tailwindcss/postcss ^4).
+   The project has NO tailwind.config.js and NO JS theme object - the theme is
+   declared in CSS with @theme / @theme inline. v3 `theme.extend` syntax would
+   be wrong here, so none is emitted.
+
+   This file is REFERENCE OUTPUT, not wired into the build. The application is
+   driven by src/app/globals.css. Use this as the portable form of the theme,
+   or to diff intent against the live file.
+
+   Two blocks, mirroring how the project itself splits them:
+
+     @theme inline  - tokens that REFERENCE :root custom properties, so the
+                      runtime value can change (themes, overrides) and the
+                      utility follows.
+     @theme         - tokens with LITERAL values that do not need indirection.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Literal scales
+   -------------------------------------------------------------------------- */
+@theme {
+  /* Type scale: base 18px, ~1.2 step. Overrides Tailwind's defaults at every
+     step (roughly 2-3px larger). Line heights keep Tailwind's unitless
+     defaults so they scale with these sizes. */
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-base: 18px;
+  --text-lg: 21px;
+  --text-xl: 23px;
+  --text-2xl: 27px;
+  --text-3xl: 33px;
+  --text-4xl: 39px;
+  --text-5xl: 51px;
+  --text-6xl: 63px;
+  --text-7xl: 75px;
+  --text-8xl: 99px;
+  --text-9xl: 131px;
+
+  /* Elevation. Exposed as shadow-card / shadow-card-lg utilities. In the live
+     app these are plain CSS classes in @layer utilities; expressing them as
+     theme tokens here makes them composable (hover:shadow-card-lg and so on).
+     Always two layers at low opacity - never a single hard drop. */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.06);
+  --shadow-card-lg: 0 4px 12px rgba(16, 24, 40, 0.06), 0 18px 40px rgba(16, 24, 40, 0.1);
+
+  /* Motion. Not declared as tokens upstream - durations and easings are
+     written literally in globals.css. Promoted here so transition utilities
+     can share them. */
+  --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Radius additions. The declared scale is a multiplier on --radius (see the
+     inline block below), but 185 usages in the source are arbitrary pixel
+     values outside it: rounded-[10px] 119x and rounded-[6px] 66x. Promoting
+     them to real tokens matches the system to what is actually built. */
+  --radius-xs: 6px;
+  --radius-control: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Token references
+   Every color resolves through a :root custom property, so a component never
+   needs a literal hex. This indirection is the system's main discipline.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  /* Families */
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-geist-mono);
+
+  /* Surfaces and text */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* Interactive */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-destructive: var(--destructive);
+
+  /* Lines */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Brand */
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-teal: var(--brand-teal); /* value is navy; name kept for parity with source */
+
+  /* AI surfaces - purple marks machine-generated content */
+  --color-ai-from: var(--ai-from);
+  --color-ai-to: var(--ai-to);
+  --color-ai-text: var(--ai-text);
+  --color-ai-solid: var(--ai-solid);
+
+  /* Logo mark */
+  --color-logo-from: var(--logo-from);
+  --color-logo-to: var(--logo-to);
+
+  /* Progress ramp - amber to green, never flattened */
+  --color-progress-from: var(--progress-from);
+  --color-progress-via: var(--progress-via);
+  --color-progress-to: var(--progress-to);
+  --color-progress-low: var(--progress-low);
+  --color-progress-early: var(--progress-early);
+  --color-progress-mid: var(--progress-mid);
+  --color-progress-high: var(--progress-high);
+  --color-progress-done: var(--progress-done);
+
+  /* Charts - the deliberate multi-hue exception */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar shell */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius scale, derived from a single --radius root (0.75rem / 12px) */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* --------------------------------------------------------------------------
+   Not emitted, deliberately
+   --------------------------------------------------------------------------
+   SPACING    The project does not override Tailwind's default 0.25rem scale.
+              Re-declaring it here would imply a decision that was never made.
+
+   BREAKPOINTS Also defaults. Observed usage is sm 258, lg 68, md 7, xl 7,
+              2xl 0 - effectively a two-breakpoint system, but the values
+              themselves are Tailwind's.
+
+   DARK THEME  No dark palette exists. A `.dark` variant is wired via
+              @custom-variant and some components carry dark: classes, but no
+              dark values are declared anywhere in the source. Inventing one
+              here would be exactly the guessing this extraction forbids.
+   -------------------------------------------------------------------------- */
