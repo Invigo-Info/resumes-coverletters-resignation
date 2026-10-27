@@ -162,14 +162,14 @@
 <header>
   <div class="kicker">Remediation worklist &middot; for the incoming engineer</div>
   <h1>Launch Blocker Worklist</h1>
-  <p class="sub">Thirteen defects that stand between this branch and a safe production launch, written
+  <p class="sub">Fourteen defects that stand between this branch and a safe production launch, written
   as work: what is broken, what to change, and the check that proves it is done. Every file reference
   was read on this branch at this commit.</p>
   <dl class="facts">
     <div><dt>Branch</dt><dd>handover/production-readiness</dd></div>
     <div><dt>Commit</dt><dd><code>317e46a</code></dd></div>
     <div><dt>Dated</dt><dd>26 Oct 2026</dd></div>
-    <div><dt>Blockers</dt><dd>5 critical, 8 high</dd></div>
+    <div><dt>Blockers</dt><dd>5 critical, 9 high</dd></div>
     <div><dt>Deployed</dt><dd>No - never launched</dd></div>
     <div><dt>Dev port</dt><dd>3001</dd></div>
   </dl>
@@ -218,6 +218,7 @@ npm run dev        <span class="c"># http://localhost:3001</span></pre>
       <tr><td>P6</td><td>Introduce a migration ledger</td><td>1 - blockers</td><td>-</td></tr>
       <tr><td>P7</td><td>Require a session at checkout</td><td>2 - payments</td><td>-</td></tr>
       <tr><td>P8</td><td>Webhook idempotency + event ordering</td><td>2 - payments</td><td>P6</td></tr>
+      <tr><td>P14</td><td>Stop concurrent saves destroying each other</td><td>2 - data loss</td><td>-</td></tr>
       <tr><td>P9</td><td>Fix the spoofable rate-limit identity</td><td>2 - abuse</td><td>-</td></tr>
       <tr><td>P10</td><td>Remove the LinkedIn scraping endpoint</td><td>2 - abuse</td><td>-</td></tr>
       <tr><td>P11</td><td>Cap the document blob</td><td>2 - abuse</td><td>-</td></tr>
@@ -540,6 +541,50 @@ stripe trigger customer.subscription.deleted
 
   <article class="task">
     <header>
+      <div class="idline"><span class="tid hi">P14</span><span class="chip">High</span><span class="chip">Data loss</span><span class="chip">found by QA handbook</span></div>
+      <h4>Two tabs editing one document silently destroy each other's work</h4>
+    </header>
+    <div class="body">
+      <div class="block defect"><span class="lbl">The defect</span>
+        <p>Document saves are an unconditional, whole-blob, last-write-wins overwrite. The upsert ends
+        with <code>on conflict (email, type, id) do update set data = excluded.data</code> and
+        <strong>no <code>updated_at</code> guard</strong>.</p>
+        <p class="impact">Open one resume in two tabs. Change the title in the first and the summary in
+        the second. Both tabs hold a full snapshot, so whichever saves last replaces the entire document
+        and discards the other edit with no warning. This is not a merge conflict, it is a total
+        replacement. The same gap means a slow or retried request can overwrite a <em>newer</em> save
+        with stale data. With autosave running, neither tab needs an explicit Save for this to happen.</p>
+        <div class="where">src/services/database/documents.ts:198-202 - pgUpsertDocument, on conflict do update</div>
+      </div>
+      <div class="block dothis"><span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Guard the write: add <code>where excluded.updated_at &gt; documents.updated_at</code> to the
+          conflict clause so a stale save cannot land.</li>
+          <li>Return a distinct status when a write is refused, and have the client tell the user their
+          copy is behind instead of failing silently.</li>
+          <li>Apply the same guard to the file-store backend, which has the identical whole-blob
+          behaviour.</li>
+          <li>Decide the product answer for a genuine two-tab conflict: refuse and reload, or merge at
+          section level. Refusing is acceptable; silently discarding is not.</li>
+        </ol>
+      </div>
+      <div class="block donewhen"><span class="lbl">Done when</span>
+        <ul class="acc">
+          <li>Two tabs editing different fields of one document no longer lose either edit.</li>
+          <li>A save carrying an older <code>updated_at</code> than the stored row is rejected.</li>
+          <li>The user is told when their save was refused.</li>
+        </ul>
+      </div>
+      <div class="block verify"><span class="lbl">Verify</span>
+        <pre><span class="c"># the QA handbook's own test, section 14.1</span>
+<span class="c"># open the same resume in two tabs, edit a different field in each,</span>
+<span class="c"># save both, reload both - neither edit may disappear</span></pre>
+      </div>
+    </div>
+  </article>
+
+  <article class="task">
+    <header>
       <div class="idline"><span class="tid hi">P9</span><span class="chip">High</span><span class="chip">Abuse / cost</span></div>
       <h4>The rate-limit identity is attacker-supplied</h4>
     </header>
@@ -720,11 +765,11 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   fine. The last column links to the task that closes the gap.</p>
 
   <div class="tally">
-    <div><div class="n" style="color:var(--done)">51</div><div class="t">Present</div></div>
+    <div><div class="n" style="color:var(--done)">52</div><div class="t">Present</div></div>
     <div><div class="n" style="color:var(--act)">14</div><div class="t">Partial</div></div>
-    <div><div class="n" style="color:var(--stop)">74</div><div class="t">Missing</div></div>
-    <div><div class="n" style="color:var(--muted)">13</div><div class="t">Blocked</div></div>
-    <div><div class="n">152</div><div class="t">Assessed</div></div>
+    <div><div class="n" style="color:var(--stop)">75</div><div class="t">Missing</div></div>
+    <div><div class="n" style="color:var(--muted)">16</div><div class="t">Blocked</div></div>
+    <div><div class="n">157</div><div class="t">Assessed</div></div>
   </div>
 
   <div class="tw"><table>
@@ -831,6 +876,9 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
       <tr><td>Document blob size cap</td><td><span class="st s-miss">MISSING</span></td><td>unbounded jsonb</td><td>P11</td></tr>
       <tr><td>Per-type document count cap</td><td><span class="st s-part">PARTIAL</span></td><td>resumes only</td><td>P11</td></tr>
       <tr><td>Deletion removes all user data</td><td><span class="st s-miss">MISSING</span></td><td>5 of 6 tables survive</td><td>P3</td></tr>
+      <tr><td>Concurrent-edit protection</td><td><span class="st s-miss">MISSING</span></td><td>unconditional last-write-wins, no updated_at guard</td><td>P14</td></tr>
+      <tr><td>Honest autosave state</td><td><span class="st s-block">BLOCKED</span></td><td>UI must never show Saved on a failed request; not tested</td><td>P13</td></tr>
+      <tr><td>Offline save behaviour</td><td><span class="st s-block">BLOCKED</span></td><td>not tested; QA handbook specifies an expected message</td><td>P13</td></tr>
       <tr><td>Automated backups</td><td><span class="st s-block">BLOCKED</span></td><td>needs database provider access</td><td>-</td></tr>
       <tr><td>Restore rehearsed</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>M9</td></tr>
       <tr><td>Virus scanning on upload</td><td><span class="st s-miss">MISSING</span></td><td>files go straight to the model</td><td>-</td></tr>
@@ -904,6 +952,8 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
       <tr><td>Responsive across breakpoints</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
       <tr><td>Keyboard navigation and focus</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
       <tr><td>Alt text coverage</td><td><span class="st s-block">BLOCKED</span></td><td>not measured this pass</td><td>R5</td></tr>
+      <tr><td>Dialog focus trap, Escape, focus return</td><td><span class="st s-block">BLOCKED</span></td><td>not tested; required by both QA handbooks</td><td>R5</td></tr>
+      <tr><td>No emoji as icon or decoration</td><td><span class="st s-ok">PRESENT</span></td><td>project convention; enforced by hand since the gate script is absent</td><td>-</td></tr>
       <tr><td>WCAG audit</td><td><span class="st s-miss">MISSING</span></td><td>never performed</td><td>R5</td></tr>
     </tbody>
   </table></div>
@@ -974,6 +1024,55 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
 </section>
 
 <section>
+  <h2>Existing QA handbooks</h2>
+  <p class="lede">Two manual-test handbooks already sit in the repository root. They were written before
+  this audit, by a different pass, and were cross-checked against it on 27 Oct 2026. Use them - they are
+  detailed and app-grounded - but with the corrections below.</p>
+  <ul class="plain">
+    <li><strong><code>AI_Career_SaaS_Manual_QA_Validation_Handbook-App-Grounded-2026-07-29.html</code></strong>
+    - module-by-module manual test plan with a real route map, severity scale and finding template.</li>
+    <li><strong><code>AI_Career_SaaS_First_Time_User_Usability_Handbook.html</code></strong> - the same
+    product walked as a first-time user, plus cross-cutting checks for states, heuristics, copy,
+    responsive, keyboard and console.</li>
+  </ul>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">What they independently confirm</h3>
+  <p class="lede">Written in July, months before this audit, and arriving at the same conclusions from
+  manual testing rather than source reading. That agreement raises confidence in both.</p>
+  <ul class="plain">
+    <li>Section 0: <em>"No forgot-password or password-reset page or route. No email-verification
+    step."</em> - the same gap as <code>P5</code>.</li>
+    <li>Section 14.1 lists what the <code>resume-co:</code> localStorage namespace holds, naming the
+    <strong>premium flag</strong> outright - independent corroboration of <code>P1</code>/<code>P2</code>.</li>
+    <li>Section 0: <em>"No change-email, change-password"</em> - matches the inventory.</li>
+    <li>Section 13.3 records AI limits of 120/minute and 300/day and login at 5 failures per 15 minutes -
+    matches the source exactly.</li>
+    <li>Section 14.2 makes user-to-user isolation the P0 test. That scoping is sound here, with four
+    isolation tests behind it.</li>
+  </ul>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">Where they are now wrong</h3>
+  <p class="lede">Both predate the August and October redesigns. Two claims no longer hold, and a tester
+  trusting them would chase features that do not exist - the exact failure the handbook's own Section 0
+  was written to prevent.</p>
+  <div class="tw">
+  <table>
+    <thead><tr><th>Claim</th><th>Reality</th><th>Checked</th></tr></thead>
+    <tbody>
+      <tr><td>"light and dark themes"</td><td><strong>Dark mode does not exist.</strong> No <code>.dark</code> block in <code>shadcn/dist/tailwind.css</code> or in <code>src</code>, and no <code>ThemeProvider</code> is mounted - <code>Providers</code> holds only <code>SessionProvider</code>, <code>AccountScope</code> and <code>AnalyticsTracker</code>. <code>next-themes</code> is imported by one file, the toast.</td><td>27 Oct 2026</td></tr>
+      <tr><td>"14 resume templates"</td><td><code>src/config/templates.ts</code> defines <strong>20</strong>.</td><td>27 Oct 2026</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">What they caught that this audit missed</h3>
+  <p class="lede">Section 14.1 of the QA handbook asks the tester to open one document in two tabs and
+  check whether one save silently overwrites the other. This audit had not examined concurrency at all.
+  Checking it against the source confirmed a real data-loss path, now filed as <code>P14</code> - the
+  only task on this page that came from the handbooks rather than from source review.</p>
+</section>
+
+<section>
   <h2>Also outstanding</h2>
   <p class="lede">Not launch blockers on their own, but each is a commitment you have already made to
   users or a gap an operator will need on day one.</p>
@@ -1017,6 +1116,126 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
     <li><strong>Secret hygiene</strong> - <code>.env*</code> ignored, no env file tracked. The two
     committed <code>*.example</code> templates carry placeholders only.</li>
   </ul>
+</section>
+
+<section>
+  <h2>Does fixing this list make it launch-ready?</h2>
+  <div class="banner" style="margin-top:22px">
+    <div class="stamp">NO</div>
+    <div class="vbody">
+      <p><strong>Closing every task on this page clears the known blockers. It does not by itself make
+      the product safe to launch.</strong> Treat this list as necessary, not sufficient. Three things
+      stand between a completed worklist and a defensible go-live decision.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:34px; font-size:19px; font-weight:600">1. Sixteen requirements were never assessable</h3>
+  <p class="lede">Everything marked <span class="st s-block">BLOCKED</span> in the inventory needs access
+  that nobody has used yet: production environment variables and domains, the live database schema and
+  its backups, Stripe dashboard configuration including whether it is in live or test mode, the Resend
+  sending domain's SPF, DKIM and DMARC records, and repository branch protection. None of these can be
+  inferred from code. Each one is capable of blocking a launch on its own - a webhook pointed at the
+  wrong URL, or a sending domain with no DMARC record, will not announce itself.</p>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">2. Nothing here has been verified in a running browser</h3>
+  <p class="lede">This audit is a source review plus executed build gates. No user journey has been run
+  end to end, no page has been opened at a phone width, no accessibility tool has been pointed at the UI,
+  and no load has been applied. A fix that typechecks and builds is not a fix that works. That is exactly
+  what <code>P13</code> exists for, and why it is the last task rather than an optional one.</p>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">3. A static review only finds what it can see</h3>
+  <p class="lede"><code>P14</code> on this page is the proof. The concurrent-save data-loss bug was not
+  found by reading the code looking for bugs - it surfaced because an existing QA handbook asked a
+  question this audit had not thought to ask. One prompt from one document produced one real defect.
+  There is no reason to believe that was the last one. Expect the end-to-end tests, the staging pass and
+  the first real users to each surface things this list does not contain.</p>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">What a defensible go-live actually requires</h3>
+  <p class="lede">In order, after this worklist is closed:</p>
+  <ul class="plain">
+    <li><strong>Check the sixteen blocked items</strong> with real access, and record what was found
+    rather than assuming it is fine.</li>
+    <li><strong>Run the journeys</strong> - signup, login, build and download, checkout, entitlement
+    revocation, deletion - against a staging deployment with its own database and Stripe test keys.</li>
+    <li><strong>Prove the destructive paths</strong>: restore a backup, revoke a subscription, delete an
+    account, and confirm each did what it claimed.</li>
+    <li><strong>Pass a visual, responsive and accessibility pass</strong> at real viewports.</li>
+    <li><strong>Settle the business decisions</strong> that are not engineering: the pricing model behind
+    <code>P1</code> and <code>P4</code>, the refund policy, tax handling, and processor disclosure.</li>
+    <li><strong>Verify the live site after deploying</strong>, not before. A green deploy is not a
+    verified product.</li>
+  </ul>
+  <p class="lede">The honest summary: this worklist takes the project from <em>unsafe to launch</em> to
+  <em>ready to be verified</em>. The verification is the part that earns a go-live, and it has not
+  started.</p>
+</section>
+
+<section>
+  <h2>Step-by-step execution order</h2>
+  <p class="lede">The waves earlier on this page group tasks by <em>urgency</em>. This section orders them
+  by <em>safety of execution</em>: which to do first so the work does not collide with itself. The two
+  orders differ, and this one is what to follow at the keyboard.</p>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">The conflict hazards</h3>
+  <p class="lede">Three places where two tasks touch the same code. Everything else is comfortably
+  disjoint.</p>
+  <div class="tw">
+  <table>
+    <thead><tr><th>Hazard</th><th>Tasks</th><th>Handling</th></tr></thead>
+    <tbody>
+      <tr><td>85 files carry lint errors in <code>src</code></td><td>P12 vs everything</td><td>The big one. Mechanical edits across 85 files will conflict with any feature branch open at the time. Do it before feature work starts, in its own PR, merged same day.</td></tr>
+      <tr><td><code>stripe/webhook/route.ts</code></td><td>P7 and P8</td><td>Both rewrite the same handler. Ship as one PR, not two.</td></tr>
+      <tr><td>Documents read/write path</td><td>P11 and P14</td><td><code>documents/route.ts</code> and <code>services/database/documents.ts</code> are one logical change. Ship together.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">The order</h3>
+  <div class="tw">
+  <table>
+    <thead><tr><th>Step</th><th>Task</th><th>Touches</th><th>Why here</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>P12a - ESLint ignores only</td><td><code>eslint.config.mjs</code></td><td>One file, two minutes. Drops the noise from 189 errors to 62 real ones so CI starts telling the truth. Do this before reading any other lint output.</td></tr>
+      <tr><td>2</td><td>P10 - delete the LinkedIn route</td><td>1 file deleted</td><td>A pure deletion cannot conflict with anything. Removes an open scraping proxy on day one.</td></tr>
+      <tr><td>3</td><td>P12b - fix the 62 real lint errors</td><td>up to 85 files</td><td><strong>The sequencing decision that matters.</strong> Mechanical and wide. Do it now, while no feature branch is open. Deferring it guarantees conflicts later.</td></tr>
+      <tr><td>4</td><td>P6 - migration ledger</td><td>new files under <code>database/</code></td><td>New files only, so no conflict. Must precede P8, and every later schema change rides on it.</td></tr>
+      <tr><td>5</td><td>P1 - decide the paywall model</td><td>nothing</td><td>A decision, not code. Make it now because it sets the size of step 11. Blocking P2 behind an unmade decision is how this stalls.</td></tr>
+      <tr><td>6</td><td>P3 - complete account deletion</td><td><code>users.ts</code>, privacy page</td><td>Self-contained and the most serious legal exposure. Nothing else touches these files.</td></tr>
+      <tr><td>7</td><td>P14 + P11 together</td><td>documents service and route</td><td>One logical change to the document write path: the <code>updated_at</code> guard and the size cap. Splitting them means editing the same two files twice.</td></tr>
+      <tr><td>8</td><td>P4 - price labels</td><td><code>plans.ts</code> and payment pages</td><td>Isolated. Do it before the webhook work so checkout is already honest when you start testing payments.</td></tr>
+      <tr><td>9</td><td>P7 + P8 together</td><td>checkout and webhook routes</td><td>Both rewrite the webhook. Needs P6 for the <code>processed_events</code> table. One PR.</td></tr>
+      <tr><td>10</td><td>P9 - rate-limit identity</td><td><code>rate-limit.ts</code> and 3 routes</td><td>After P7, so the checkout rate limit P7 adds is built on the corrected identity rather than the spoofable one.</td></tr>
+      <tr><td>11</td><td>P5 - reset, verification, linking</td><td><code>auth.ts</code>, <code>email.ts</code>, new routes</td><td>Mostly new files. Start with the one-line <code>allowDangerousEmailAccountLinking: false</code> - that closes the takeover path immediately, before the longer flow work lands.</td></tr>
+      <tr><td>12</td><td>P2 - enforce the paywall</td><td>new route, 5 consumers, export path</td><td>Last of the code work: the largest change, the widest blast radius, and the only one that depends on a decision. Running it after step 3 means it never fights the lint pass.</td></tr>
+      <tr><td>13</td><td>P13 - end-to-end tests</td><td>new files under <code>tests/</code></td><td>New files only. Last because it locks in steps 6 through 12 - a spec written before its fix tests nothing.</td></tr>
+      <tr><td>14</td><td>R1-R7</td><td>various, all isolated</td><td>Error and loading pages, cancellation UI, data export, OG image, accessibility pass, deploy pipeline, monitoring. Independent of each other and of the above; hand to a second person to run in parallel from step 4 onward.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="margin-top:30px; font-size:19px; font-weight:600">Rules that keep it conflict-free</h3>
+  <ul class="plain">
+    <li><strong>One step, one branch, one PR.</strong> Steps are sized so each is reviewable alone. The
+    two paired steps (7 and 9) are single PRs precisely because splitting them would mean touching the
+    same file twice.</li>
+    <li><strong>Merge and rebase before starting the next step.</strong> The order assumes each step
+    lands before the next begins. Two steps open at once reintroduces exactly the conflicts this
+    ordering removes.</li>
+    <li><strong>Never run step 3 in parallel with anything.</strong> It is the only step that rewrites
+    files across the whole tree.</li>
+    <li><strong>Run the four gates before every merge:</strong> <code>npx tsc --noEmit</code>,
+    <code>npm run test:run</code>, <code>npm run build</code>, <code>npm run lint</code>. After step 3
+    all four should be green, and any later red is caused by the branch in front of you.</li>
+    <li><strong>Tag after step 12.</strong> That is the first point where a deployable candidate exists.
+    Deploy from a tag, never from a working tree.</li>
+    <li><strong>If a second person is available</strong>, give them R1-R7 from step 4 onward. That track
+    touches no file in steps 5 to 13.</li>
+  </ul>
+
+  <p class="lede" style="margin-top:26px"><strong>After step 13</strong>, return to the previous section.
+  The worklist is then closed, which means the product is ready to be <em>verified</em> - the sixteen
+  blocked items checked with real access, the journeys run against staging, and the live site confirmed
+  after deploy. That verification is what earns the go-live, and it is not part of this list.</p>
 </section>
 
 <footer>
