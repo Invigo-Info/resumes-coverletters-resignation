@@ -49,7 +49,15 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      allowDangerousEmailAccountLinking: true,
+      // Never auto-link a Google sign-in onto an existing email/password
+      // account. With this true, anyone able to create a Google account at a
+      // victim's address took over that account with no ownership proof - the
+      // provider name says exactly how dangerous it is. The cost of false is
+      // that a user who registered with a password and later clicks "Continue
+      // with Google" is refused rather than signed in; /login surfaces that as
+      // OAuthAccountNotLinked. Proper linking (verify ownership, then link) is
+      // tracked as part of the account-lifecycle work.
+      allowDangerousEmailAccountLinking: false,
       // Always show the Google "Choose an account" screen, even when the user
       // already has an active Google session (otherwise it silently re-auths).
       authorization: { params: { prompt: "select_account" } },
