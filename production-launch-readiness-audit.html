@@ -164,12 +164,14 @@
   <h1>Launch Blocker Worklist</h1>
   <p class="sub">Fourteen defects that stand between this branch and a safe production launch, written
   as work: what is broken, what to change, and the check that proves it is done. Every file reference
-  was read on this branch at this commit.</p>
+  was read on this branch at this commit. A later section covers the <strong>third-party integrations
+  and launch codes</strong> - Sentry, PostHog, tag management, consent, email and the SEO surface -
+  separating what only needs a key from what still needs code.</p>
   <dl class="facts">
     <div><dt>Branch</dt><dd>handover/production-readiness</dd></div>
-    <div><dt>Commit</dt><dd><code>317e46a</code></dd></div>
-    <div><dt>Dated</dt><dd>26 Oct 2026</dd></div>
-    <div><dt>Blockers</dt><dd>5 critical, 9 high</dd></div>
+    <div><dt>Commit</dt><dd><code>6ab7257</code></dd></div>
+    <div><dt>Dated</dt><dd>26 Oct, rev 28 Oct 2026</dd></div>
+    <div><dt>Blockers</dt><dd>5 critical, 9 high, +3 integration</dd></div>
     <div><dt>Deployed</dt><dd>No - never launched</dd></div>
     <div><dt>Dev port</dt><dd>3001</dd></div>
   </dl>
@@ -1081,14 +1083,283 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
     <thead><tr><th>ID</th><th>Item</th><th>Area</th></tr></thead>
     <tbody>
       <tr><td>M1</td><td>The route gate in <code>src/proxy.ts</code> checks only that a session cookie <em>exists</em>, not that the JWT is valid. A forged cookie reaches the app shells. No data leaks - every API handler calls <code>auth()</code> and the pages are static shells - but verify the token.</td><td>Auth</td></tr>
-      <tr><td>M3</td><td>No cookie consent. PostHog and Sentry initialise unconditionally, which is an ePrivacy/GDPR problem the moment an EU visitor loads the page.</td><td>Privacy</td></tr>
+      <tr><td>M3</td><td>No cookie consent, no consent state, nothing gating analytics. PostHog and Sentry are correctly inert without their keys - but the moment those keys are set in production both initialise unconditionally, with no consent check, which is an ePrivacy/GDPR problem for the first EU visitor. See <strong>Group C</strong> under third-party integrations.</td><td>Privacy</td></tr>
       <tr><td>M4</td><td>The privacy policy names Stripe, Gemini, Google and Adzuna but omits Resend, PostHog, Sentry, Dropbox and Upstash, and states no retention period, legal basis or contact route.</td><td>Privacy</td></tr>
-      <tr><td>M5</td><td><code>EMAIL_FROM</code> is read by the code but documented in neither env template - it affects deliverability.</td><td>Email</td></tr>
+      <tr><td>M5</td><td><code>EMAIL_FROM</code> is now documented in <code>.env.example</code>, but <code>.env.local.example</code> is a stale 21-line template missing it along with Sentry, PostHog and Resend. Two templates that disagree is how a key gets missed on a fresh deploy - consolidate onto one. Unset, the sender falls back to <code>resend.dev</code>, which only delivers to your own address.</td><td>Email</td></tr>
       <tr><td>M6</td><td>No <code>script-src</code> CSP. A reasoned trade-off documented in <code>next.config.ts</code> (nonces need middleware); <code>frame-ancestors 'none'</code> and HSTS are in place. Revisit, do not ignore.</td><td>Security</td></tr>
       <tr><td>M9</td><td>No backup or restore plan, and no restore ever rehearsed. Needed before launch, not after.</td><td>DR</td></tr>
       <tr><td>1P</td><td>Sentry and PostHog are wired and <code>/api/health</code> is a good probe, but there are no alerts, no runbook and no on-call path.</td><td>Ops</td></tr>
     </tbody>
   </table>
+  </div>
+</section>
+
+<section>
+  <h2>Third-party integrations and launch codes</h2>
+  <p class="lede">What has to be switched on, configured or written before this app can serve real
+  traffic: error monitoring, product analytics, tag management, consent, transactional email and the
+  SEO surface. Read on this branch at commit <code>6ab7257</code> &mdash; every claim below was
+  checked against the files, not inferred from <code>package.json</code>.</p>
+
+  <div class="tally">
+    <div><div class="n" style="color:var(--done)">7</div><div class="t">Wired &middot; key only</div></div>
+    <div><div class="n" style="color:var(--act)">3</div><div class="t">Wired &middot; code needed</div></div>
+    <div><div class="n" style="color:var(--stop)">8</div><div class="t">Not present at all</div></div>
+    <div><div class="n" style="color:var(--accent)">8</div><div class="t">Env vars to add</div></div>
+  </div>
+
+  <p class="lede"><strong>The headline:</strong> Sentry and PostHog are already installed and wired,
+  so nobody needs to add an SDK. But PostHog is wired for <em>pageviews only</em> &mdash;
+  <code>capture()</code> and <code>identify()</code> exist and are called from nowhere in the
+  codebase. Ship as-is and you will know how many people loaded a page and nothing whatsoever about
+  whether they finished a resume or why they abandoned checkout.</p>
+
+  <div class="wave">
+    <span class="tag">Group A</span>
+    <h3>Already wired &mdash; needs only a key in production</h3>
+    <p class="note">No code to write. Every one of these is deliberately inert without its key, which
+    is excellent for local development and treacherous at launch: a mistyped DSN is indistinguishable
+    from a working one. Do not mark any of these done until Group E proves it fires.</p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th>Integration</th><th>Where it already lives</th><th>Env keys to set</th></tr></thead>
+    <tbody>
+      <tr><td>Sentry (server)</td><td><code>src/instrumentation.ts</code> + <code>src/sentry.server.config.ts</code>. Loaded only when the DSN is set; also forwards request errors via <code>onRequestError</code>.</td><td><code>SENTRY_DSN</code></td></tr>
+      <tr><td>Sentry (browser)</td><td><code>src/instrumentation-client.ts</code>. The import is inside the env check, so the SDK is dead-code-eliminated and ships nothing to users until configured.</td><td><code>NEXT_PUBLIC_SENTRY_DSN</code></td></tr>
+      <tr><td>PostHog pageviews</td><td><code>src/utilities/analytics.ts</code> (lazy-loaded helpers) and <code>src/components/common/analytics/analytics-tracker.tsx</code>, mounted in <code>src/components/providers.tsx</code>.</td><td><code>NEXT_PUBLIC_POSTHOG_KEY</code>, <code>NEXT_PUBLIC_POSTHOG_HOST</code></td></tr>
+      <tr><td>Resend email</td><td><code>src/services/email/email.ts</code>. Falls back to the <code>resend.dev</code> sender, which only delivers to your own address &mdash; set <code>EMAIL_FROM</code> to a verified domain or production email silently reaches nobody.</td><td><code>RESEND_API_KEY</code>, <code>EMAIL_FROM</code></td></tr>
+      <tr><td>Shared rate limiting</td><td><code>src/permissions/rate-limit.ts</code>. Without these it is in-memory and therefore per-instance, so the limit multiplies by your instance count.</td><td><code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code></td></tr>
+      <tr><td>robots.txt &amp; sitemap.xml</td><td><code>src/app/robots.ts</code>, <code>src/app/sitemap.ts</code>, both resolving through <code>src/config/site.ts</code>. Authenticated routes are already excluded from both.</td><td><code>NEXT_PUBLIC_SITE_URL</code></td></tr>
+      <tr><td>Security headers</td><td><code>next.config.ts</code> &mdash; HSTS, nosniff, DENY framing, referrer policy, permissions policy. Applied to every route.</td><td>none</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="block verify" style="margin-top:18px">
+    <span class="lbl">The one people forget</span>
+    <p><code>NEXT_PUBLIC_SITE_URL</code> is read by <code>metadataBase</code>, every canonical and
+    OpenGraph URL, the sitemap and robots. Leave it unset and the fallback chain lands on Vercel's
+    generated domain or, worse, <code>http://localhost:3000</code> &mdash; published in your
+    sitemap, for Google to crawl.</p>
+  </div>
+
+  <div class="wave">
+    <span class="tag">Group B</span>
+    <h3>Wired but incomplete &mdash; code still needed</h3>
+    <p class="note">These are the three that need an engineer rather than a dashboard.</p>
+  </div>
+
+  <div class="task">
+    <header>
+      <div class="idline"><span class="tid hi">I1</span><span class="chip">Analytics</span><span class="chip">Half a day</span></div>
+      <h4>PostHog has no product events, so it cannot answer a single product question</h4>
+    </header>
+    <div class="body">
+      <div class="block defect">
+        <span class="lbl">The gap</span>
+        <p><code>capture()</code>, <code>identify()</code> and <code>resetAnalytics()</code> are all
+        defined in <code>src/utilities/analytics.ts</code> and there is <strong>not one call site
+        anywhere in <code>src/</code></strong>. Pageviews arrive; nothing else does. And because
+        <code>identify()</code> is never called after sign-in, every session is an unlinked
+        anonymous visitor &mdash; so even the pageviews cannot be assembled into a funnel.</p>
+      </div>
+      <div class="block dothis">
+        <span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Call <code>identify(user.id)</code> once after a successful sign-in, and
+          <code>resetAnalytics()</code> on sign-out. Without this pair, everything else here is
+          unattributable.</li>
+          <li>Instrument the funnel the business actually cares about. Minimum viable set:</li>
+        </ol>
+<pre><span class="c">// acquisition</span>
+signed_up            signed_in
+<span class="c">// resume funnel - where drop-off actually happens</span>
+resume_created       resume_section_completed   resume_downloaded
+ai_summary_generated ai_bullets_generated
+<span class="c">// the rest of the product</span>
+job_searched         job_saved                  resume_tailored
+cover_letter_generated   cover_letter_downloaded
+interview_prep_generated <span class="c">// include the type: screening | manager | technical | other</span>
+<span class="c">// revenue - the only way to see where money is lost</span>
+paywall_hit          <span class="c">// include WHICH gate: resume cap, download cap</span>
+checkout_started     checkout_completed         checkout_abandoned</pre>
+        <p>Send no resume content, no employer names and no email addresses as event properties.
+        Identifiers and enums only &mdash; this is a product analytics tool, not a data warehouse,
+        and the privacy policy does not cover shipping CV text to it.</p>
+      </div>
+      <div class="block donewhen">
+        <span class="lbl">Done when</span>
+        <p>PostHog shows a funnel from <code>signed_up</code> to <code>resume_downloaded</code> with
+        a real drop-off number at each step, and <code>paywall_hit</code> breaks down by gate.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="task">
+    <header>
+      <div class="idline"><span class="tid hi">I2</span><span class="chip">Monitoring</span><span class="chip">Half a day</span></div>
+      <h4>Sentry will report errors you cannot act on</h4>
+    </header>
+    <div class="body">
+      <div class="block defect">
+        <span class="lbl">The gap</span>
+        <p>The wiring is sound but four things are absent, and each one costs you at exactly the
+        moment an incident starts: no <code>global-error.tsx</code>, so a React render crash in the
+        root layout is never reported at all; no release or environment tag, so you cannot tell
+        which deploy broke or whether an error is from production or preview; no source map upload,
+        so every stack trace is minified; and no <code>Sentry.setUser</code>, so you cannot tell
+        whether one customer is hitting something or everyone is.</p>
+      </div>
+      <div class="block dothis">
+        <span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Add <code>src/app/global-error.tsx</code> and report from it.</li>
+          <li>Pass <code>environment</code> and <code>release</code> into both
+          <code>Sentry.init</code> calls, from <code>VERCEL_ENV</code> and the commit SHA.</li>
+          <li>Call <code>Sentry.setUser({ id })</code> alongside the <code>identify()</code> call
+          added in <strong>I1</strong> &mdash; same hook, same place.</li>
+          <li>Upload source maps as a <em>separate</em> build step using the Sentry CLI. Do
+          <strong>not</strong> reach for <code>withSentryConfig</code>: the comments in
+          <code>src/instrumentation.ts</code> and <code>src/sentry.server.config.ts</code> record a
+          deliberate decision not to wrap <code>next.config.ts</code>, to keep the customised
+          Next 16 build intact. Respect that decision or revisit it on purpose.</li>
+        </ol>
+      </div>
+      <div class="block donewhen">
+        <span class="lbl">Done when</span>
+        <p>A deliberately thrown error in production appears in Sentry with an unminified stack
+        trace, a release tag matching the deployed commit, and a user id attached.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="task">
+    <header>
+      <div class="idline"><span class="tid hi">I3</span><span class="chip">Error handling</span><span class="chip">2 hours</span></div>
+      <h4>Three Next.js error files are missing, so users meet a framework screen</h4>
+    </header>
+    <div class="body">
+      <div class="block defect">
+        <span class="lbl">The gap</span>
+        <p><code>src/app/</code> contains no <code>global-error.tsx</code>, no
+        <code>not-found.tsx</code> and no <code>error.tsx</code> at any level. A bad URL or a thrown
+        render error shows the default framework page: no branding, no navigation back, and in some
+        configurations more internal detail than you want a stranger to read.</p>
+      </div>
+      <div class="block dothis">
+        <span class="lbl">Do this</span>
+        <ol class="steps">
+          <li>Add <code>src/app/not-found.tsx</code> &mdash; branded, with a route back to the
+          dashboard.</li>
+          <li>Add <code>src/app/(authenticated)/error.tsx</code> &mdash; a recoverable boundary with
+          a retry, so one broken page does not look like a broken product.</li>
+          <li>Add <code>src/app/global-error.tsx</code> &mdash; shared with <strong>I2</strong>.</li>
+          <li>Show a friendly message and an incident id. Never render the raw error, the stack, or
+          a file path.</li>
+        </ol>
+      </div>
+      <div class="block donewhen">
+        <span class="lbl">Done when</span>
+        <p>QA case <strong>NAV-06</strong> in the manual test plan passes: every bad route shows a
+        branded page with a way out, and no framework default appears anywhere.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wave">
+    <span class="tag">Group C</span>
+    <h3>Not present at all</h3>
+    <p class="note">Nothing in the repository for any of these. Read the consent row before the
+    GTM row &mdash; it gates everything else in this group.</p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th>Item</th><th>What is needed</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Cookie consent</td><td>No banner, no consent state, no gating anywhere in <code>src/</code>. PostHog, GTM and GA all set identifiers, so for EU and UK traffic they must not load before consent. <code>analytics.ts</code> already lazy-loads PostHog, which makes it genuinely easy to gate &mdash; but nothing gates it today. <strong>Do this before, not after, adding any tag manager.</strong></td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>Google Tag Manager</td><td>Nothing in the repo. Needs <code>GoogleTagManager</code> from <code>@next/third-parties/google</code> (not yet a dependency), <code>NEXT_PUBLIC_GTM_ID</code>, dataLayer pushes for conversions, and consent-mode wiring to the banner above.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>GA4</td><td>Nothing in the repo. Either through GTM or directly via <code>GoogleAnalytics</code>. Pick one route; do not do both.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>OpenGraph image</td><td><code>twitter.card</code> is set to <code>summary_large_image</code> in <code>src/app/layout.tsx</code> and no image file exists, so every shared link renders a blank card. Add <code>src/app/opengraph-image.png</code> at 1200&times;630.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>App icons &amp; manifest</td><td>Only <code>favicon.ico</code>. No <code>apple-icon</code>, no <code>icon.png</code>, no <code>manifest.ts</code> &mdash; so an iOS home-screen bookmark gets a screenshot instead of an icon.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>Search console verification</td><td>No <code>metadata.verification</code> block. Needed for Google Search Console and Bing before you can see indexing or submit the sitemap.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>Web Vitals reporting</td><td>No <code>useReportWebVitals</code>. Cheap to add and it routes into the PostHog client that already exists.</td><td><span class="st s-miss">MISSING</span></td></tr>
+      <tr><td>Uptime monitoring</td><td><code>/api/health</code> exists and is a good probe target, but nothing probes it. External service, not code &mdash; and still nobody's job until someone owns it.</td><td><span class="st s-miss">MISSING</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="block defect" style="margin-top:20px">
+    <span class="lbl">Decide this before building it</span>
+    <p>GTM and PostHog overlap almost entirely. If the goal is product analytics, PostHog already
+    covers it and GTM adds a second script on the critical path, a second consent surface, and a
+    second place where tracking can be changed without review. GTM earns its place when marketing
+    needs to drop in ad pixels without waiting for a deploy &mdash; which is a real need, but a
+    different one. Decide which of the two it is before writing any of it.</p>
+    <p>GTM also makes <strong>M6</strong> harder: a nonce-based <code>script-src</code> policy and a
+    tag manager that injects arbitrary third-party scripts are close to mutually exclusive in
+    practice. Adding GTM is a decision to defer a real CSP, so make that trade knowingly rather than
+    discovering it later.</p>
+  </div>
+
+  <div class="wave">
+    <span class="tag">Group D</span>
+    <h3>Environment variables</h3>
+    <p class="note">Every <code>process.env</code> read in <code>src/</code> and
+    <code>next.config.ts</code> was diffed against <code>.env.example</code>. The template is in
+    good shape &mdash; only two reads are undocumented.</p>
+  </div>
+
+<pre><span class="c"># Read by the code, documented in neither template</span>
+LOGIN_RATE_LIMIT
+REGISTER_RATE_LIMIT
+
+<span class="c"># Needed only if you take Group B / C</span>
+SENTRY_AUTH_TOKEN          <span class="c"># source map upload (I2)</span>
+SENTRY_ORG
+SENTRY_PROJECT
+NEXT_PUBLIC_APP_VERSION    <span class="c"># or derive the release tag from the commit SHA</span>
+NEXT_PUBLIC_GTM_ID         <span class="c"># only if GTM survives the decision above</span>
+NEXT_PUBLIC_GA_ID</pre>
+
+  <div class="block verify" style="margin-top:16px">
+    <span class="lbl">Also worth closing</span>
+    <p><code>.env.local.example</code> is a 21-line relic from an earlier stage and is missing
+    Sentry, PostHog, Resend and <code>EMAIL_FROM</code> entirely, while
+    <code>.env.example</code> carries all of them. Two templates that disagree is how a key gets
+    missed on a fresh deploy. Make <code>.env.example</code> the single source and delete the other.</p>
+  </div>
+
+  <div class="wave">
+    <span class="tag">Group E</span>
+    <h3>Verify after deploy &mdash; a key in the dashboard is not proof</h3>
+    <p class="note">Every integration here fails silently when misconfigured. That is the right
+    behaviour for local development and the single most likely way this list gets marked complete
+    while being broken. Tick these against the live deployment, not a preview.</p>
+  </div>
+
+  <ul class="acc">
+    <li>Throw a deliberate error in production; it appears in Sentry with an <strong>unminified</strong> stack trace, a release tag matching the deployed commit, and a user id.</li>
+    <li>Load any page; the pageview appears in PostHog Live Events within seconds.</li>
+    <li>Trigger one instrumented event; it arrives with its properties intact and attached to an identified user.</li>
+    <li>Send a real transactional email to an address on another provider; it arrives in the inbox, not spam, and the From address is your verified domain &mdash; not <code>onboarding@resend.dev</code>.</li>
+    <li><code>curl</code> the deployed <code>/api/health</code>; it answers, and discloses no version, path or connection string.</li>
+    <li>Run the production URL through a link-preview tool; title, description and OG image all render.</li>
+    <li>Fetch <code>/robots.txt</code> and <code>/sitemap.xml</code>; both show your real domain and no authenticated route.</li>
+    <li>Inspect response headers; HSTS, <code>X-Frame-Options</code> and the referrer policy are present on a normal page response.</li>
+    <li>With a fresh EU-geolocated session, confirm no analytics or tag-manager request fires before consent is given.</li>
+    <li>Confirm rate limiting holds across instances by exceeding a limit from two different sessions &mdash; proof the Redis keys took effect rather than falling back to in-memory.</li>
+  </ul>
+
+  <div class="block dothis" style="margin-top:22px">
+    <span class="lbl">Shortest safe path</span>
+    <p>Set the Group A keys, write the three error files (<strong>I3</strong>), add the consent
+    banner, then instrument the PostHog events (<strong>I1</strong>) and finish Sentry
+    (<strong>I2</strong>). GTM and GA4 can follow after launch &mdash; nothing breaks without them,
+    and deciding GTM-versus-PostHog under launch pressure is how a team ends up carrying both
+    forever.</p>
   </div>
 </section>
 
