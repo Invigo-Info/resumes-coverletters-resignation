@@ -1,7 +1,17 @@
--- Resumewriter.ai database schema (Neon / Vercel Postgres).
+-- Resumewriter.ai base database schema.
+--
+-- Provider-agnostic: the app talks plain Postgres over DATABASE_URL via
+-- postgres.js, with no vendor SDK, so Supabase, Neon, RDS or any Postgres works
+-- unchanged. Supabase is the chosen host - see docs/supabase-setup.md, and note
+-- that Supabase needs migration 0001_supabase_hardening.sql on top of this file
+-- to keep these tables off its public REST API.
+--
 -- Mirrors the shapes previously stored in .data/users.json and
 -- .data/documents.json so the file-store -> Postgres switch is a drop-in.
--- Apply once: `node scripts/db-setup.mjs` (or paste into the Neon SQL console).
+--
+-- Apply with `npm run db:migrate`, which records this file as the 0000_baseline
+-- migration and then applies database/migrations/ in order. Every statement
+-- below is idempotent, so re-running is safe.
 
 create table if not exists users (
   id            text primary key,
