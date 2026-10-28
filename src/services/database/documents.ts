@@ -92,6 +92,51 @@ function withDefaults(docs: Partial<UserDocuments> | undefined): UserDocuments {
   return { ...emptyUserDocuments(), ...docs };
 }
 
+/* ----------------------- concurrency control ------------------------ */
+
+/**
+ * Optional write options. `baseUpdatedAt` is the `updatedAt` the client had when
+ * it LOADED the document - i.e. the version its edit is based on. Supplying it
+ * turns the write into a compare-and-swap.
+ */
+export interface UpsertOptions {
+  /** The stored `updatedAt` this edit was derived from, for a CAS write. */
+  baseUpdatedAt?: number;
+}
+
+/** Outcome of a write. A stale write is refused, never silently applied. */
+export type UpsertResult =
+  | { ok: true }
+  | { ok: false; reason: "stale"; storedUpdatedAt: number };
+
+/**
+ * Decide whether a write may land, given the currently stored version.
+ *
+ * Two modes, because the two real failure shapes need different guards:
+ *
+ * 1. `base` SUPPLIED - compare-and-swap. The write lands only if the stored
+ *    version is still the one the editor loaded. This is the mode that fixes
+ *    the two-tab data loss: tab B's save carries a NEWER timestamp but was
+ *    composed from a document that predates tab A's edit, so a timestamp
+ *    comparison alone happily accepts it and A's work disappears. Comparing
+ *    against the BASE catches it, because B's base is no longer current.
+ *
+ * 2. `base` ABSENT - monotonic guard, for older clients and server-side
+ *    callers that do not track a base. It cannot catch the two-tab case (B's
+ *    timestamp really is newer), but it does reject genuinely out-of-order
+ *    writes: a delayed retry, a replayed request, or a client with a slow
+ *    clock overwriting newer data. `>=` rather than `>` so an idempotent retry
+ *    carrying the same timestamp still succeeds.
+ */
+function writeAllowed(
+  stored: number,
+  incoming: number,
+  base: number | undefined
+): boolean {
+  if (base !== undefined) return stored === base;
+  return incoming >= stored;
+}
+
 /* --------------------------- file backend --------------------------- */
 
 /** Read the whole documents file; returns {} if it doesn't exist yet. */
@@ -117,17 +162,28 @@ async function fileGetUserDocuments(email: string): Promise<UserDocuments> {
 async function fileUpsertDocument(
   email: string,
   type: DocType,
-  record: StoredDocument
-): Promise<void> {
+  record: StoredDocument,
+  opts?: UpsertOptions
+): Promise<UpsertResult> {
   const all = await readAll();
   const key = normalize(email);
   const docs = withDefaults(all[key]);
   const list = docs[type];
   const i = list.findIndex((r) => r.id === record.id);
-  if (i >= 0) list[i] = record;
-  else list.unshift(record);
+
+  if (i >= 0) {
+    const stored = list[i].updatedAt;
+    if (!writeAllowed(stored, record.updatedAt, opts?.baseUpdatedAt)) {
+      return { ok: false, reason: "stale", storedUpdatedAt: stored };
+    }
+    list[i] = record;
+  } else {
+    list.unshift(record);
+  }
+
   all[key] = docs;
   await writeAll(all);
+  return { ok: true };
 }
 
 async function fileRemoveDocument(
@@ -179,8 +235,9 @@ async function pgGetUserDocuments(email: string): Promise<UserDocuments> {
 async function pgUpsertDocument(
   email: string,
   type: DocType,
-  record: StoredDocument
-): Promise<void> {
+  record: StoredDocument,
+  opts?: UpsertOptions
+): Promise<UpsertResult> {
   const sql = getSql();
   // Store `data` as a proper jsonb OBJECT via postgres.js's `sql.json` helper.
   // `${JSON.stringify(data)}::jsonb` double-encodes here (postgres.js re-encodes
@@ -188,7 +245,16 @@ async function pgUpsertDocument(
   // the editor on read. `decodeJson` also normalizes any legacy string that
   // arrives from a corrupted round-trip back into an object before storing.
   const data = decodeJson(record.data);
-  await sql`
+  // The conflict guard decides whether an UPDATE is permitted; see
+  // writeAllowed() for why the two modes differ. A fresh INSERT never conflicts,
+  // so a brand-new document is unaffected by either guard.
+  const base = opts?.baseUpdatedAt;
+  const guard =
+    base !== undefined
+      ? sql`documents.updated_at = ${base}`
+      : sql`excluded.updated_at >= documents.updated_at`;
+
+  const res = await sql`
     insert into documents (email, type, id, title, template_id, data, updated_at)
     values (
       ${normalize(email)}, ${type}, ${record.id}, ${record.title},
@@ -200,7 +266,24 @@ async function pgUpsertDocument(
       template_id = excluded.template_id,
       data = excluded.data,
       updated_at = excluded.updated_at
+    where ${guard}
   `;
+
+  // Zero rows affected means the ON CONFLICT guard rejected the update, i.e.
+  // the stored version moved on. Report it instead of pretending it saved -
+  // silently returning ok here is exactly the bug this change removes.
+  if (res.count === 0) {
+    const [row] = (await sql`
+      select updated_at from documents
+      where email = ${normalize(email)} and type = ${type} and id = ${record.id}
+    `) as unknown as { updated_at: string | number }[];
+    return {
+      ok: false,
+      reason: "stale",
+      storedUpdatedAt: row ? Number(row.updated_at) : 0,
+    };
+  }
+  return { ok: true };
 }
 
 async function pgRemoveDocument(
@@ -224,15 +307,24 @@ export async function getUserDocuments(email: string): Promise<UserDocuments> {
     : fileGetUserDocuments(email);
 }
 
-/** Insert or replace one document (by id) for a user. */
+/**
+ * Insert or replace one document (by id) for a user.
+ *
+ * Pass `opts.baseUpdatedAt` (the version the editor loaded) to get a
+ * compare-and-swap write that refuses to clobber a concurrent edit. Callers
+ * that ignore the return value keep the previous behaviour for new documents
+ * and in-order writes; only a genuinely conflicting write now comes back
+ * `{ ok: false }` instead of silently overwriting.
+ */
 export async function upsertDocument(
   email: string,
   type: DocType,
-  record: StoredDocument
-): Promise<void> {
+  record: StoredDocument,
+  opts?: UpsertOptions
+): Promise<UpsertResult> {
   return isDbEnabled()
-    ? pgUpsertDocument(email, type, record)
-    : fileUpsertDocument(email, type, record);
+    ? pgUpsertDocument(email, type, record, opts)
+    : fileUpsertDocument(email, type, record, opts);
 }
 
 /** Remove one document (by id) for a user. Idempotent. */
