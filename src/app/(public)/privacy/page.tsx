@@ -15,7 +15,7 @@ export default function PrivacyPage() {
   return (
     <LegalShell title="Privacy Policy" updated="27 July 2026">
       <p>
-        This Privacy Policy explains what information Resumewriter.ai ("we", "us")
+        This Privacy Policy explains what information Resumewriter.ai (&quot;we&quot;, &quot;us&quot;)
         collects, how we use it, and the choices you have. By using the service
         you agree to this policy.
       </p>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
 
       <h2>Cookies and local storage</h2>
       <p>
-        We use a session cookie to keep you signed in. We also use your browser's
+        We use a session cookie to keep you signed in. We also use your browser&apos;s
         local storage to save drafts and preferences on your device. We do not
         use third-party advertising cookies.
       </p>

@@ -24,11 +24,12 @@ async function callAi<T>(task: string, payload: Record<string, unknown>): Promis
   }
 }
 
-export interface CoverLetterInput
-  extends Pick<
-    CoverLetterState,
-    "jobIntent" | "jobDetails" | "skills" | "strengths" | "experience" | "recentJob" | "education" | "personal"
-  > {}
+// A type alias, not an empty `interface ... extends`: identical to callers, and
+// the empty-body form is what @typescript-eslint/no-empty-object-type rejects.
+export type CoverLetterInput = Pick<
+  CoverLetterState,
+  "jobIntent" | "jobDetails" | "skills" | "strengths" | "experience" | "recentJob" | "education" | "personal"
+>;
 
 function fallbackLetter(input: CoverLetterInput): string {
   const role = input.jobDetails.desiredJobTitle || "the role";

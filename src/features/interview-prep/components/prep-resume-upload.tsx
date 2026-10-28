@@ -68,7 +68,9 @@ export function PrepResumeUpload({
 
   // Use an existing saved resume: load it into the editor store so the prep is
   // grounded in its data, remember which one, then advance.
-  function useSaved(rec: ResumeRecord) {
+  // NB: deliberately NOT named with a `use` prefix - that makes the React hooks
+  // lint rule treat this plain helper as a hook and reject the onClick below.
+  function pickSaved(rec: ResumeRecord) {
     loadDocument(rec.id, rec.data);
     setApplyResumeId(rec.id);
     onPicked?.();
@@ -199,7 +201,7 @@ export function PrepResumeUpload({
                   <button
                     key={rec.id}
                     type="button"
-                    onClick={() => useSaved(rec)}
+                    onClick={() => pickSaved(rec)}
                     className="flex w-full cursor-pointer items-center gap-3 border-t border-border py-3.5 text-left outline-none transition-colors hover:bg-muted/50"
                   >
                     <FileText className="size-4 shrink-0 text-muted-foreground" />

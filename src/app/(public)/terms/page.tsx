@@ -16,8 +16,8 @@ export default function TermsPage() {
   return (
     <LegalShell title="Terms of Use" updated="27 July 2026">
       <p>
-        These Terms of Use ("Terms") govern your access to and use of Resumewriter.ai
-        (the "service"). By creating an account or using the service, you agree to
+        These Terms of Use (&quot;Terms&quot;) govern your access to and use of Resumewriter.ai
+        (the &quot;service&quot;). By creating an account or using the service, you agree to
         these Terms. If you do not agree, do not use the service.
       </p>
 
@@ -72,7 +72,7 @@ export default function TermsPage() {
       <p>You agree not to:</p>
       <ul>
         <li>Use the service for anything unlawful or to submit false information as another person.</li>
-        <li>Attempt to break, overload, reverse engineer, or gain unauthorized access to the service or other users' data.</li>
+        <li>Attempt to break, overload, reverse engineer, or gain unauthorized access to the service or other users&apos; data.</li>
         <li>Abuse the AI features to generate harmful, deceptive, or infringing content.</li>
       </ul>
 
@@ -101,7 +101,7 @@ export default function TermsPage() {
 
       <h2>9. Disclaimers</h2>
       <p>
-        The service is provided "as is" and "as available" without warranties of
+        The service is provided &quot;as is&quot; and &quot;as available&quot; without warranties of
         any kind, to the fullest extent permitted by law.
       </p>
 

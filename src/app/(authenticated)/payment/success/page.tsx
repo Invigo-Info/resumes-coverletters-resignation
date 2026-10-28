@@ -55,6 +55,10 @@ export default async function PaymentSuccessPage({
               status: "active",
               plan,
             },
+            // This runs inside an async Server Component helper, not a React
+            // render path; the purity rule cannot model that and flags the
+            // clock read as impure rendering.
+            // eslint-disable-next-line react-hooks/purity
             Date.now()
           );
         }

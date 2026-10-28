@@ -14,7 +14,7 @@ export function PlaceholderForm({
     <div>
       <SectionHeading title={title} description={description} />
       <div className="rounded-xl border border-dashed border-border bg-muted/40 px-5 py-10 text-center text-sm text-muted-foreground">
-        This section's form is built in {phase}. Your entries already render in
+        This section&apos;s form is built in {phase}. Your entries already render in
         the live preview.
       </div>
     </div>
