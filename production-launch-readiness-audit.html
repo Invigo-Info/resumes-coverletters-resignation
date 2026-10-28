@@ -156,6 +156,26 @@
   footer p+p{margin-top:9px}
   a{color:var(--accent)}
   a:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+
+  /* contents */
+  nav.toc{margin-top:34px; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; box-shadow:var(--shadow); padding:20px 24px 22px}
+  nav.toc h2{font-size:15px; font-weight:600; border:none; padding:0; display:block;
+    color:var(--muted); font-family:"JetBrains Mono",monospace; letter-spacing:.12em;
+    text-transform:uppercase; font-size:11px; margin-bottom:14px}
+  nav.toc ol{margin:0; padding-left:0; list-style:none; columns:2; column-gap:34px}
+  @media (max-width:720px){ nav.toc ol{columns:1} }
+  nav.toc li{margin-bottom:7px; break-inside:avoid; display:flex; gap:10px; align-items:baseline}
+  nav.toc .n{font:600 11px/1.6 "JetBrains Mono",monospace; color:var(--muted);
+    min-width:18px; font-variant-numeric:tabular-nums}
+  nav.toc a{text-decoration:none; font-weight:500; font-size:15px}
+  nav.toc a:hover{text-decoration:underline}
+  nav.toc .sub{margin:9px 0 2px 28px; padding:0; list-style:none; columns:1}
+  nav.toc .sub li{margin-bottom:5px}
+  nav.toc .sub a{font-size:13.5px; font-weight:400; color:var(--ink-2)}
+  nav.toc .sub .n{color:var(--accent); min-width:54px}
+  section{scroll-margin-top:18px}
+  .wave .tag{scroll-margin-top:24px}
 </style>
 
 <div class="wrap">
@@ -186,7 +206,31 @@
   worth building.</p>
 </div>
 
-<section>
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><span class="n">1</span><a href="#start">Before you start</a></li>
+    <li><span class="n">2</span><a href="#work-order">Work order</a></li>
+    <li><span class="n">3</span><a href="#the-work">The work &mdash; P1 to P14</a></li>
+    <li><span class="n">4</span><a href="#inventory">Complete requirements inventory</a></li>
+    <li><span class="n">5</span><a href="#handbooks">Existing QA handbooks</a></li>
+    <li><span class="n">6</span><a href="#outstanding">Also outstanding</a></li>
+    <li><span class="n">7</span><a href="#integrations">Third-party integrations and launch codes</a>
+      <ol class="sub">
+        <li><span class="n">A</span><a href="#grp-a">Wired &mdash; needs only a key</a></li>
+        <li><span class="n">B</span><a href="#grp-b">Wired but incomplete &mdash; I1 to I3</a></li>
+        <li><span class="n">C</span><a href="#grp-c">Not present at all</a></li>
+        <li><span class="n">D</span><a href="#grp-d">Environment variables</a></li>
+        <li><span class="n">E</span><a href="#grp-e">Verify after deploy</a></li>
+      </ol>
+    </li>
+    <li><span class="n">8</span><a href="#sound">What is already sound</a></li>
+    <li><span class="n">9</span><a href="#launch-ready">Does fixing this list make it launch-ready?</a></li>
+    <li><span class="n">10</span><a href="#order">Step-by-step execution order</a></li>
+  </ol>
+</nav>
+
+<section id="start">
   <h2>Before you start</h2>
   <p class="lede">Get a working localhost first - verified from a clean clone of this branch.</p>
   <pre><span class="c"># one variable is genuinely required; without it /api/auth/session returns 500</span>
@@ -204,7 +248,7 @@ npm run dev        <span class="c"># http://localhost:3001</span></pre>
   triggers it.</p>
 </section>
 
-<section>
+<section id="work-order">
   <h2>Work order</h2>
   <p class="lede">The sequence is load-bearing. P1 gates how much of P2 matters; P6 must land before any
   schema change ships; P13 is last because it is what keeps everything above it fixed.</p>
@@ -231,7 +275,7 @@ npm run dev        <span class="c"># http://localhost:3001</span></pre>
   </div>
 </section>
 
-<section>
+<section id="the-work">
   <h2>The work</h2>
 
   <div class="wave"><span class="tag">Wave 1</span><h3>Launch blockers</h3>
@@ -757,7 +801,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   </article>
 </section>
 
-<section class="inv">
+<section class="inv" id="inventory">
   <h2>Complete requirements inventory</h2>
   <p class="lede">Every production requirement assessed on this branch, grouped by area. Status is what
   the code shows, not what it intends: <span class="st s-ok">PRESENT</span> means implemented and found,
@@ -1025,7 +1069,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   money or deploy.</p>
 </section>
 
-<section>
+<section id="handbooks">
   <h2>Existing QA handbooks</h2>
   <p class="lede">Two manual-test handbooks already sit in the repository root. They were written before
   this audit, by a different pass, and were cross-checked against it on 27 Oct 2026. Use them - they are
@@ -1074,7 +1118,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   only task on this page that came from the handbooks rather than from source review.</p>
 </section>
 
-<section>
+<section id="outstanding">
   <h2>Also outstanding</h2>
   <p class="lede">Not launch blockers on their own, but each is a commitment you have already made to
   users or a gap an operator will need on day one.</p>
@@ -1094,7 +1138,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   </div>
 </section>
 
-<section>
+<section id="integrations">
   <h2>Third-party integrations and launch codes</h2>
   <p class="lede">What has to be switched on, configured or written before this app can serve real
   traffic: error monitoring, product analytics, tag management, consent, transactional email and the
@@ -1115,7 +1159,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   whether they finished a resume or why they abandoned checkout.</p>
 
   <div class="wave">
-    <span class="tag">Group A</span>
+    <span class="tag" id="grp-a">Group A</span>
     <h3>Already wired &mdash; needs only a key in production</h3>
     <p class="note">No code to write. Every one of these is deliberately inert without its key, which
     is excellent for local development and treacherous at launch: a mistyped DSN is indistinguishable
@@ -1146,7 +1190,7 @@ npm run lint         <span class="c"># currently RED - this is the task</span></
   </div>
 
   <div class="wave">
-    <span class="tag">Group B</span>
+    <span class="tag" id="grp-b">Group B</span>
     <h3>Wired but incomplete &mdash; code still needed</h3>
     <p class="note">These are the three that need an engineer rather than a dashboard.</p>
   </div>
@@ -1269,7 +1313,7 @@ checkout_started     checkout_completed         checkout_abandoned</pre>
   </div>
 
   <div class="wave">
-    <span class="tag">Group C</span>
+    <span class="tag" id="grp-c">Group C</span>
     <h3>Not present at all</h3>
     <p class="note">Nothing in the repository for any of these. Read the consent row before the
     GTM row &mdash; it gates everything else in this group.</p>
@@ -1305,7 +1349,7 @@ checkout_started     checkout_completed         checkout_abandoned</pre>
   </div>
 
   <div class="wave">
-    <span class="tag">Group D</span>
+    <span class="tag" id="grp-d">Group D</span>
     <h3>Environment variables</h3>
     <p class="note">Every <code>process.env</code> read in <code>src/</code> and
     <code>next.config.ts</code> was diffed against <code>.env.example</code>. The template is in
@@ -1333,7 +1377,7 @@ NEXT_PUBLIC_GA_ID</pre>
   </div>
 
   <div class="wave">
-    <span class="tag">Group E</span>
+    <span class="tag" id="grp-e">Group E</span>
     <h3>Verify after deploy &mdash; a key in the dashboard is not proof</h3>
     <p class="note">Every integration here fails silently when misconfigured. That is the right
     behaviour for local development and the single most likely way this list gets marked complete
@@ -1363,7 +1407,7 @@ NEXT_PUBLIC_GA_ID</pre>
   </div>
 </section>
 
-<section>
+<section id="sound">
   <h2>What is already sound</h2>
   <p class="lede">Do not disturb these while fixing the above - several are better than typical.</p>
   <ul class="plain">
@@ -1389,7 +1433,7 @@ NEXT_PUBLIC_GA_ID</pre>
   </ul>
 </section>
 
-<section>
+<section id="launch-ready">
   <h2>Does fixing this list make it launch-ready?</h2>
   <div class="banner" style="margin-top:22px">
     <div class="stamp">NO</div>
@@ -1441,7 +1485,7 @@ NEXT_PUBLIC_GA_ID</pre>
   started.</p>
 </section>
 
-<section>
+<section id="order">
   <h2>Step-by-step execution order</h2>
   <p class="lede">The waves earlier on this page group tasks by <em>urgency</em>. This section orders them
   by <em>safety of execution</em>: which to do first so the work does not collide with itself. The two
