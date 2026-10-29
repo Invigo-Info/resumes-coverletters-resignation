@@ -129,6 +129,26 @@ try {
     )
   `;
 
+  // The ledger is itself a table in `public`, so it needs the same treatment as
+  // every other one - it cannot be covered by 0001_supabase_hardening, because
+  // this runner creates it BEFORE any migration runs. Done here, every run, so
+  // it is right on a fresh project rather than needing a follow-up migration.
+  // (Supabase enables RLS on new public tables automatically now, but the
+  // default grants to anon/authenticated are still handed out, so revoke them.)
+  await sql`alter table public.schema_migrations enable row level security`;
+  await sql.unsafe(`
+    do $$
+    declare r text;
+    begin
+      for r in select unnest(array['anon', 'authenticated']) loop
+        if exists (select 1 from pg_roles where rolname = r) then
+          execute format('revoke all on table public.schema_migrations from %I', r);
+        end if;
+      end loop;
+    end
+    $$;
+  `).simple();
+
   const applied = new Set(
     (await sql`select name from schema_migrations`).map((r) => r.name)
   );

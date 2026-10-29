@@ -1,21 +1,46 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 // Next.js 16 renamed `middleware` → `proxy`. This gates every (matched) route
-// behind an Auth.js (NextAuth) session. We only check for the presence of the
-// session cookie here (a lightweight route gate); the JWT itself is verified
-// server-side by `auth()`. Cookie name: `authjs.session-token` on http,
-// `__Secure-authjs.session-token` on https (may be chunked with a `.N` suffix).
-function hasSession(request: NextRequest): boolean {
-  return request.cookies
-    .getAll()
-    .some(
-      (c) =>
-        c.name === "authjs.session-token" ||
-        c.name.startsWith("authjs.session-token.") ||
-        c.name === "__Secure-authjs.session-token" ||
-        c.name.startsWith("__Secure-authjs.session-token.")
-    );
+// behind an Auth.js (NextAuth) session.
+//
+// The gate VERIFIES the session JWT rather than merely noticing that a cookie
+// exists. Presence alone was trivially forgeable: setting a cookie named
+// `authjs.session-token` to any value at all got a visitor past the gate and
+// rendered the authenticated page shells. No user data leaked - every API route
+// and server component independently calls `auth()` - but a stranger could walk
+// the whole signed-in surface, which is not a thing to leave standing.
+//
+// `getToken` decrypts and validates the JWE with AUTH_SECRET, so a forged or
+// tampered cookie now fails here. It runs on the Edge runtime, unlike `auth()`
+// itself, which pulls in bcrypt and cannot run in a proxy.
+async function hasSession(request: NextRequest): Promise<boolean> {
+  // Auth.js picks the cookie name by scheme and uses that same name as the
+  // decryption salt, so both must match what the server issued or every valid
+  // session would be rejected.
+  const secureCookie =
+    request.nextUrl.protocol === "https:" ||
+    request.headers.get("x-forwarded-proto") === "https";
+  const cookieName = secureCookie
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.AUTH_SECRET,
+      salt: cookieName,
+      cookieName,
+      secureCookie,
+    });
+    return Boolean(token);
+  } catch {
+    // A malformed or undecryptable cookie is not a session. Treating the error
+    // as "signed out" sends the visitor to /login, which is the safe direction:
+    // the alternative, failing open, is the bug we are removing.
+    return false;
+  }
 }
 
 /** The sign-in entry. Signed-in users are bounced away from these. */
@@ -44,9 +69,9 @@ function isPublic(pathname: string): boolean {
  * Route gate (Next.js 16 "proxy", formerly middleware): redirect signed-in users
  * away from /login and bounce signed-out users on protected routes to /login.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authed = hasSession(request);
+  const authed = await hasSession(request);
 
   // Signed in but visiting the sign-in entry → send to the home onboarding.
   // Only the auth entry triggers this; other public routes (/, /terms, …) must
