@@ -1,3 +1,7 @@
+"use client";
+
+import { ConsentPreferencesLink } from "@/components/common/consent/consent-banner";
+
 /**
  * Footer links. Support is a mailto - replace the placeholder domain with your
  * real support address before launch. Privacy / Terms point to the legal pages.
@@ -23,6 +27,10 @@ export function SiteFooter() {
             {i < LINKS.length - 1 && <span aria-hidden>·</span>}
           </span>
         ))}
+        {/* Consent must be as easy to withdraw as to give, so the entry point
+            is permanent rather than a one-time banner. Renders nothing when
+            there is no optional storage in this deployment. */}
+        <ConsentPreferencesLink className="hover:text-foreground" />
       </span>
     </footer>
   );

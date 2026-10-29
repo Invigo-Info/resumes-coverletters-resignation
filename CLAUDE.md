@@ -33,6 +33,60 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-10-29 - Phase 6: consent gate, then analytics and error monitoring
+
+Consent FIRST, because the order was the risk. PostHog initialised and started
+sending pageviews the moment NEXT_PUBLIC_POSTHOG_KEY was set, with no consent
+gate at all - and GDPR/ePrivacy require consent BEFORE analytics storage is set,
+not a notice afterwards. Setting that key would have tracked the first EU
+visitor unlawfully.
+
+- `utilities/consent.ts` - versioned consent store with THREE states. `null`
+  (undecided) permits nothing and is deliberately distinct from a recorded
+  `false`; a default of "yes" is the unlawful case, so tests pin it. A stored
+  decision from an older version is treated as undecided, so adding a category
+  cannot inherit consent never given for it.
+- `consent-banner.tsx` - banner + a permanent footer "Cookie preferences" entry
+  (consent must be as easy to withdraw as to give). Both buttons carry equal
+  weight; a buried reject is a dark pattern and explicitly non-compliant. Shown
+  ONLY when a PostHog key exists - with no optional storage, a cookie banner
+  would be pointless and slightly dishonest. `role="region"`, not a dialog, so
+  it cannot trap focus before someone reads the privacy policy.
+- Analytics now needs configured AND consented, re-checked on EVERY call rather
+  than cached, so a withdrawal takes effect immediately. PostHog also inits
+  `opt_out_capturing_by_default` and opts in explicitly. Withdrawal calls
+  `revokeAnalytics()`, which opts out and RESETS the stored distinct id.
+- `analytics-events.ts` - the event catalogue. Call sites name `EVENTS.x`, never
+  a literal: event names are a schema, and a rename at one call site silently
+  splits a metric. First real capture() call sites (there were zero):
+  export_blocked / document_exported (both inside `authorizeDownload`, so the
+  paywall funnel cannot drift as buttons move), checkout_started,
+  checkout_completed, billing_portal_opened, user_signed_up/signed_in.
+- Users are identified by a SHA-256 hash of their email, never the address: a
+  PostHog person list of plain addresses would be a directory of who is job
+  hunting. Documented ban on ever sending resume content, employer names, job
+  titles, written text, or AI prompts/completions as properties.
+- Sentry hardened and kept consent-free as service stability - defensible only
+  BECAUSE of the scrubbing: `sendDefaultPii: false`, `beforeSend` strips URL
+  QUERY STRINGS (a `?token=` on the reset/verify pages would otherwise put a
+  live single-use credential into an error report), request body, cookies and
+  user. Session Replay stays off - it records the DOM, i.e. the resume being
+  typed. Added environment + release (without a release every stack trace is
+  filed against "unknown").
+- Privacy policy (M4): added Sentry, PostHog and Resend to the provider list
+  (a material omission once keys are set), rewrote Cookies around the consent
+  model, and corrected the deletion section - it now describes full erasure of
+  every per-user store plus what necessarily survives at Stripe and PostHog.
+  Verified the "we cancel your subscription first" claim is actually true in
+  /api/account DELETE.
+
+Grounding doc: `docs/observability.md` (includes why next.config is NOT wrapped
+in withSentryConfig, and the standalone sourcemap upload instead).
+
+Verified: tsc clean, eslint 0 errors, build OK, vitest 189 passed (12 new). The
+load-bearing test is `analytics-consent.test.ts`: with a key configured and
+consent undecided, posthog-js is never even IMPORTED.
+
 ### 2026-10-29 - Phase 5: the export paywall is now actually enforced
 
 The free tier allows 3 distinct documents per kind. That allowance was counted

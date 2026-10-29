@@ -28,6 +28,7 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/common/tooltip";
 import { Toaster } from "@/components/common/sonner";
 import { Providers } from "@/components/providers";
+import { ConsentBanner } from "@/components/common/consent/consent-banner";
 import { siteUrl } from "@/config/site";
 
 const inter = Inter({
@@ -140,6 +141,9 @@ export default function RootLayout({
           <TooltipProvider>{children}</TooltipProvider>
         </Providers>
         <Toaster />
+        {/* Outside Providers: the choice is not tied to being signed in, and it
+            must render even if the session fetch is slow or fails. */}
+        <ConsentBanner />
       </body>
     </html>
   );

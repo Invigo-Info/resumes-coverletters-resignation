@@ -10,6 +10,8 @@ import { Lock, CircleCheck, Loader2, ShieldAlert } from "lucide-react";
 import { LogoMark } from "@/components/common/brand/logo-mark";
 import { HelpPill } from "@/components/layout/help-pill";
 import { getPlan } from "@/services/payments/plans";
+import { capture } from "@/utilities/analytics";
+import { EVENTS } from "@/utilities/analytics-events";
 
 // Initialize Stripe.js once at module load; null when the publishable key is absent
 // so the page can render a "not configured" state instead of crashing.
@@ -39,6 +41,8 @@ function PaymentCard({ plan, next }: { plan: string; next: string }) {
   useEffect(() => {
     if (!stripePromise) return;
     let active = true;
+    // The top of the money funnel. Plan id only - no amount, no email.
+    void capture(EVENTS.checkoutStarted, { plan });
     fetch("/api/checkout/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

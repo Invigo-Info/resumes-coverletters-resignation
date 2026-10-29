@@ -6,6 +6,8 @@ import { signOut, useSession } from "next-auth/react";
 import { Send, Loader2, UserRoundX, SlidersHorizontal, Check, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utilities/utils";
+import { capture } from "@/utilities/analytics";
+import { EVENTS } from "@/utilities/analytics-events";
 import { Input } from "@/components/forms/input";
 import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import {
@@ -224,6 +226,7 @@ export function AccountSettings() {
         error?: string;
       };
       if (res.ok && data.url) {
+        void capture(EVENTS.billingPortalOpened);
         window.location.href = data.url;
         return;
       }

@@ -65,6 +65,8 @@ Create `.env.local` (never commit it):
 | `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email (welcome, receipts, password reset, verification). Inert no-op when unset. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin. Builds the links in recovery emails, so it must be right in production. |
 | `EXPORT_RATE_LIMIT` | Export authorizations per account per minute (default 60). |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Error monitoring. PII-scrubbed; runs without consent as service stability. Set a release too (see `docs/observability.md`). |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Product analytics. Consent-gated: nothing loads or sends until the visitor allows it on the cookie banner. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared rate-limit store. Required on multi-instance deploys, or each instance enforces its own copy of every cap. |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google sign-in. Omit to offer email/password only. |
 
@@ -107,5 +109,7 @@ See `CLAUDE.md` for the project overview and changelog, `docs/architecture.md`
 for the folder architecture, and `AGENTS.md` for the "this is a customized
 Next.js" note. Also `docs/supabase-setup.md` (database provisioning and the RLS
 step) `docs/account-recovery.md` (password reset, email verification, and what
-actually guards OAuth sign-in), and `docs/export-paywall.md` (how the free-tier
-export allowance is enforced, and the limit of that enforcement).
+actually guards OAuth sign-in), `docs/export-paywall.md` (how the free-tier export
+allowance is enforced, and the limit of that enforcement), and
+`docs/observability.md` (consent, analytics, and what is scrubbed from error
+reports - read before setting any analytics key in production).

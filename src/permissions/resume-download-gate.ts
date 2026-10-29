@@ -5,6 +5,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "@/utilities/safe-storage";
 import { FREE_RESUME_LIMIT } from "@/permissions/limits";
 import type { DownloadKind } from "@/permissions/download-ledger";
+import { capture } from "@/utilities/analytics";
+import { EVENTS } from "@/utilities/analytics-events";
 
 export { FREE_RESUME_LIMIT };
 export type { DownloadKind };
@@ -155,6 +157,21 @@ export async function authorizeDownload(
   if (ok) useDownloadGate.getState().noteDownloaded(kind, id);
 
   const reason = data.reason ?? "unavailable";
+
+  // Instrumented HERE rather than at each of the seven download buttons: one
+  // place means the paywall funnel cannot drift out of sync as buttons are
+  // added or moved. `export_blocked` is the moment the paywall actually bites
+  // and is the denominator for every conversion question worth asking.
+  //
+  // Properties are counts and enums only - no document id, no title, nothing
+  // about what the document says.
+  void capture(ok ? EVENTS.documentExported : EVENTS.exportBlocked, {
+    kind,
+    reason,
+    used: data.used ?? 0,
+    limit: data.limit ?? FREE_RESUME_LIMIT,
+  });
+
   return {
     ok,
     reason,

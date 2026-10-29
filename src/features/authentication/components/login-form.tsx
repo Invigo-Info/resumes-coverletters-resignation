@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { capture } from "@/utilities/analytics";
+import { EVENTS } from "@/utilities/analytics-events";
 import { Loader2 } from "lucide-react";
 import { LogoMark } from "@/components/common/brand/logo-mark";
 
@@ -120,7 +122,9 @@ export function LoginForm({
           return;
         }
       }
+      if (isSignup) void capture(EVENTS.signedUp, { method: "password" });
       const ok = await credentialsSignIn();
+      if (ok && !isSignup) void capture(EVENTS.signedIn, { method: "password" });
       // Everyone lands on the main dashboard - which shows the new-user
       // onboarding checklist for a brand-new account, or the full metrics
       // dashboard once the user has created their first document.
