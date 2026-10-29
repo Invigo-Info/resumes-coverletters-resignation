@@ -68,24 +68,54 @@ interface EntitlementUpsert {
   status: string;
   plan?: string | null;
   currentPeriodEnd?: number | null;
+  /**
+   * Epoch ms of the Stripe event this state came from (its `created` field).
+   *
+   * Supplied by the webhook so a late-arriving older event cannot overwrite
+   * newer state. Omitted by callers that are not reacting to an event (e.g. the
+   * post-checkout page confirming a session it just verified), which then write
+   * unconditionally - correct, because there is no ordering question to answer.
+   */
+  lastEventAt?: number;
 }
 
-/** Insert or update the entitlement for an email (used by the webhook). */
+/** Outcome of an ordering-guarded entitlement write. */
+export type ApplyResult =
+  /** The write landed. */
+  | "applied"
+  /** No row matched the Stripe customer id - the caller may need to insert. */
+  | "no_row"
+  /** A row exists but already holds state from a NEWER event; nothing changed. */
+  | "stale";
+
+/**
+ * Insert or update the entitlement for an email (used by the webhook).
+ *
+ * When `lastEventAt` is given, an update is refused if the stored row already
+ * carries a newer event - returning "stale" instead of silently rolling the
+ * subscription backwards.
+ */
 export async function upsertEntitlement(
   email: string,
   e: EntitlementUpsert,
   now: number
-): Promise<void> {
+): Promise<ApplyResult> {
   const sql = getSql();
-  await sql`
+  const at = e.lastEventAt ?? null;
+  // Unguarded callers must still win, so their guard clause is always true.
+  const guard =
+    at == null
+      ? sql`true`
+      : sql`subscriptions.last_event_at is null or subscriptions.last_event_at <= ${at}`;
+  const rows = (await sql`
     insert into subscriptions (
       email, stripe_customer_id, stripe_subscription_id, status, plan,
-      current_period_end, updated_at
+      current_period_end, updated_at, last_event_at
     )
     values (
       ${normalize(email)}, ${e.stripeCustomerId ?? null},
       ${e.stripeSubscriptionId ?? null}, ${e.status}, ${e.plan ?? null},
-      ${e.currentPeriodEnd ?? null}, ${now}
+      ${e.currentPeriodEnd ?? null}, ${now}, ${at}
     )
     on conflict (email) do update set
       stripe_customer_id     = coalesce(excluded.stripe_customer_id, subscriptions.stripe_customer_id),
@@ -93,29 +123,63 @@ export async function upsertEntitlement(
       status                 = excluded.status,
       plan                   = coalesce(excluded.plan, subscriptions.plan),
       current_period_end     = excluded.current_period_end,
-      updated_at             = excluded.updated_at
-  `;
+      updated_at             = excluded.updated_at,
+      last_event_at          = coalesce(excluded.last_event_at, subscriptions.last_event_at)
+    where ${guard}
+    returning email
+  `) as unknown as { email: string }[];
+  return rows.length > 0 ? "applied" : "stale";
 }
 
 /**
  * Update status/period by Stripe customer id (subscription lifecycle events
- * carry the customer, not the email). Returns the number of rows updated so the
- * caller can fall back to a customer->email lookup when nothing matched yet.
+ * carry the customer, not the email).
+ *
+ * `currentPeriodEnd` is deliberately OPTIONAL and distinguishes undefined from
+ * null. Events like `invoice.payment_failed` say nothing about the billing
+ * period, and passing a blanket null for them erased a period end we already
+ * knew - leaving the account with no renewal date on record. Omit the field to
+ * keep the stored value; pass null only to genuinely clear it (a cancellation).
  */
 export async function setEntitlementByCustomer(
   customerId: string,
-  status: string,
-  currentPeriodEnd: number | null,
+  patch: {
+    status: string;
+    currentPeriodEnd?: number | null;
+    /** Epoch ms of the originating Stripe event; enforces ordering. */
+    lastEventAt?: number;
+  },
   now: number
-): Promise<number> {
+): Promise<ApplyResult> {
   const sql = getSql();
+  const at = patch.lastEventAt ?? null;
+  const period =
+    patch.currentPeriodEnd === undefined
+      ? sql`current_period_end`
+      : sql`${patch.currentPeriodEnd}`;
+  const guard =
+    at == null
+      ? sql`true`
+      : sql`(last_event_at is null or last_event_at <= ${at})`;
   const rows = (await sql`
     update subscriptions
-    set status = ${status}, current_period_end = ${currentPeriodEnd}, updated_at = ${now}
+    set status             = ${patch.status},
+        current_period_end = ${period},
+        updated_at         = ${now},
+        last_event_at      = coalesce(${at}, last_event_at)
     where stripe_customer_id = ${customerId}
+      and ${guard}
     returning email
   `) as unknown as { email: string }[];
-  return rows.length;
+  if (rows.length > 0) return "applied";
+
+  // Zero rows is ambiguous - no such customer, or the guard refused a stale
+  // event. The caller acts very differently on each (insert a new row vs do
+  // nothing at all), so resolve it rather than guessing.
+  const exists = (await sql`
+    select 1 from subscriptions where stripe_customer_id = ${customerId} limit 1
+  `) as unknown as unknown[];
+  return exists.length > 0 ? "stale" : "no_row";
 }
 
 /**

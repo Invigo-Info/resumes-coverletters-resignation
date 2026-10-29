@@ -151,11 +151,65 @@ export async function reset(key: string): Promise<void> {
   }
 }
 
-/** Best-effort client IP from proxy headers (Vercel sets x-forwarded-for). */
+/**
+ * How many proxies sit in front of the app and append to `x-forwarded-for`.
+ * 1 for a normal Vercel/Netlify/Cloudflare deployment. Raise it only if you
+ * genuinely add another trusted proxy in front - each extra hop you claim is
+ * one more entry an attacker is allowed to forge.
+ */
+const TRUSTED_PROXY_HOPS = Math.max(
+  1,
+  Number(process.env.TRUSTED_PROXY_HOPS ?? 1)
+);
+
+/**
+ * The client IP to rate-limit on.
+ *
+ * Reading the FIRST entry of `x-forwarded-for` - the obvious implementation,
+ * and the one this replaces - defeats the rate limiter completely. That header
+ * is just a request header: anyone can send `X-Forwarded-For: 1.2.3.4`, and
+ * proxies APPEND rather than overwrite, so the leftmost entry is whatever the
+ * client typed. A script that varies it per request gets a brand-new bucket
+ * every time and is never limited. On `/api/ai` that is an uncapped bill with
+ * someone else's Gemini key; on `/api/register`, unlimited account creation.
+ *
+ * The only entries that can be trusted are the ones a proxy we control added,
+ * which are at the RIGHT-hand end. So:
+ *
+ *   1. Platform headers first. Vercel sets `x-vercel-forwarded-for` and
+ *      `x-real-ip` itself, overwriting anything the client sent, which makes
+ *      them authoritative where they exist.
+ *   2. Otherwise count in from the right of `x-forwarded-for` by the number of
+ *      proxies we actually have, never from the left.
+ *
+ * When nothing trustworthy is available the caller is bucketed as "unknown".
+ * That is a deliberately blunt shared bucket - it can let one abuser use up the
+ * anonymous allowance - but the alternative, a unique key per forged header, is
+ * no limit at all. Routes that can identify the user key on the account instead,
+ * which is why this is only ever the fallback.
+ */
 export function clientIp(req: Request): string {
+  // Platform-set and not client-spoofable.
+  const platform =
+    req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-real-ip");
+  if (platform) {
+    const ip = platform.split(",").pop()?.trim();
+    if (ip) return ip;
+  }
+
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]?.trim() || "unknown";
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
+  if (xff) {
+    const hops = xff
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean);
+    // The rightmost entry was added by the proxy nearest to us; with N trusted
+    // proxies, ours is the Nth from the right. Anything further left is forgeable.
+    const ip = hops[hops.length - TRUSTED_PROXY_HOPS];
+    if (ip) return ip;
+  }
+
+  return "unknown";
 }
 
 /** Test-only: clear all windows so cases don't bleed into each other. */

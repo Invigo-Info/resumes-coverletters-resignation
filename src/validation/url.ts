@@ -50,3 +50,34 @@ export function urlError(value: string): string {
   }
   return "";
 }
+
+/**
+ * A redirect target that is guaranteed to stay on this site, or "" if the value
+ * cannot be trusted.
+ *
+ * `value.startsWith("/")` is the obvious check and it is not enough. A browser
+ * reads `//evil.com` as a PROTOCOL-RELATIVE url and navigates off-site, and it
+ * normalises backslashes to forward slashes, so a leading slash-backslash pair
+ * leaves the origin too. Both pass a startsWith test, which is how an open
+ * redirect gets into a checkout flow: a crafted `?next=` on a payment link
+ * sends the user to an attacker's page immediately after they have paid, at the
+ * exact moment they are primed to re-enter card details.
+ *
+ * So: one leading slash, never a second separator of either kind, and no
+ * whitespace or control characters.
+ */
+export function safeInternalPath(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const v = value.trim();
+  if (!v.startsWith("/")) return "";
+  // Reject a second leading separator in either slash direction.
+  if (v.length > 1 && (v[1] === "/" || v[1] === "\\")) return "";
+  // No whitespace or control characters anywhere: a raw newline can split a
+  // Location header. Written as a code-point check rather than a regex escape
+  // range so no literal control byte can end up in this source file.
+  for (let i = 0; i < v.length; i += 1) {
+    const c = v.charCodeAt(i);
+    if (c <= 0x20 || c === 0x7f) return "";
+  }
+  return v;
+}

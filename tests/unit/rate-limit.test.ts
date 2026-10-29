@@ -112,9 +112,13 @@ describe("clientIp", () => {
   const make = (headers: Record<string, string>) =>
     new Request("http://x/", { headers });
 
-  it("takes the first x-forwarded-for entry", () => {
+  // This case previously asserted the FIRST entry, which codified the bug it
+  // was testing: the leftmost x-forwarded-for entry is supplied by the client,
+  // so keying the rate limiter on it let any caller mint unlimited buckets.
+  // See client-ip.test.ts for the full set of spoofing cases.
+  it("takes the last x-forwarded-for entry, which the proxy added", () => {
     expect(clientIp(make({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }))).toBe(
-      "1.2.3.4"
+      "5.6.7.8"
     );
   });
 

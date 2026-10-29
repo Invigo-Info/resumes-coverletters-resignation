@@ -7,6 +7,7 @@ import { getStripe } from "@/services/payments/server";
 import { auth } from "@/features/authentication/auth";
 import { upsertEntitlement } from "@/permissions/entitlements";
 import { isDbEnabled } from "@/services/database/db";
+import { safeInternalPath } from "@/validation/url";
 
 /**
  * Post-checkout confirmation page. Reads the Stripe session_id from the URL,
@@ -19,49 +20,88 @@ export default async function PaymentSuccessPage({
   searchParams: Promise<{ session_id?: string; next?: string }>;
 }) {
   const { session_id, next } = await searchParams;
-  // Return the user to where they started checkout (same-origin path only).
-  const dashboardHref = next && next.startsWith("/") ? next : "/";
+  // Return the user to where they started checkout. Validated as a same-origin
+  // path - `startsWith("/")` alone accepts `//evil.com`, which a browser reads
+  // as protocol-relative and follows off-site.
+  const dashboardHref = safeInternalPath(next) || "/";
 
   // Confirm the Checkout Session status server-side (best-effort).
-  let status: string | null = null;
   let email: string | null = null;
+  // True only when this session belonged to the signed-in account AND was paid.
+  let granted = false;
   const stripe = getStripe();
   if (stripe && session_id) {
     try {
       const s = await stripe.checkout.sessions.retrieve(session_id);
-      status = s.status ?? null;
       email = s.customer_details?.email ?? null;
 
       // A verified, completed checkout grants premium server-side right here -
       // so access sticks even when the Stripe webhook isn't configured (the
       // webhook still maintains the later lifecycle: renewals/cancellations).
-      // Keyed by the signed-in email, which is what /api/entitlement reads.
-      if (s.status === "complete" && isDbEnabled()) {
-        const authed = await auth();
-        const userEmail = authed?.user?.email ?? email ?? undefined;
-        if (userEmail) {
-          const plan = typeof s.metadata?.plan === "string" ? s.metadata.plan : null;
-          const customerId =
-            typeof s.customer === "string" ? s.customer : (s.customer?.id ?? null);
-          const subId =
-            typeof s.subscription === "string"
-              ? s.subscription
-              : (s.subscription?.id ?? null);
-          await upsertEntitlement(
-            userEmail,
-            {
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subId,
-              status: "active",
-              plan,
-            },
-            // This runs inside an async Server Component helper, not a React
-            // render path; the purity rule cannot model that and flags the
-            // clock read as impure rendering.
-            // eslint-disable-next-line react-hooks/purity
-            Date.now()
-          );
+      //
+      // The session must BELONG to the signed-in account. Taking the session id
+      // on trust was a paywall bypass: session ids travel in the URL, so one
+      // real payment could be replayed by any number of other signed-in users
+      // simply by visiting this page with that id, and each would be granted
+      // premium. The id now has to match the account that paid, and the grant
+      // only happens when Stripe says the money actually arrived.
+      const authed = await auth();
+      const userEmail = authed?.user?.email?.toLowerCase() ?? null;
+      const sessionEmail = (
+        s.client_reference_id ||
+        s.customer_details?.email ||
+        s.customer_email ||
+        ""
+      ).toLowerCase();
+      const ownsSession = Boolean(
+        userEmail && sessionEmail && userEmail === sessionEmail
+      );
+      // `complete` can still be unpaid for delayed payment methods; a trial
+      // that charges nothing today legitimately reports no_payment_required.
+      const paid =
+        s.payment_status === "paid" ||
+        s.payment_status === "no_payment_required";
+
+      granted = s.status === "complete" && ownsSession && paid;
+
+      if (granted && isDbEnabled()) {
+        const plan =
+          typeof s.metadata?.plan === "string" ? s.metadata.plan : null;
+        const customerId =
+          typeof s.customer === "string"
+            ? s.customer
+            : (s.customer?.id ?? null);
+        const subId =
+          typeof s.subscription === "string"
+            ? s.subscription
+            : (s.subscription?.id ?? null);
+        // Take the real status from the subscription rather than asserting
+        // "active": a trialing subscription is `trialing`, and hardcoding
+        // active here also discarded the renewal date entirely.
+        let subStatus = "active";
+        let periodEnd: number | null = null;
+        if (subId) {
+          const sub = await stripe.subscriptions.retrieve(subId);
+          subStatus = sub.status;
+          const sec = (sub as unknown as { current_period_end?: number })
+            .current_period_end;
+          periodEnd = typeof sec === "number" ? sec * 1000 : null;
         }
+        await upsertEntitlement(
+          userEmail as string,
+          {
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subId,
+            status: subStatus,
+            plan,
+            currentPeriodEnd: periodEnd,
+          },
+          // This runs inside an async Server Component helper, not a React
+          // render path; the purity rule cannot model that and flags the
+          // clock read as impure rendering.
+          // eslint-disable-next-line react-hooks/purity
+          Date.now()
+        );
       }
     } catch {
       /* ignore - the client UnlockPremium below still flips the local flag */
@@ -69,8 +109,10 @@ export default async function PaymentSuccessPage({
   }
 
   // Treat a completed session as success; also show success when no session_id
-  // was supplied (e.g. a direct visit) rather than a scary error.
-  const ok = status === "complete" || !session_id;
+  // was supplied (e.g. a direct visit) rather than a scary error. When an id IS
+  // supplied it must be this account's, so someone else's session id cannot be
+  // pasted in to produce a convincing "You're all set!" screen.
+  const ok = granted || !session_id;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
