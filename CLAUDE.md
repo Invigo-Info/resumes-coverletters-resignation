@@ -33,6 +33,50 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-10-29 - Phase 5: the export paywall is now actually enforced
+
+The free tier allows 3 distinct documents per kind. That allowance was counted
+entirely in localStorage (`resume-co:downloads`, plus `resume-co:paywall` for
+premium), so CLEARING SITE DATA RESET IT - the free tier was in practice
+unlimited and the paywall created no reason to subscribe. No server call was
+part of the decision, and nothing server-side could refuse a download.
+
+- `document_downloads` (migration `0004`) + `permissions/download-ledger.ts` +
+  `POST /api/export/authorize`. The decision and the record happen in ONE
+  transaction: a separate "may I?" then "I did" lets concurrent clicks pass the
+  check before any of them records, spending one slot repeatedly.
+- All 7 download call sites now await server authorization before exporting
+  (resume top-bar, improve panel, dashboard, two tailoring handlers, cover
+  letter preview + design panel, resignation letter preview).
+- The client fails CLOSED. Failing open would mean one ad-blocker rule against
+  `/api/export/authorize` restores the unlimited free tier - no devtools, no
+  patched JS. The server's error path fails closed for the same reason. The
+  legitimate "no server to ask" case is answered by the SERVER (`unconfigured`
+  when there is no DATABASE_URL), so local dev works without a client bypass.
+- `shouldUpsell` separates "allowance spent" from "could not reach the server":
+  a subscriber hitting a dropped connection gets a retry message, not an
+  upgrade page that reads as "your subscription is gone".
+- Repeats stay free (the allowance counts distinct documents), a refused
+  attempt does not occupy a slot, and premium downloads are still recorded so a
+  lapsed subscription does not hand slots back.
+- `clearDownloads` added to the account-erasure orchestrator.
+- The old `canDownload`/`recordDownload` and the unused `useDownloadAllowance`
+  are gone; `useDownloadGate` survives as a badge cache only, hydrated from the
+  server so a tampered value is corrected rather than trusted.
+
+LIMIT, stated rather than hidden: the PDF is still rendered in the browser from
+data the user typed, so this does not make exporting impossible - someone
+editing the page's JS can still produce a file, and the live preview can be
+printed. What is now real is the ALLOWANCE. Gating the artifact itself needs
+server-side rendering (headless browser, templates reproduced server-side,
+different pagination) and would not stop print-the-preview either; deliberately
+not done. Reasoning in `docs/export-paywall.md`.
+
+Verified: tsc clean, eslint 0 errors, build OK, vitest 177 passed (13 new), and
+migration 0004 applied with 11/11 checks against the real database - including
+the concurrency property: 3 simultaneous requests with 2 of 3 slots used allow
+exactly one, and the ledger lands exactly on the limit.
+
 ### 2026-10-29 - Phase 4: account recovery (branch: handover/production-readiness)
 
 There was no password reset at all. A user who forgot their password lost their

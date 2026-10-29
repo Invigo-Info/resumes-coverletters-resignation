@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,8 +12,8 @@ import { WriteMode, type Section as WriteSection } from "@/features/cover-letter
 import { HelpPill } from "@/components/layout/help-pill";
 import { useCoverLetterStore, letterCompletion } from "@/features/cover-letter/store/cover-letter-store";
 import {
-  canDownloadCoverLetter,
-  recordCoverLetterDownload,
+  authorizeCoverLetterDownload,
+  EXPORT_UNAVAILABLE,
 } from "@/permissions/resume-download-gate";
 import { downloadCoverLetter } from "@/features/cover-letter/lib/download";
 import { useCoverLetterAutosave } from "@/features/cover-letter/store/cover-letter-documents-store";
@@ -90,14 +91,20 @@ function CoverLetterPreviewContent() {
   // the PDF; over it we start the Stripe checkout, returning to the dashboard.
   const [downloading, setDownloading] = useState(false);
   async function handleDownload() {
-    if (!canDownloadCoverLetter(s.id)) {
-      router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
-      return;
-    }
     setDownloading(true);
     try {
+      const authorized = await authorizeCoverLetterDownload(s.id);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) {
+          router.push(
+            `/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`
+          );
+        } else {
+          toast.error(EXPORT_UNAVAILABLE);
+        }
+        return;
+      }
       await downloadCoverLetter();
-      recordCoverLetterDownload(s.id);
     } finally {
       setDownloading(false);
     }

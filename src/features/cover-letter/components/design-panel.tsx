@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -17,8 +18,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  canDownloadCoverLetter,
-  recordCoverLetterDownload,
+  authorizeCoverLetterDownload,
+  EXPORT_UNAVAILABLE,
 } from "@/permissions/resume-download-gate";
 import { downloadCoverLetter } from "@/features/cover-letter/lib/download";
 import {
@@ -104,14 +105,20 @@ export function CoverLetterDesignPanel({ onEdit }: { onEdit?: () => void }) {
   // needs a subscription (premium is unlimited). Within the allowance we export
   // the PDF; over it we start the Stripe checkout, returning to the dashboard.
   async function handleDownload() {
-    if (!canDownloadCoverLetter(letterId)) {
-      router.push(`/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`);
-      return;
-    }
     setDownloading(true);
     try {
+      const authorized = await authorizeCoverLetterDownload(letterId);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) {
+          router.push(
+            `/payment?next=${encodeURIComponent(COVER_LETTER_DASHBOARD)}`
+          );
+        } else {
+          toast.error(EXPORT_UNAVAILABLE);
+        }
+        return;
+      }
       await downloadCoverLetter();
-      recordCoverLetterDownload(letterId);
     } finally {
       setDownloading(false);
     }

@@ -64,6 +64,7 @@ Create `.env.local` (never commit it):
 | `STRIPE_PORTAL_CONFIGURATION_ID` | Customer Portal config from `node scripts/stripe-portal-config.mjs`. Optional; falls back to the Stripe dashboard default. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email (welcome, receipts, password reset, verification). Inert no-op when unset. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical origin. Builds the links in recovery emails, so it must be right in production. |
+| `EXPORT_RATE_LIMIT` | Export authorizations per account per minute (default 60). |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared rate-limit store. Required on multi-instance deploys, or each instance enforces its own copy of every cap. |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google sign-in. Omit to offer email/password only. |
 
@@ -105,5 +106,6 @@ Code is grouped by **purpose** (see `docs/architecture.md` for the full map):
 See `CLAUDE.md` for the project overview and changelog, `docs/architecture.md`
 for the folder architecture, and `AGENTS.md` for the "this is a customized
 Next.js" note. Also `docs/supabase-setup.md` (database provisioning and the RLS
-step) and `docs/account-recovery.md` (password reset, email verification, and
-what actually guards OAuth sign-in).
+step) `docs/account-recovery.md` (password reset, email verification, and what
+actually guards OAuth sign-in), and `docs/export-paywall.md` (how the free-tier
+export allowance is enforced, and the limit of that enforcement).

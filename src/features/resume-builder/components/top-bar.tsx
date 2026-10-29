@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import {
   PenLine,
@@ -18,7 +19,10 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/utilities/utils";
 import { useResumeStore, getProgress } from "@/features/resume-builder/store/resume-store";
-import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
+import {
+  authorizeResumeDownload,
+  EXPORT_UNAVAILABLE,
+} from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { HomeButton } from "@/components/layout/home-button";
 import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
@@ -78,15 +82,19 @@ export function TopBar({
 
   // Free accounts may download up to 3 distinct resumes; a further one needs a
   // subscription. Premium is unlimited. Over the allowance -> /payment.
+  //
+  // The server decides AND records in one call, so the allowance is counted
+  // against the account rather than in a localStorage key the user can clear.
   async function handleDownload() {
-    if (!canDownloadResume(resumeId)) {
-      router.push("/payment");
-      return;
-    }
     setDownloading(true);
     try {
+      const authorized = await authorizeResumeDownload(resumeId);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) router.push("/payment");
+        else toast.error(EXPORT_UNAVAILABLE);
+        return;
+      }
       await downloadResume();
-      recordResumeDownload(resumeId);
     } finally {
       setDownloading(false);
     }

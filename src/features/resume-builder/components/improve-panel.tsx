@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
@@ -27,7 +28,10 @@ import {
 } from "@/features/resume-builder/store/resume-store";
 import { PrimaryButton } from "@/components/common/brand/brand-buttons";
 import { Confetti } from "@/components/common/brand/confetti";
-import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
+import {
+  authorizeResumeDownload,
+  EXPORT_UNAVAILABLE,
+} from "@/permissions/resume-download-gate";
 import { downloadResume } from "@/services/storage/download-pdf";
 import { ShareDialog, buildShareUrl } from "@/components/common/share/share-dialog";
 import { cn } from "@/utilities/utils";
@@ -98,14 +102,16 @@ export function ImprovePanel({
   // Free accounts may download up to 3 distinct resumes; a further one needs a
   // subscription. Premium is unlimited. Over the allowance -> /payment.
   async function handleDownload() {
-    if (!canDownloadResume(s.id)) {
-      router.push("/payment");
-      return;
-    }
     setDownloading(true);
     try {
+      // Server-side decision + record, in one call.
+      const authorized = await authorizeResumeDownload(s.id);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) router.push("/payment");
+        else toast.error(EXPORT_UNAVAILABLE);
+        return;
+      }
       await downloadResume();
-      recordResumeDownload(s.id);
     } finally {
       setDownloading(false);
     }

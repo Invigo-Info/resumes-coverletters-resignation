@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,8 +16,8 @@ import {
 import { generateResignationLetter } from "@/features/resignation-letter/lib/ai";
 import { bodyToHtml } from "@/features/resignation-letter/lib/format";
 import {
-  canDownloadResignationLetter,
-  recordResignationLetterDownload,
+  authorizeResignationLetterDownload,
+  EXPORT_UNAVAILABLE,
 } from "@/permissions/resume-download-gate";
 import { downloadResignationLetter } from "@/features/resignation-letter/lib/download";
 import { cn } from "@/utilities/utils";
@@ -110,14 +111,20 @@ function ResignationLetterPreviewContent() {
   // export the PDF; over it we start the Stripe checkout, returning to the
   // resignation-letter dashboard.
   async function handleDownload() {
-    if (!canDownloadResignationLetter(letterId)) {
-      router.push(`/payment?next=${encodeURIComponent(RESIGNATION_DASHBOARD)}`);
-      return;
-    }
     setDownloading(true);
     try {
+      const authorized = await authorizeResignationLetterDownload(letterId);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) {
+          router.push(
+            `/payment?next=${encodeURIComponent(RESIGNATION_DASHBOARD)}`
+          );
+        } else {
+          toast.error(EXPORT_UNAVAILABLE);
+        }
+        return;
+      }
       await downloadResignationLetter();
-      recordResignationLetterDownload(letterId);
     } finally {
       setDownloading(false);
     }

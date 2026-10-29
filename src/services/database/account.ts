@@ -4,6 +4,7 @@ import { clearSavedJobs } from "@/features/jobs/lib/saved";
 import { clearDismissedJobs } from "@/features/jobs/lib/dismissed";
 import { clearTailoringSessions } from "@/features/jobs/tailoring/sessions";
 import { deleteEntitlement } from "@/permissions/entitlements";
+import { clearDownloads } from "@/permissions/download-ledger";
 
 /**
  * Account erasure - removing every trace of one account from every store.
@@ -32,6 +33,7 @@ const purges: { store: string; purge: (email: string) => Promise<void> }[] = [
   { store: "savedJobs", purge: clearSavedJobs },
   { store: "dismissedJobs", purge: clearDismissedJobs },
   { store: "tailoringSessions", purge: clearTailoringSessions },
+  { store: "downloads", purge: clearDownloads },
   { store: "entitlement", purge: deleteEntitlement },
   // users LAST: it is the record that proves the account existed, so losing it
   // first would strand the rest with no way to find them again.

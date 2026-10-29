@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,7 +28,10 @@ import { TailorArt } from "@/features/jobs/components/improve-keywords-flow";
 import { useResumeStore } from "@/features/resume-builder/store/resume-store";
 import { useDocumentsStore } from "@/features/resume-builder/store/documents-store";
 import { useTailorStore } from "@/features/jobs/store/tailor-store";
-import { canDownloadResume, recordResumeDownload } from "@/permissions/resume-download-gate";
+import {
+  authorizeResumeDownload,
+  EXPORT_UNAVAILABLE,
+} from "@/permissions/resume-download-gate";
 import {
   buildTailorPlan,
   type TailorPlanItem,
@@ -127,14 +131,15 @@ function TailoringTopBar() {
     // up to 3 distinct resumes; a further one needs a subscription (premium is
     // unlimited). Over the allowance -> the subscribe / Stripe checkout funnel.
     finalize();
-    if (!canDownloadResume(resumeId)) {
-      router.push("/payment");
-      return;
-    }
     setDownloading(true);
     try {
+      const authorized = await authorizeResumeDownload(resumeId);
+      if (!authorized.ok) {
+        if (authorized.shouldUpsell) router.push("/payment");
+        else toast.error(EXPORT_UNAVAILABLE);
+        return;
+      }
       await downloadResume();
-      recordResumeDownload(resumeId);
     } finally {
       setDownloading(false);
     }
@@ -438,14 +443,16 @@ export default function TailoringPage() {
   // Downloading finalizes the tailored version, then downloads. Free accounts
   // may download up to 3 distinct resumes; a further one needs a subscription
   // (premium is unlimited). Over the allowance -> the /payment funnel.
-  const handleDownloadResume = () => {
+  // Async now that the allowance is decided on the server.
+  const handleDownloadResume = async () => {
     finalize();
-    if (!canDownloadResume(resumeId)) {
-      router.push("/payment");
+    const authorized = await authorizeResumeDownload(resumeId);
+    if (!authorized.ok) {
+      if (authorized.shouldUpsell) router.push("/payment");
+      else toast.error(EXPORT_UNAVAILABLE);
       return;
     }
-    void downloadResume();
-    recordResumeDownload(resumeId);
+    await downloadResume();
   };
 
   const [mounted, setMounted] = useState(false);

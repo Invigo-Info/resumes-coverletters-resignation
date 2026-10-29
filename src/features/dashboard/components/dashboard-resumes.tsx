@@ -24,9 +24,9 @@ import { cn } from "@/utilities/utils";
 import { usePaywall } from "@/features/cover-letter/lib/paywall";
 import { useResumeLimit } from "@/permissions/resume-limit";
 import {
-  canDownloadResume,
-  recordResumeDownload,
+  authorizeResumeDownload,
   useDownloadGate,
+  EXPORT_UNAVAILABLE,
 } from "@/permissions/resume-download-gate";
 import {
   useResumeStore,
@@ -514,11 +514,15 @@ export function DashboardResumes() {
         // resume is loaded into the hidden off-screen preview below, which the
         // exporter captures.
         const download = async () => {
-          if (!canDownloadResume(rec.id)) {
-            router.push("/payment");
+          if (exportingId) return; // a download is already in flight
+          // The in-flight check comes FIRST: authorizing before it would spend
+          // an allowance slot for a click that is then ignored.
+          const authorized = await authorizeResumeDownload(rec.id);
+          if (!authorized.ok) {
+            if (authorized.shouldUpsell) router.push("/payment");
+            else toast.error(EXPORT_UNAVAILABLE);
             return;
           }
-          if (exportingId) return; // a download is already in flight
           loadDocument(rec.id, rec.data);
           setExportingId(rec.id);
           try {
@@ -530,7 +534,6 @@ export function DashboardResumes() {
               /* fonts API absent - proceed anyway */
             }
             await downloadResume();
-            recordResumeDownload(rec.id);
           } finally {
             setExportingId(null);
           }
