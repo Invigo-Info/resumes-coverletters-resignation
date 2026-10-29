@@ -13,16 +13,22 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned in ONE place and matched to .nvmrc and package.json engines. CI was
+  # on 20 while local development ran 22, which is how a version-specific break
+  # reaches main without anyone seeing it fail.
+  NODE_VERSION: "22"
+
 jobs:
   quality:
-    name: Typecheck, lint, format, test, build
+    name: Typecheck, lint, format, unit tests, build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Install dependencies
@@ -37,16 +43,20 @@ jobs:
         run: npm run typecheck
 
       - name: Lint
+        # A required gate since the lint debt was cleared: 0 errors. Warnings
+        # are triaged and deliberately not failing the build.
         run: npm run lint
 
       - name: Format check
-        # Informational until the one-time `npm run format` pass lands on a clean
-        # tree (the existing code predates Prettier). After that, remove
-        # continue-on-error to make formatting a required gate.
+        # Informational, deliberately. Making this required needs a one-time
+        # `npm run format` across a codebase that predates Prettier, which would
+        # rewrite nearly every file - destroying `git blame` for the whole
+        # history to satisfy a gate. Worth doing as its own commit one day; not
+        # worth smuggling into an unrelated change.
         run: npm run format:check
         continue-on-error: true
 
-      - name: Unit + integration tests
+      - name: Unit + isolation tests
         run: npm run test:run
 
       - name: Build
@@ -55,6 +65,61 @@ jobs:
         env:
           AUTH_SECRET: ci-placeholder-secret-not-used-at-runtime
         run: npm run build
+
+      # Keep the build for the e2e job rather than building twice. `.next` is
+      # several hundred MB of cache, so only the server output is kept.
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next
+            !.next/cache
+          retention-days: 1
+
+  e2e:
+    name: Integration + end-to-end
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+
+      - name: Cache Playwright browsers
+        # Keyed on the Playwright version: a browser build is tied to the
+        # library version, and a stale cache fails with "Executable doesn't
+        # exist" rather than anything that points at the cause.
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        # Only Chromium. The suites do not test cross-browser rendering, and
+        # three engines would triple the download for no extra signal.
+        run: npx playwright install --with-deps chromium
+
+      - name: Run integration + end-to-end suites
+        # These boot a real production server via tests/e2e-setup.ts and hit it
+        # over HTTP, so they catch the class of bug a unit test cannot: a route
+        # that forgets to call the gate its unit test proves correct.
+        env:
+          AUTH_SECRET: ci-placeholder-secret-not-used-at-runtime
+        run: npm run test:e2e
 
   security:
     name: Secret + dependency scan
@@ -71,7 +136,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Dependency vulnerability scan

@@ -15,16 +15,29 @@ import { getToken } from "next-auth/jwt";
 // `getToken` decrypts and validates the JWE with AUTH_SECRET, so a forged or
 // tampered cookie now fails here. It runs on the Edge runtime, unlike `auth()`
 // itself, which pulls in bcrypt and cannot run in a proxy.
+/** The two names Auth.js may have issued the session cookie under. */
+const SECURE_COOKIE = "__Secure-authjs.session-token";
+const PLAIN_COOKIE = "authjs.session-token";
+
 async function hasSession(request: NextRequest): Promise<boolean> {
-  // Auth.js picks the cookie name by scheme and uses that same name as the
-  // decryption salt, so both must match what the server issued or every valid
-  // session would be rejected.
-  const secureCookie =
-    request.nextUrl.protocol === "https:" ||
-    request.headers.get("x-forwarded-proto") === "https";
-  const cookieName = secureCookie
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
+  // Read the name from the cookie that is ACTUALLY present, rather than
+  // inferring it from the request scheme.
+  //
+  // Inferring was a real bug, found by the end-to-end suite. Auth.js picks the
+  // name from `useSecureCookies`, which this app ties to NODE_ENV - but the
+  // gate was guessing from `nextUrl.protocol` / `x-forwarded-proto`. Those two
+  // disagree on any production deployment that does not surface
+  // `x-forwarded-proto`: Auth.js issues `__Secure-authjs.session-token` while
+  // the gate looks for `authjs.session-token`, finds nothing, and redirects
+  // every signed-in user to /login. It presents as "login is broken" with a
+  // valid session and nothing in the logs, which is about the worst shape a
+  // production incident can take.
+  //
+  // The cookie name is also the JWE decryption salt, so it has to be right, not
+  // merely close.
+  const cookieName = request.cookies.has(SECURE_COOKIE)
+    ? SECURE_COOKIE
+    : PLAIN_COOKIE;
 
   try {
     const token = await getToken({
@@ -32,7 +45,7 @@ async function hasSession(request: NextRequest): Promise<boolean> {
       secret: process.env.AUTH_SECRET,
       salt: cookieName,
       cookieName,
-      secureCookie,
+      secureCookie: cookieName === SECURE_COOKIE,
     });
     return Boolean(token);
   } catch {

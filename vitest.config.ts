@@ -11,7 +11,10 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    // Unit + tenancy-isolation suites only. The integration and end-to-end
+    // suites need a running server and live in vitest.e2e.config.ts, so that
+    // this lane stays fast enough that people actually run it.
+    include: ["tests/unit/**/*.test.ts", "tests/security/**/*.test.ts"],
     globals: false,
   },
 });

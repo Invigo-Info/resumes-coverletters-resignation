@@ -77,7 +77,8 @@ Run before pushing:
 ```bash
 npx tsc --noEmit             # type-check
 npx eslint .                 # must be 0 errors (warnings are triaged)
-npx vitest run               # unit tests
+npx vitest run               # unit + isolation tests (fast, no server)
+npm run build && npm run test:e2e   # integration + end-to-end (real server)
 npx next build               # production build
 ```
 
@@ -113,4 +114,5 @@ actually guards OAuth sign-in), `docs/export-paywall.md` (how the free-tier expo
 allowance is enforced, and the limit of that enforcement), and
 `docs/observability.md` (consent, analytics, and what is scrubbed from error
 reports), and `docs/integrations.md` (what every key turns on, plus a
-post-deploy verification list - these all fail silently when misconfigured).
+post-deploy verification list - these all fail silently when misconfigured), and
+`docs/testing.md` (the two test lanes and why they are separate).

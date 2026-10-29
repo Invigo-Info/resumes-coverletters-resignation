@@ -21,7 +21,12 @@ export function SiteFooter() {
       <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
         {LINKS.map((link, i) => (
           <span key={link.label} className="inline-flex items-center gap-x-2">
-            <a href={link.href} className="hover:text-foreground">
+            {/* min-h-6: WCAG 2.5.8 target size (24 CSS px). These measured
+                23px - one pixel short, and invisible without measuring. */}
+            <a
+              href={link.href}
+              className="inline-flex min-h-6 items-center hover:text-foreground"
+            >
               {link.label}
             </a>
             {i < LINKS.length - 1 && <span aria-hidden>·</span>}
@@ -30,7 +35,7 @@ export function SiteFooter() {
         {/* Consent must be as easy to withdraw as to give, so the entry point
             is permanent rather than a one-time banner. Renders nothing when
             there is no optional storage in this deployment. */}
-        <ConsentPreferencesLink className="hover:text-foreground" />
+        <ConsentPreferencesLink className="inline-flex min-h-6 items-center hover:text-foreground" />
       </span>
     </footer>
   );

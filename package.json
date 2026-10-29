@@ -16,7 +16,8 @@
     "db:status": "node scripts/db-migrate.mjs --status",
     "db:verify": "node scripts/db-migrate.mjs --verify",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject .next && sentry-cli sourcemaps upload .next",
-    "brand:assets": "python scripts/generate_brand_assets.py"
+    "brand:assets": "python scripts/generate_brand_assets.py",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -68,5 +69,8 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

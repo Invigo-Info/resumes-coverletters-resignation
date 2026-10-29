@@ -193,9 +193,13 @@ export function LoginForm({
           // Only in sign-in mode: during sign-up there is no password to forget,
           // and the link would read as an instruction rather than an escape.
           <p className="text-right">
+            {/* min-h-6 is WCAG 2.5.8 (Target Size, Minimum, AA): 24 CSS px.
+                It measured 20px, which is a small tap target on a phone - the
+                one place this link matters most, since it is reached by someone
+                already failing to sign in. */}
             <Link
               href="/forgot-password"
-              className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+              className="inline-flex min-h-6 items-center text-sm font-medium text-primary underline-offset-2 hover:underline"
             >
               Forgot your password?
             </Link>

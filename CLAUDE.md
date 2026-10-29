@@ -33,6 +33,66 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-10-29 - Phase 8: integration + end-to-end tests, and CI to run them
+
+P13 and P12. `tests/integration` and `tests/end-to-end` were both EMPTY, and
+the audit's gap was explicit: "Negative / abuse tests - no tampering or
+authz-bypass cases".
+
+Two lanes, deliberately separate (`docs/testing.md`):
+- `npm run test:run` - unit + isolation, ~2s, no server. Stays fast, because a
+  unit suite that takes 30s is one people stop running.
+- `npm run test:e2e` - 58 cases against a REAL production server booted by
+  `tests/e2e-setup.ts`, plus a browser suite. ~38s.
+
+Why integration tests at all: a unit test proves a guard returns false; it
+cannot prove the deployed route CALLS that guard. That gap is where authz bugs
+live.
+
+- `authz.test.ts` - anonymous access to documents/deletion/portal/checkout/
+  export, the route gate on six paths incl. a FORGED session cookie, the Stripe
+  webhook refusing unsigned and bogus-signature requests, account enumeration
+  (reset answers byte-identically for known and unknown addresses), and the
+  health probe leaking no connection string or path.
+- `signed-in-journey.test.ts` - registers, signs in through Auth.js's real CSRF
+  handshake, stores a document, gets refused at the 1 MiB cap, walks the export
+  allowance to the ceiling, deletes the account, then proves the credentials no
+  longer work.
+- `paywall-tampering.test.ts` - a real browser running the exact console
+  one-liner that used to unlock premium; the server refuses anyway. Also
+  watches network traffic to prove ZERO analytics requests before consent, and
+  that Tab reaches the skip link first. Driven via the `playwright` library
+  under vitest - no @playwright/test, no second runner, no new dependency.
+- `responsive.test.ts` - converts two BLOCKED audit items into measured ones:
+  no horizontal overflow across 5 public pages x 3 breakpoints (15/15 pass),
+  and tap-target sizes.
+
+BUG FOUND BY THE SUITE: the route gate inferred the session cookie's NAME from
+the request scheme, while Auth.js names it from `useSecureCookies` (NODE_ENV).
+On any production deploy that does not surface `x-forwarded-proto`, Auth.js
+issues `__Secure-authjs.session-token` while the gate looked for
+`authjs.session-token` - so EVERY signed-in user is redirected to /login, with
+a valid session and nothing in the logs. The gate now reads the name from the
+cookie actually present. Nothing in tsc, the unit suite or the build caught it.
+
+REAL a11y FINDING (not a test bug): four links measured 20-23px against WCAG
+2.5.8's 24px minimum - "Forgot your password?" and the three footer links.
+Fixed with `inline-flex min-h-6`. The 1px element was the sr-only skip link,
+which is correctly not a pointer target, so the test excludes visually-hidden
+elements rather than lowering the bar.
+
+CI (P12): added an `e2e` job that reuses the `quality` job's uploaded build
+rather than rebuilding, and caches Chromium. Node pinned to 22 in ONE place
+(`env.NODE_VERSION`) matched by a new `.nvmrc` and `package.json` engines - CI
+ran 20 while local ran 22, which is how a version-specific break reaches main.
+Format stays informational on purpose: making it required needs a one-time
+`npm run format` that rewrites nearly every file and destroys git blame, which
+deserves its own commit rather than being smuggled into this one.
+
+Skips are visible: the allowance-ceiling case needs a database, so it uses
+`it.skipIf` and is REPORTED as skipped rather than taking a silent no-op branch
+that reads as a pass.
+
 ### 2026-10-29 - Phase 7: remaining stack wiring + the brand/SEO surface
 
 Everything is wired and INERT - keys only, no code needed to switch anything on.
