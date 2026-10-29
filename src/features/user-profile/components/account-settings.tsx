@@ -158,6 +158,43 @@ export function AccountSettings() {
   }, [fullName]);
 
   /** Persist the combined first/last name and refresh the session display name. */
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  /** Open Stripe's Customer Portal in this tab (cancellation, card, invoices). */
+  async function openBillingPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      // Each failure gets its own message: "no subscription yet" and "billing
+      // is misconfigured" need different things from the user.
+      toast.error(
+        data.error === "no_customer"
+          ? "You don't have a subscription yet"
+          : data.error === "billing_unconfigured"
+            ? "Billing isn't configured on this environment"
+            : "Couldn't open the billing portal",
+        {
+          description:
+            data.error === "no_customer"
+              ? "Subscribe first, then you can manage or cancel it here."
+              : "Please try again, or contact support if it keeps happening.",
+        }
+      );
+    } catch {
+      toast.error("Couldn't open the billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
   async function saveName() {
     const name = [first.trim(), last.trim()].filter(Boolean).join(" ");
     if (!name) {
@@ -256,11 +293,29 @@ export function AccountSettings() {
       <div className="space-y-5">
         {/* Subscription */}
         <SectionCard className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-xl font-bold text-foreground">Subscription</h2>
-          <PrimaryButton onClick={() => router.push("/payment")}>
-            <Send className="size-4 -rotate-45" />
-            Subscribe now
-          </PrimaryButton>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Subscription</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage billing, update your card, or cancel at any time.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {/* Opens Stripe's Customer Portal. Cancelling must not require
+                deleting the account - that was the only route before. */}
+            <button
+              type="button"
+              onClick={openBillingPortal}
+              disabled={portalLoading}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-muted px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted/70 disabled:opacity-60"
+            >
+              {portalLoading && <Loader2 className="size-4 animate-spin" />}
+              Manage subscription
+            </button>
+            <PrimaryButton onClick={() => router.push("/payment")}>
+              <Send className="size-4 -rotate-45" />
+              Subscribe now
+            </PrimaryButton>
+          </div>
         </SectionCard>
 
         {/* Personal details */}

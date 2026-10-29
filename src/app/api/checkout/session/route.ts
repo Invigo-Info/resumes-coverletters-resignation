@@ -55,6 +55,27 @@ export async function POST(req: Request) {
             recurring: { interval: plan.stripe.interval },
           },
         },
+        // A paid trial: the upfront charge is a ONE-TIME price alongside the
+        // recurring one. Stripe bills one-time prices on the initial invoice
+        // only, so this is taken today while the recurring price waits out
+        // trial_period_days. Without it, trial_period_days alone gives a FREE
+        // trial and the advertised trial price is never actually charged.
+        ...(plan.stripe.upfrontAmount
+          ? [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: "usd",
+                  product_data: {
+                    name:
+                      plan.stripe.upfrontProductName ??
+                      `${plan.stripe.productName} trial`,
+                  },
+                  unit_amount: plan.stripe.upfrontAmount,
+                },
+              },
+            ]
+          : []),
       ],
       subscription_data: {
         ...(plan.stripe.trialDays > 0

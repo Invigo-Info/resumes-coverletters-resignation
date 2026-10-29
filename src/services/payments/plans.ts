@@ -17,12 +17,29 @@ export interface Plan {
   /** What the checkout "Summary" shows as due. */
   summaryAmount: string;
   summaryNote: string;
-  /** Stripe inline price (test sample). */
+  /** Stripe inline price. */
   stripe: {
-    unitAmount: number; // in cents
+    /** The RECURRING amount, in cents, charged every `interval`. */
+    unitAmount: number;
     interval: "month" | "year";
+    /** Days before the recurring charge starts. 0 = bills immediately. */
     trialDays: number;
+    /**
+     * Amount charged UP FRONT, in cents, when the plan has a paid trial.
+     *
+     * `trialDays` alone gives Stripe a FREE trial: it bills nothing today and
+     * `unitAmount` on day `trialDays`. That is not what a "$1.95 for 7 days"
+     * plan promises, so the upfront amount is added to the Checkout Session as
+     * a separate ONE-TIME line item. Stripe puts one-time prices on the initial
+     * invoice only, which bills it immediately while the recurring price waits
+     * out the trial - exactly the paid-trial shape.
+     *
+     * Omit for plans that simply bill their full amount today.
+     */
+    upfrontAmount?: number;
     productName: string;
+    /** Product name for the upfront charge, shown as its own checkout line. */
+    upfrontProductName?: string;
   };
 }
 
@@ -41,7 +58,19 @@ export const PLANS: Record<PlanId, Plan> = {
     ],
     summaryAmount: "$1.95",
     summaryNote: "Tax may apply",
-    stripe: { unitAmount: 2995, interval: "month", trialDays: 7, productName: "Resumewriter.ai Premium (monthly)" },
+    // $1.95 billed today, then $29.95/month from day 7. The upfront amount MUST
+    // match priceLabel/summaryAmount above: they are what the user is shown
+    // before paying. They disagreed previously - the page advertised $1.95
+    // while Stripe was told to run a free trial and charge $29.95 on day 7, so
+    // no code path ever charged $1.95 at all.
+    stripe: {
+      unitAmount: 2995,
+      interval: "month",
+      trialDays: 7,
+      upfrontAmount: 195,
+      productName: "Resumewriter.ai Premium (monthly)",
+      upfrontProductName: "Resumewriter.ai 7-day trial",
+    },
   },
   annual: {
     id: "annual",
