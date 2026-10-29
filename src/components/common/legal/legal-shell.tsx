@@ -26,7 +26,7 @@ export function LegalShell({
         </Link>
       </header>
 
-      <main className="flex-1 px-5 pb-20 sm:px-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 px-5 pb-20 sm:px-8">
         <div className="mx-auto max-w-[68ch]">
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             {title}

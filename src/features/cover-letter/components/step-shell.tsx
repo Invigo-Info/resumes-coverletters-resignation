@@ -106,7 +106,7 @@ export function StepShell({
       </header>
 
       {/* Centered content */}
-      <main className="flex flex-1 flex-col items-center px-4 pb-32 pt-6 sm:pt-12">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center px-4 pb-32 pt-6 sm:pt-12">
         <div className="w-full max-w-xl">{children}</div>
       </main>
 

@@ -187,7 +187,7 @@ export function EditorShell({
             </aside>
 
             {/* Center form */}
-            <main className="min-w-0 flex-1">
+            <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">
               {/* Match the preview's height so switching steps (which have
                   different content heights) doesn't resize the page and jump. */}
               <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border sm:p-9 lg:min-h-[calc(100vh-7rem)]">

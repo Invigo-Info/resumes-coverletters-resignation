@@ -29,6 +29,8 @@ import { TooltipProvider } from "@/components/common/tooltip";
 import { Toaster } from "@/components/common/sonner";
 import { Providers } from "@/components/providers";
 import { ConsentBanner } from "@/components/common/consent/consent-banner";
+import { SkipLink } from "@/components/common/skip-link";
+import { GoogleTags } from "@/components/common/analytics/google-tags";
 import { siteUrl } from "@/config/site";
 
 const inter = Inter({
@@ -120,6 +122,29 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   robots: { index: true, follow: true },
+  /**
+   * Search-console ownership.
+   *
+   * Needed before Google or Bing will show indexing data or accept a sitemap
+   * submission. Driven by env so the tokens are not committed, and omitted
+   * entirely when unset - an empty verification meta tag is worse than none,
+   * because it looks configured.
+   */
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? {
+          other: {
+            "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION,
+          },
+        }
+      : {}),
+  },
+  // Picked up automatically from src/app/icon.svg, icon.png, apple-icon.png
+  // and opengraph-image.png - no manual <link> tags needed, and no chance of
+  // them drifting from the files that actually exist.
 };
 
 /**
@@ -137,6 +162,9 @@ export default function RootLayout({
       className={`${inter.variable} ${gabarito.variable} ${geistMono.variable} ${robotoFlex.variable} ${designFontVars} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* First focusable element in the document - the only position where a
+            skip link is any use. */}
+        <SkipLink />
         <Providers>
           <TooltipProvider>{children}</TooltipProvider>
         </Providers>
@@ -144,6 +172,9 @@ export default function RootLayout({
         {/* Outside Providers: the choice is not tied to being signed in, and it
             must render even if the session fetch is slow or fails. */}
         <ConsentBanner />
+        {/* Renders nothing unless a GTM or GA id is configured, and loads
+            nothing until the matching consent is granted. */}
+        <GoogleTags />
       </body>
     </html>
   );

@@ -37,7 +37,7 @@ export function ErrorState({
         </Link>
       </div>
 
-      <main className="flex flex-1 items-center justify-center px-4 py-16">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center px-4 py-16">
         <div className="w-full max-w-md text-center">
           {code && (
             <p className="mb-3 font-mono text-sm font-semibold tracking-widest text-muted-foreground">

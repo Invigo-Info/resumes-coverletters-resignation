@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { AnalyticsTracker } from "@/components/common/analytics/analytics-tracker";
+import { WebVitals } from "@/components/common/analytics/web-vitals";
 import { AccountScope } from "@/features/authentication/components/account-scope";
 
 /** Wraps the app so client components can read the Auth.js session. */
@@ -11,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AccountScope />
       {children}
       <AnalyticsTracker />
+      <WebVitals />
     </SessionProvider>
   );
 }

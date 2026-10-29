@@ -31,16 +31,37 @@ export function AnalyticsTracker() {
   }, [pathname, consent]);
 
   useEffect(() => {
-    if (!analyticsEnabled() || !email) return;
-    // The distinct id is a hash of the email, never the address itself: a
-    // PostHog person would otherwise be a directory of who is job hunting,
-    // which is exactly the inference users would least like us to export to a
-    // third party. The hash is stable, so funnels across sessions still work.
+    if (!email) return;
+    // The id is a hash of the email, never the address itself: a PostHog person
+    // list would otherwise be a directory of who is job hunting, which is
+    // exactly the inference users would least like exported to a third party.
+    // The hash is stable, so funnels across sessions still work.
     void (async () => {
       const id = await hashEmail(email);
-      await identify(id);
+
+      // Sentry gets the SAME hashed id, and gets it regardless of analytics
+      // consent - error monitoring runs on service-stability grounds, and this
+      // is what answers "is one customer affected or everyone?" at the start of
+      // an incident. It is a pseudonymous id only; `beforeSend` strips email,
+      // username and IP from every event.
+      if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+        void import("@sentry/nextjs").then((Sentry) => {
+          Sentry.setUser({ id });
+        });
+      }
+
+      if (analyticsEnabled()) await identify(id);
     })();
   }, [email, consent]);
+
+  // Clear the Sentry identity on sign-out, so a later error on a shared machine
+  // is not attributed to whoever used it last.
+  useEffect(() => {
+    if (email || !process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    void import("@sentry/nextjs").then((Sentry) => {
+      Sentry.setUser(null);
+    });
+  }, [email]);
 
   return null;
 }

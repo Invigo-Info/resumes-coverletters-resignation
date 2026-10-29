@@ -18,7 +18,7 @@ export function AuthShell({
   footer?: React.ReactNode;
 }) {
   return (
-    <main className="flex flex-1 flex-col items-center px-4 pt-16 sm:pt-20">
+    <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center px-4 pt-16 sm:pt-20">
       <Link href="/" aria-label="resumewriter.ai home">
         <LogoMark className="size-9" />
       </Link>

@@ -124,7 +124,7 @@ export default async function PaymentSuccessPage({
         </Link>
       </div>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-24 text-center">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center px-4 pb-24 text-center">
         <span className="grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-600">
           <CircleCheck className="size-9" />
         </span>

@@ -14,7 +14,9 @@
     "test:run": "vitest run",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:status": "node scripts/db-migrate.mjs --status",
-    "db:verify": "node scripts/db-migrate.mjs --verify"
+    "db:verify": "node scripts/db-migrate.mjs --verify",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject .next && sentry-cli sourcemaps upload .next",
+    "brand:assets": "python scripts/generate_brand_assets.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

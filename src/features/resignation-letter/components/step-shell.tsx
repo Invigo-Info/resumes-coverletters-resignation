@@ -116,7 +116,7 @@ export function StepShell({
       </header>
 
       {/* Two-pane body: form (left) + live preview (right) */}
-      <main className="flex flex-1 justify-center px-4 pb-32 pt-8 sm:pt-14">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 justify-center px-4 pb-32 pt-8 sm:pt-14">
         <div className="flex w-full max-w-5xl gap-10 lg:gap-16">
           <div className="w-full max-w-xl">{children}</div>
           <aside className="hidden w-[360px] shrink-0 lg:block">

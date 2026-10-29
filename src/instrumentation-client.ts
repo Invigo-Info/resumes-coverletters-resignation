@@ -20,9 +20,10 @@
  *   - Query strings are stripped from URLs: `?token=` on the password-reset and
  *     email-verification pages would otherwise put a LIVE single-use credential
  *     into an error report.
- *   - No user email or name is attached. The analytics id is a hash, and Sentry
- *     gets nothing at all - an event id is enough for support to correlate,
- *     which is why the error pages surface that and nothing else.
+ *   - The only user field kept is a HASHED id (the same SHA-256 of the email
+ *     used for analytics). No email, no username, no IP. That is enough to
+ *     answer "one customer or everyone?" during an incident without Sentry
+ *     holding an address. The error pages still surface only an event id.
  *
  * Error reporting itself runs without consent, as service security and
  * stability (legitimate interest), which is only defensible BECAUSE of the
@@ -36,10 +37,28 @@ function stripUrl(value: string): string {
   return cut === -1 ? value : value.slice(0, cut);
 }
 
-/** Strip credentials and PII that must never leave the app in a crash report. */
-function scrub<T extends { request?: { url?: string; query_string?: unknown; data?: unknown; cookies?: unknown }; user?: unknown }>(
-  event: T
-): T {
+/**
+ * Strip credentials and PII that must never leave the app in a crash report.
+ *
+ * The user object is REDUCED rather than deleted. Deleting it outright - which
+ * is what this did first - also destroyed the ability to answer "is this one
+ * customer or everyone?", which is the first question asked in an incident and
+ * the difference between a support reply and a rollback. So the hashed id is
+ * kept and every directly identifying field is dropped: no email, no username,
+ * no IP address. The id is the same SHA-256 of the email used for analytics, so
+ * a report can be correlated without Sentry ever holding an address.
+ */
+function scrub<
+  T extends {
+    request?: {
+      url?: string;
+      query_string?: unknown;
+      data?: unknown;
+      cookies?: unknown;
+    };
+    user?: Record<string, unknown>;
+  },
+>(event: T): T {
   if (event.request) {
     if (typeof event.request.url === "string") {
       event.request.url = stripUrl(event.request.url);
@@ -49,7 +68,10 @@ function scrub<T extends { request?: { url?: string; query_string?: unknown; dat
     delete event.request.data;
     delete event.request.cookies;
   }
-  delete event.user;
+  if (event.user) {
+    const id = event.user.id;
+    event.user = typeof id === "string" ? { id } : {};
+  }
   return event;
 }
 

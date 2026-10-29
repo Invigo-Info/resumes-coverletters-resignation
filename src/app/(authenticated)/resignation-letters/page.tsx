@@ -9,7 +9,7 @@ export default function ResignationLettersPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav active="Resignation letters" />
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
           <ResignationDashboardBody />
         </div>

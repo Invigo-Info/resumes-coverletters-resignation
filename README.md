@@ -112,4 +112,5 @@ step) `docs/account-recovery.md` (password reset, email verification, and what
 actually guards OAuth sign-in), `docs/export-paywall.md` (how the free-tier export
 allowance is enforced, and the limit of that enforcement), and
 `docs/observability.md` (consent, analytics, and what is scrubbed from error
-reports - read before setting any analytics key in production).
+reports), and `docs/integrations.md` (what every key turns on, plus a
+post-deploy verification list - these all fail silently when misconfigured).

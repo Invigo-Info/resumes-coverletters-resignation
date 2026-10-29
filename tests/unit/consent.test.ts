@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   useConsent,
   analyticsConsentGranted,
+  marketingConsentGranted,
   consentUndecided,
   CONSENT_VERSION,
 } from "@/utilities/consent";
@@ -22,6 +23,7 @@ beforeEach(() => {
   useConsent.setState({
     version: CONSENT_VERSION,
     analytics: null,
+    marketing: null,
     decidedAt: null,
   });
 });
@@ -32,12 +34,35 @@ describe("consent", () => {
     // here is an unlawful-tracking bug, not a preference.
     expect(consentUndecided()).toBe(true);
     expect(analyticsConsentGranted()).toBe(false);
+    expect(marketingConsentGranted()).toBe(false);
   });
 
-  it("grants analytics only on an explicit accept", () => {
+  it("grants both categories only on an explicit accept-all", () => {
     useConsent.getState().acceptAll();
     expect(analyticsConsentGranted()).toBe(true);
+    expect(marketingConsentGranted()).toBe(true);
     expect(consentUndecided()).toBe(false);
+  });
+
+  it("honours a PARTIAL choice without inferring the other category", () => {
+    // Analytics and advertising are different purposes; allowing one must
+    // never be read as allowing the other.
+    useConsent.getState().setChoices({ analytics: true, marketing: false });
+    expect(analyticsConsentGranted()).toBe(true);
+    expect(marketingConsentGranted()).toBe(false);
+    expect(consentUndecided()).toBe(false);
+
+    useConsent.getState().setChoices({ analytics: false, marketing: true });
+    expect(analyticsConsentGranted()).toBe(false);
+    expect(marketingConsentGranted()).toBe(true);
+  });
+
+  it("treats a half-answered state as still undecided", () => {
+    // Reached when a NEW category is added: the visitor answered the old one
+    // and has not seen the new one. They must be asked, not assumed.
+    useConsent.setState({ analytics: true, marketing: null });
+    expect(consentUndecided()).toBe(true);
+    expect(marketingConsentGranted()).toBe(false);
   });
 
   it("records a rejection as a decision, not as undecided", () => {
@@ -45,6 +70,7 @@ describe("consent", () => {
     // re-asking until the visitor gives in, which is the nagging dark pattern.
     useConsent.getState().rejectAll();
     expect(analyticsConsentGranted()).toBe(false);
+    expect(marketingConsentGranted()).toBe(false);
     expect(consentUndecided()).toBe(false);
   });
 
@@ -52,7 +78,7 @@ describe("consent", () => {
     useConsent.getState().acceptAll();
     expect(useConsent.getState().decidedAt).toBeTypeOf("number");
 
-    useConsent.setState({ analytics: null, decidedAt: null });
+    useConsent.setState({ analytics: null, marketing: null, decidedAt: null });
     useConsent.getState().rejectAll();
     expect(useConsent.getState().decidedAt).toBeTypeOf("number");
   });
@@ -66,6 +92,7 @@ describe("consent", () => {
     // collection rather than leaving the old permission standing while the
     // banner is on screen.
     expect(analyticsConsentGranted()).toBe(false);
+    expect(marketingConsentGranted()).toBe(false);
     expect(consentUndecided()).toBe(true);
   });
 
@@ -78,7 +105,12 @@ describe("consent", () => {
   it("stamps the current version on a decision", () => {
     // So a stored decision can be matched against the version it was made
     // under; a mismatch is treated as undecided by the store's merge.
-    useConsent.setState({ version: 0, analytics: null, decidedAt: null });
+    useConsent.setState({
+      version: 0,
+      analytics: null,
+      marketing: null,
+      decidedAt: null,
+    });
     useConsent.getState().acceptAll();
     expect(useConsent.getState().version).toBe(CONSENT_VERSION);
   });

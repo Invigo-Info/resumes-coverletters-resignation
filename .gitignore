@@ -32,10 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-# ...except the key-only templates, which carry no values and are needed to
-# set up a fresh checkout. Never un-ignore .env or .env.local.
+# ...except the key-only template, which carries no values and is needed to set
+# up a fresh checkout. .env.example is the SINGLE source: a second template is
+# how a key gets missed on a fresh deploy. Never un-ignore .env or .env.local.
 !.env.example
-!.env.local.example
 
 # vercel
 .vercel

@@ -184,7 +184,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Content */}
-        <main className="min-w-0 flex-1 overflow-y-auto print:overflow-visible">{children}</main>
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto print:overflow-visible">{children}</main>
       </div>
     </div>
   );

@@ -112,6 +112,12 @@ export const config = {
   // Run on everything except API routes, Next internals, and static assets
   // (images/fonts), so CSS/JS and the public/ illustration keep loading.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    // `webmanifest` is in this list because the route gate redirected
+    // /manifest.webmanifest to /login: a signed-out browser, and every
+    // crawler, got an HTML redirect instead of the manifest, so the install
+    // prompt and the home-screen icon silently never worked. It is public by
+    // definition - a browser reads it BEFORE anyone signs in. Same for the
+    // .txt/.xml SEO files.
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico|woff2?|webmanifest|txt|xml)$).*)",
   ],
 };

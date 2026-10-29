@@ -145,7 +145,7 @@ export function WriteMode({
       </aside>
 
       {/* Center editor */}
-      <main className="min-w-0 flex-1">
+      <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">
         <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border sm:p-8">
           {section === "personal" ? <PersonalSection /> : <ContentSection />}
 

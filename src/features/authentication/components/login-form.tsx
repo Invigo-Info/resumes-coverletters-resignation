@@ -148,7 +148,7 @@ export function LoginForm({
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 pt-16 sm:pt-20">
+    <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center px-4 pt-16 sm:pt-20">
       <LogoMark className="size-9" />
 
       <h1 className="mt-10 font-heading text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">

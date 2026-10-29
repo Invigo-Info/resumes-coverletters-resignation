@@ -33,6 +33,79 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-10-29 - Phase 7: remaining stack wiring + the brand/SEO surface
+
+Everything is wired and INERT - keys only, no code needed to switch anything on.
+
+Tag manager / GA4 (Group C)
+- `utilities/google-tags.ts` + `components/common/analytics/google-tags.tsx`,
+  hand-rolled on `next/script` rather than adding `@next/third-parties`: that
+  package's component loads the container as soon as it renders, which is
+  exactly what must not happen before consent.
+- GTM and GA4 are MUTUALLY EXCLUSIVE at runtime. If both ids are set, GTM wins
+  and GA4 is not loaded directly - otherwise a GA4 tag configured inside the
+  container double-counts every event, silently. Pinned by a test.
+- Google Consent Mode v2 signals (incl. `ad_user_data`/`ad_personalization`)
+  are pushed as a second layer, because a container can be edited by someone
+  who never reads this repo.
+
+Consent v2
+- Added a `marketing` category and bumped CONSENT_VERSION to 2, so a v1
+  "accept" cannot be read as permission for tags v2 introduced. GTM is gated on
+  `marketing`, not `analytics`: it is a container, so it is consented to at the
+  broadest purpose it could serve, not the narrowest one it serves today.
+- Banner gained a granular panel (toggles default OFF, so opening and saving
+  grants nothing the visitor did not switch on).
+
+Observability completion (I2)
+- `Sentry.setUser({ id })` with the SAME hashed email id analytics uses, and
+  cleared on sign-out. This REVISES the Phase 6 scrub, which deleted
+  `event.user` outright and with it the ability to answer "one customer or
+  everyone?" - the first question in an incident. Now reduced, not deleted: the
+  hashed id survives, email/username/IP do not.
+- `npm run sentry:sourcemaps` (sentry-cli ships inside @sentry/nextjs - no new
+  dependency). next.config stays unwrapped per AGENTS.md.
+- Web Vitals reported into PostHog, consent-gated like everything else.
+
+Brand + SEO surface
+- `scripts/generate_brand_assets.py` (`npm run brand:assets`) generates icon.png,
+  apple-icon.png, the 192/512 manifest icons and the 1200x630 OG card from the
+  SAME gradient stops as globals.css and the SAME lucide glyph as LogoMark, so a
+  bookmarked icon matches the header mark. Output is committed; no runtime
+  ImageResponse route or edge function.
+- `icon.svg`, `manifest.ts` (standalone display, start_url /dashboard), and
+  search-console verification wired from env - omitted entirely when unset,
+  since an empty verification tag looks configured but is not.
+- `twitter.card` had been `summary_large_image` with no image file anywhere, so
+  every shared link rendered a blank card.
+
+BUG FOUND AND FIXED while verifying: the route gate matched
+`/manifest.webmanifest` and redirected it to /login. A signed-out browser and
+every crawler got an HTML redirect instead of the manifest, so the install
+prompt and home-screen icon silently never worked. Matcher now also excludes
+`webmanifest|txt|xml`. The regression test targets `config.matcher`, not
+`proxy()` - these paths are protected by never reaching the handler, so
+asserting against the handler tests the wrong layer.
+
+Accessibility
+- Skip link (WCAG 2.4.1 Bypass Blocks, Level A) as the first focusable element,
+  with `id="main-content"` + `tabIndex={-1}` on all 13 `<main>` landmarks -
+  without the tabindex, Safari and Firefox scroll without moving focus, so the
+  next Tab returns to the top. Verified `<img>`/`<Image>` alt coverage: already
+  complete.
+
+Env hygiene (Group D)
+- Documented every previously-undocumented read (LOGIN_RATE_LIMIT,
+  REGISTER_RATE_LIMIT, TRUSTED_PROXY_HOPS, all the reset/verify/export limits,
+  GTM/GA, site verification, SENTRY_AUTH_TOKEN/ORG/PROJECT).
+- Deleted the `.env.local.example` relic and its .gitignore negation.
+  `.env.example` is now the single source - two templates that disagree is how
+  a key gets missed on a fresh deploy.
+
+Grounding doc: `docs/integrations.md` - what each key turns on, the GTM/GA
+decision, and a post-deploy verification list (every one of these fails
+silently when misconfigured).
+
 ### 2026-10-29 - Phase 6: consent gate, then analytics and error monitoring
 
 Consent FIRST, because the order was the risk. PostHog initialised and started
