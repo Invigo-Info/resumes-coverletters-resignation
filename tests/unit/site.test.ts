@@ -22,7 +22,10 @@ describe("siteUrl", () => {
   it("falls back to localhost when nothing is configured", () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
-    expect(siteUrl()).toBe("http://localhost:3000");
+    // 3001, not 3000: that is the port the dev server runs on, and this
+    // fallback now also builds the links in password-reset and verification
+    // emails, where a wrong port means a dead link rather than a cosmetic one.
+    expect(siteUrl()).toBe("http://localhost:3001");
   });
 });
 

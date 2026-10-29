@@ -21,6 +21,8 @@ interface StoredUser {
   email: string;
   name: string;
   passwordHash: string;
+  /** Epoch ms the address was confirmed, or null/undefined if never. */
+  emailVerifiedAt?: number | null;
 }
 
 /** A user safe to expose to the client - no password hash. */
@@ -96,6 +98,24 @@ async function fileUpdateUserName(email: string, name: string): Promise<boolean>
   return true;
 }
 
+async function fileSetPassword(email: string, password: string): Promise<boolean> {
+  const users = await readUsers();
+  const user = users.find((u) => u.email === normalize(email));
+  if (!user) return false;
+  user.passwordHash = await bcrypt.hash(password, 10);
+  await writeUsers(users);
+  return true;
+}
+
+async function fileSetEmailVerified(email: string, at: number): Promise<boolean> {
+  const users = await readUsers();
+  const user = users.find((u) => u.email === normalize(email));
+  if (!user) return false;
+  user.emailVerifiedAt = at;
+  await writeUsers(users);
+  return true;
+}
+
 async function fileDeleteUser(email: string): Promise<void> {
   const users = await readUsers();
   const target = normalize(email);
@@ -109,6 +129,7 @@ interface UserRow {
   email: string;
   name: string;
   password_hash: string;
+  email_verified_at?: string | number | null;
 }
 
 function rowToUser(row: UserRow): StoredUser {
@@ -117,6 +138,8 @@ function rowToUser(row: UserRow): StoredUser {
     email: row.email,
     name: row.name,
     passwordHash: row.password_hash,
+    emailVerifiedAt:
+      row.email_verified_at == null ? null : Number(row.email_verified_at),
   };
 }
 
@@ -133,7 +156,7 @@ function isUniqueViolation(err: unknown): boolean {
 async function pgFindUserByEmail(email: string): Promise<StoredUser | undefined> {
   const sql = getSql();
   const rows = (await sql`
-    select id, email, name, password_hash
+    select id, email, name, password_hash, email_verified_at
     from users where email = ${normalize(email)} limit 1
   `) as unknown as UserRow[];
   return rows[0] ? rowToUser(rows[0]) : undefined;
@@ -178,6 +201,25 @@ async function pgUpdateUserName(email: string, name: string): Promise<boolean> {
   }
   const rows = (await sql`
     select id from users where email = ${target} limit 1
+  `) as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+async function pgSetPassword(email: string, password: string): Promise<boolean> {
+  const sql = getSql();
+  const hash = await bcrypt.hash(password, 10);
+  const rows = (await sql`
+    update users set password_hash = ${hash}
+    where email = ${normalize(email)} returning id
+  `) as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+async function pgSetEmailVerified(email: string, at: number): Promise<boolean> {
+  const sql = getSql();
+  const rows = (await sql`
+    update users set email_verified_at = ${at}
+    where email = ${normalize(email)} returning id
   `) as unknown as { id: string }[];
   return rows.length > 0;
 }
@@ -227,6 +269,43 @@ export async function updateUserName(
 /** Permanently remove a user from the store (idempotent). */
 export async function deleteUser(email: string): Promise<void> {
   return isDbEnabled() ? pgDeleteUser(email) : fileDeleteUser(email);
+}
+
+/**
+ * Replace a user's password. Returns false when no such user exists.
+ *
+ * Used by the password-reset flow, which has already proved mailbox control by
+ * consuming a token - so this function deliberately does NOT require the old
+ * password. Callers that are not holding a consumed token must not use it.
+ */
+export async function setUserPassword(
+  email: string,
+  password: string
+): Promise<boolean> {
+  return isDbEnabled()
+    ? pgSetPassword(email, password)
+    : fileSetPassword(email, password);
+}
+
+/** Record that an address was confirmed. Returns false if no such user. */
+export async function setEmailVerified(
+  email: string,
+  at: number = Date.now()
+): Promise<boolean> {
+  return isDbEnabled()
+    ? pgSetEmailVerified(email, at)
+    : fileSetEmailVerified(email, at);
+}
+
+/**
+ * When the address was verified, or null for unverified / Google-only accounts
+ * (which have no users row - Google has already verified the address itself).
+ */
+export async function getEmailVerifiedAt(
+  email: string
+): Promise<number | null> {
+  const user = await findUserByEmail(email);
+  return user?.emailVerifiedAt ?? null;
 }
 
 /** Return the user if email + password match, otherwise null. */

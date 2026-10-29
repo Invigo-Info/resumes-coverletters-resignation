@@ -49,6 +49,24 @@ function isAuthEntry(pathname: string): boolean {
 }
 
 /**
+ * Account-recovery pages, reachable while signed out BUT not bounced away from
+ * when signed in.
+ *
+ * Both halves matter. Someone who has forgotten their password is by definition
+ * signed out, so gating these would redirect them to the login page they cannot
+ * get past - the lockout this whole flow exists to fix. And a confirmation link
+ * is routinely opened in a browser where the user IS signed in, so treating
+ * these as sign-in entries would redirect the link away before it is consumed.
+ */
+function isRecovery(pathname: string): boolean {
+  return (
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
+    pathname === "/verify-email"
+  );
+}
+
+/**
  * Routes reachable while signed out. Beyond the sign-in entry this covers the
  * marketing landing (`/`, which itself branches on the session), the legal
  * pages, and the SEO files — none of which a crawler or logged-out visitor can
@@ -57,6 +75,7 @@ function isAuthEntry(pathname: string): boolean {
 function isPublic(pathname: string): boolean {
   return (
     isAuthEntry(pathname) ||
+    isRecovery(pathname) ||
     pathname === "/" ||
     pathname === "/terms" ||
     pathname === "/privacy" ||

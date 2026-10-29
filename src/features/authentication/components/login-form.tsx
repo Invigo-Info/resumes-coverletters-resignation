@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { LogoMark } from "@/components/common/brand/logo-mark";
@@ -31,7 +32,10 @@ function messageForAuthError(code?: string): string | null {
     case "OAuthAccountNotLinked":
       return "This email is already registered with a different sign-in method. Sign in with your email and password instead.";
     case "AccessDenied":
-      return "Google sign-in was blocked. If this app is still in testing, ask the owner to add your email as a test user in the Google Cloud console.";
+      // Two causes now reach this code: Google's own test-user restriction, and
+      // our signIn callback refusing a profile whose email the provider has not
+      // verified. The message has to cover both without guessing which.
+      return "Google sign-in was blocked. This happens if Google has not verified that email address, or if the app is still in testing and your email is not on its test-user list. You can sign in with an email and password instead.";
     case "Configuration":
       return "Google sign-in is misconfigured on the server. Check the Google OAuth credentials.";
     case "OAuthCallbackError":
@@ -51,9 +55,12 @@ function messageForAuthError(code?: string): string | null {
 export function LoginForm({
   googleEnabled,
   initialError,
+  passwordWasReset = false,
 }: {
   googleEnabled: boolean;
   initialError?: string;
+  /** Set after a completed password reset, so the user knows it worked. */
+  passwordWasReset?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -178,6 +185,19 @@ export function LoginForm({
           />
         </label>
 
+        {!isSignup && (
+          // Only in sign-in mode: during sign-up there is no password to forget,
+          // and the link would read as an instruction rather than an escape.
+          <p className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Forgot your password?
+            </Link>
+          </p>
+        )}
+
         {isSignup && (
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-foreground">Confirm password</span>
@@ -192,6 +212,12 @@ export function LoginForm({
               className="h-12 w-full rounded-[10px] border border-border bg-card px-4 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/30"
             />
           </label>
+        )}
+
+        {passwordWasReset && !error && (
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" role="status">
+            Your password has been updated. Sign in with your new password.
+          </p>
         )}
 
         {error && (

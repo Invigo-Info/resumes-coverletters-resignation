@@ -1,0 +1,59 @@
+// @vitest-environment node
+import { describe, it, expect, beforeAll } from "vitest";
+
+/**
+ * The route gate must let the account-recovery pages through.
+ *
+ * This is the trap the gate walked straight into: someone who has forgotten
+ * their password is signed OUT by definition, so a gate that treats
+ * /forgot-password as protected redirects them to the login page they cannot
+ * get past. The recovery flow would have shipped completely unreachable, and
+ * nothing in a type check or a build would have said so.
+ *
+ * The mirror case matters too. A confirmation link is routinely opened in a
+ * browser where the user IS signed in. If these counted as sign-in entries,
+ * the gate would bounce the link to "/" before the token was ever consumed.
+ */
+
+// AUTH_SECRET must exist before the proxy module reads it.
+beforeAll(() => {
+  process.env.AUTH_SECRET ||= "test-secret-for-route-gate-only";
+});
+
+const { NextRequest } = await import("next/server");
+const { proxy } = await import("@/proxy");
+
+/**
+ * A signed-OUT request for a path (no session cookie at all). NextRequest, not
+ * a bare Request: the gate reads `nextUrl`, which only the former provides.
+ */
+function anonRequest(pathname: string) {
+  return new NextRequest(new URL(`https://example.com${pathname}`));
+}
+
+/** Where the gate sends this request, or null when it lets it through. */
+async function destinationOf(pathname: string): Promise<string | null> {
+  const res = await proxy(anonRequest(pathname));
+  const location = res.headers.get("location");
+  return location ? new URL(location).pathname : null;
+}
+
+describe("route gate: account recovery", () => {
+  for (const path of ["/forgot-password", "/reset-password", "/verify-email"]) {
+    it(`lets a signed-out visitor reach ${path}`, async () => {
+      expect(await destinationOf(path)).toBeNull();
+    });
+  }
+
+  it("still protects an ordinary authenticated route", async () => {
+    // Proves the test is actually exercising the gate rather than passing
+    // because every path happens to be allowed.
+    expect(await destinationOf("/dashboard")).toBe("/login");
+  });
+
+  it("still allows the public marketing and legal pages", async () => {
+    expect(await destinationOf("/")).toBeNull();
+    expect(await destinationOf("/privacy")).toBeNull();
+    expect(await destinationOf("/terms")).toBeNull();
+  });
+});

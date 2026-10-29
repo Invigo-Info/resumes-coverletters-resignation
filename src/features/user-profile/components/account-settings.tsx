@@ -157,6 +157,60 @@ export function AccountSettings() {
     setLast(rest.join(" "));
   }, [fullName]);
 
+  // Email-verification state. `null` while unknown, so the row renders nothing
+  // rather than flashing "unverified" at a verified user on first paint.
+  const [verified, setVerified] = useState<boolean | null>(null);
+  const [verifySending, setVerifySending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/auth/verify");
+        if (!r.ok) return;
+        const d = (await r.json()) as { verified?: boolean };
+        if (!cancelled) setVerified(Boolean(d.verified));
+      } catch {
+        /* leave unknown - the row stays hidden */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Ask for a fresh confirmation link for the signed-in address. */
+  async function resendVerification() {
+    setVerifySending(true);
+    try {
+      const r = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const d = (await r.json().catch(() => ({}))) as {
+        error?: string;
+        alreadyVerified?: boolean;
+      };
+      if (r.ok && d.alreadyVerified) {
+        setVerified(true);
+        toast.success("Your email is already confirmed");
+        return;
+      }
+      if (r.ok) {
+        toast.success("Confirmation email sent", {
+          description: `Check ${email} for the link.`,
+        });
+        return;
+      }
+      toast.error(d.error || "Couldn't send the email");
+    } catch {
+      toast.error("Couldn't send the email");
+    } finally {
+      setVerifySending(false);
+    }
+  }
+
   /** Persist the combined first/last name and refresh the session display name. */
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -393,6 +447,29 @@ export function AccountSettings() {
         {/* Emails */}
         <SectionCard>
           <h2 className="mb-5 text-xl font-bold text-foreground">Emails</h2>
+
+          {/* Only shown once the state is known AND unverified: a verified user
+              does not need telling, and an unresolved fetch must not accuse
+              them of something that is not true. */}
+          {verified === false && (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3">
+              <p className="text-sm text-amber-900">
+                <span className="font-semibold">Confirm your email address.</span>{" "}
+                Until you do, we can&apos;t be sure password resets and receipts
+                will reach you.
+              </p>
+              <button
+                type="button"
+                onClick={resendVerification}
+                disabled={verifySending}
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[6px] bg-(--brand-blue) px-4 text-sm font-semibold text-primary-foreground transition-colors disabled:opacity-60"
+              >
+                {verifySending && <Loader2 className="size-4 animate-spin" />}
+                Send confirmation link
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
               Subscribe to career tips and Resumewriter.ai news, events, offers

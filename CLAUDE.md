@@ -33,6 +33,73 @@ Key areas (full purpose-grouped layout: `docs/architecture.md`):
 
 ## Changelog
 
+### 2026-10-29 - Phase 4: account recovery (branch: handover/production-readiness)
+
+There was no password reset at all. A user who forgot their password lost their
+account and every resume in it - no reset, no support inbox, no admin tool.
+
+- `auth_tokens` (migration `0003`) + `users.email_verified_at`, with both
+  backends (file store for local dev, Postgres when `DATABASE_URL` is set).
+  Only `sha256(token)` is persisted - a live reset token is a password
+  equivalent, so a leaked backup must not contain replayable ones.
+- New: `/forgot-password`, `/reset-password`, `/verify-email`, and
+  `POST /api/auth/password/{request,reset}` + `GET|POST /api/auth/verify`.
+  Verification mail now also goes out on sign-up, with a resend on `/account`.
+- The request endpoint answers identically for a known and an unknown address
+  (no account enumeration - on a resume site that would reveal who is job
+  hunting), and is throttled per IP *and* per account (mailbox flooding).
+  Tokens are spent in one atomic statement; a completed reset invalidates every
+  other outstanding link for that account.
+- The route gate now allows the recovery pages: gating them would have
+  redirected locked-out users to the login page they cannot get past, shipping
+  the whole flow unreachable. Locked down in `tests/unit/recovery-routes.test.ts`.
+- Verification is recorded, NOT enforced at sign-in - every existing account
+  predates it, so gating login would lock out the current user base.
+- **Correction to the Phase 0 note below:** `allowDangerousEmailAccountLinking`
+  is inert in this app. Auth.js only reads it on the adapter path and
+  `handle-login.js` returns early when there is no adapter; this app is JWT-only.
+  The real guard is the new `signIn` callback refusing any OAuth profile whose
+  `email_verified` is not true - which matters because every store is keyed by
+  email. Details in `docs/account-recovery.md`.
+- `siteUrl()` dev fallback corrected 3000 -> 3001 (the actual dev port); it now
+  builds recovery-email links, where a wrong port is a dead link.
+
+### 2026-10-29 - Phase 3: payments made correct under Stripe's real guarantees
+
+Stripe delivers webhooks at-least-once and in no particular order; the handler
+assumed exactly-once and ordered.
+
+- `processed_events` (migration `0002`): every event is claimed by id before it
+  is handled, and the claim is RELEASED if the handler throws - otherwise a
+  transient error would permanently lose a paid customer's entitlement. Fixes a
+  retried `invoice.payment_succeeded` mailing a second receipt.
+- `subscriptions.last_event_at` + an ordering guard on every entitlement write.
+  A stale "active" event delivered after a cancellation used to resurrect the
+  subscription, so a cancelled customer kept premium.
+- `current_period_end` is no longer wiped by events that say nothing about the
+  billing period; `checkout.session.completed` now requires a paid status.
+- **Pricing bug:** the trial config told Stripe to run a FREE trial ($0 today,
+  $29.95 on day 7) while the page advertised $1.95 - no code path ever charged
+  $1.95. The upfront amount is now a one-time line item alongside the recurring
+  price. Verified against the Stripe test API (`amount_total: 195`).
+- **Cancellation:** `POST /api/billing/portal` opens Stripe's Customer Portal
+  (customer resolved from the session email, never a client id), with a "Manage
+  subscription" button on `/account`. Previously the only way to stop billing
+  was to delete the account. The portal config is code-managed via
+  `scripts/stripe-portal-config.mjs` rather than clicked into a dashboard.
+- **Checkout:** sign-in now required (without an email the webhook receives a
+  payment it cannot attribute - charged, granted nothing), rate-limited, and
+  `?next=` validated with `safeInternalPath` - `startsWith("/")` waves through
+  `//evil.com`, an open redirect landing where card details were just entered.
+- **Paywall bypass fixed on `/payment/success`:** it granted premium to whoever
+  was signed in for ANY completed session id, so one payment could be replayed
+  to premium-ify unlimited accounts. The session must now belong to the
+  signed-in account.
+- **P9:** `clientIp` read the FIRST `x-forwarded-for` entry, which the client
+  supplies - varying it minted a fresh bucket per request, so no rate limit
+  applied at all (uncapped Gemini spend, unlimited signups). Now prefers
+  platform-set headers and otherwise counts in from the right.
+
 ### 2026-08-10 — Blue+white UI redesign (branch: redesign-blue-white)
 
 App-wide chrome redesign to a disciplined blue+white system, driven entirely from

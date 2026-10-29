@@ -49,14 +49,13 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      // Never auto-link a Google sign-in onto an existing email/password
-      // account. With this true, anyone able to create a Google account at a
-      // victim's address took over that account with no ownership proof - the
-      // provider name says exactly how dangerous it is. The cost of false is
-      // that a user who registered with a password and later clicks "Continue
-      // with Google" is refused rather than signed in; /login surfaces that as
-      // OAuthAccountNotLinked. Proper linking (verify ownership, then link) is
-      // tracked as part of the account-lifecycle work.
+      // Kept false, but be clear about what it does here: NOTHING. Auth.js
+      // only consults this flag on the database-adapter path, and
+      // handle-login.js returns early with `if (!adapter) return {...}` - this
+      // app uses JWT sessions with no adapter, so the flag is never read. The
+      // real guard is the `email_verified` check in the signIn callback below.
+      // It stays set so that adding an adapter later cannot silently switch
+      // auto-linking on.
       allowDangerousEmailAccountLinking: false,
       // Always show the Google "Choose an account" screen, even when the user
       // already has an active Google session (otherwise it silently re-auths).
@@ -77,6 +76,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // this makes the secure flag explicit rather than relying on host detection.
   useSecureCookies: process.env.NODE_ENV === "production",
   callbacks: {
+    /**
+     * Refuse an OAuth sign-in whose email the provider has not verified.
+     *
+     * This is the check that actually protects existing accounts. Documents,
+     * subscriptions and saved jobs are all keyed by EMAIL, so whoever signs in
+     * with an address owns that account's data. If a provider handed us an
+     * address it had not confirmed, anyone could claim any user's account by
+     * putting their email in a provider profile.
+     *
+     * Google sets `email_verified` on its OIDC profile and it is true for both
+     * gmail.com and Workspace domains, so a legitimate Google user is never
+     * blocked. Treating a MISSING flag as unverified is the deliberate choice:
+     * failing closed on an unexpected profile shape is the safe direction.
+     */
+    async signIn({ account, profile }) {
+      if (!account || account.type === "credentials") return true;
+      const verified = (profile as { email_verified?: unknown } | undefined)
+        ?.email_verified;
+      if (verified === true) return true;
+      console.warn(
+        `[auth] refused ${account.provider} sign-in: email not verified by provider`
+      );
+      return false;
+    },
+
     // Remember which provider signed the user in (shown on the account page),
     // and let `useSession().update({ name })` refresh the display name live.
     async jwt({ token, account, trigger, session }) {

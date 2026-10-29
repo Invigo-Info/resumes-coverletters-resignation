@@ -44,9 +44,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "no_customer" }, { status: 404 });
     }
 
+    // Use the repo-managed portal configuration when one is set (see
+    // scripts/stripe-portal-config.mjs). Unset, Stripe falls back to the
+    // account's dashboard default, so this stays optional.
+    const configuration = process.env.STRIPE_PORTAL_CONFIGURATION_ID;
+
     const portal = await stripe.billingPortal.sessions.create({
       customer: customer.id,
       return_url: `${origin}/account`,
+      ...(configuration ? { configuration } : {}),
     });
 
     return NextResponse.json({ url: portal.url });

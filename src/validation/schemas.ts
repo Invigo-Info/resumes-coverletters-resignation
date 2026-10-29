@@ -148,3 +148,24 @@ export const registerBodySchema = z
   );
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
+
+/**
+ * `/api/auth/password/request` body. Only the address - the response is
+ * deliberately identical whether or not it matches an account.
+ */
+export const passwordResetRequestSchema = z.object({
+  email: z.string().trim().regex(EMAIL_RE, "Enter a valid email address"),
+});
+
+/**
+ * `/api/auth/password/reset` body: the emailed token plus the new password.
+ *
+ * The same policy as registration, so a reset cannot be used as a side door to
+ * set a weaker password than sign-up would have allowed. The token is bounded
+ * in length to keep a huge body from reaching the hashing step at all; the real
+ * check is whether its hash matches a live row.
+ */
+export const passwordResetSchema = z.object({
+  token: z.string().trim().min(16, "Invalid or expired link").max(200),
+  password: passwordSchema,
+});

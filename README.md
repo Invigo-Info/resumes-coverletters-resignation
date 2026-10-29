@@ -14,6 +14,11 @@ all grounded in the user's own resume, never invented content.
   fabricates employers, metrics, tools, or years.
 - **Cover & resignation letters** — generated from the resume and target role.
 - **Jobs** — search, score against the resume, and tailor.
+- **Accounts** — email/password or Google sign-in, password reset, email
+  verification, and permanent account deletion that erases every per-user store.
+- **Billing** — Stripe Checkout with a paid trial, server-side entitlement
+  driven by webhooks, and self-service cancellation via the Stripe Customer
+  Portal.
 - **Interview prep** — start by choosing a resume (pick a saved one or upload a
   new one), then a mode:
   - *Interview at a specific company* — paste a company + job description; get a
@@ -56,14 +61,29 @@ Create `.env.local` (never commit it):
 | `DATABASE_URL` | Postgres connection. Omit to use the local file store in dev. |
 | `AUTH_SECRET` | NextAuth session secret. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Billing. |
+| `STRIPE_PORTAL_CONFIGURATION_ID` | Customer Portal config from `node scripts/stripe-portal-config.mjs`. Optional; falls back to the Stripe dashboard default. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email (welcome, receipts, password reset, verification). Inert no-op when unset. |
+| `NEXT_PUBLIC_SITE_URL` | Canonical origin. Builds the links in recovery emails, so it must be right in production. |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Shared rate-limit store. Required on multi-instance deploys, or each instance enforces its own copy of every cap. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google sign-in. Omit to offer email/password only. |
 
 ## Quality gates
 
 Run before pushing:
 
 ```bash
-npx tsc --noEmit                                   # type-check
-python ../scripts/check_no_emoji.py <changed files># no emoji in UI/output
+npx tsc --noEmit             # type-check
+npx eslint .                 # must be 0 errors (warnings are triaged)
+npx vitest run               # unit tests
+npx next build               # production build
+```
+
+Database changes apply through the migration ledger, which also fails if any
+`public` table is left without row-level security:
+
+```bash
+node scripts/db-migrate.mjs --status   # list applied / pending
+node scripts/db-migrate.mjs            # apply pending
 ```
 
 CI runs token, contrast, component-spec, and test gates on push/PR.
@@ -84,4 +104,6 @@ Code is grouped by **purpose** (see `docs/architecture.md` for the full map):
 
 See `CLAUDE.md` for the project overview and changelog, `docs/architecture.md`
 for the folder architecture, and `AGENTS.md` for the "this is a customized
-Next.js" note.
+Next.js" note. Also `docs/supabase-setup.md` (database provisioning and the RLS
+step) and `docs/account-recovery.md` (password reset, email verification, and
+what actually guards OAuth sign-in).

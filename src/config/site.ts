@@ -7,7 +7,9 @@
  *      (e.g. https://app.your-domain.com). Preferred.
  *   2. VERCEL_PROJECT_PRODUCTION_URL - Vercel's stable production domain, so
  *      preview/prod deploys get a correct origin without extra config.
- *   3. http://localhost:3000 - local development fallback.
+ *   3. http://localhost:3001 - local development fallback (the dev server
+ *      runs on 3001, so a 3000 fallback produced unreachable links in the
+ *      emails that are built from this origin).
  *
  * Always returns an origin with no trailing slash.
  */
@@ -16,5 +18,5 @@ export function siteUrl(): string {
   if (explicit) return explicit.replace(/\/+$/, "");
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercel) return `https://${vercel}`;
-  return "http://localhost:3000";
+  return "http://localhost:3001";
 }
