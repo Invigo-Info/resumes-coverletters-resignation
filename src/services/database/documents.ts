@@ -337,3 +337,21 @@ export async function removeDocument(
     ? pgRemoveDocument(email, type, id)
     : fileRemoveDocument(email, type, id);
 }
+
+/**
+ * Erase every document this user owns, of every type. Used by account deletion.
+ *
+ * The Postgres path cannot rely on a cascade from `users`: schema.sql
+ * deliberately DROPS documents_email_fkey, because OAuth accounts own documents
+ * without ever having a `users` row. Deletion therefore has to be explicit.
+ */
+export async function deleteAllDocuments(email: string): Promise<void> {
+  if (isDbEnabled()) {
+    const sql = getSql();
+    await sql`delete from documents where email = ${normalize(email)}`;
+    return;
+  }
+  const all = await readAll();
+  delete all[normalize(email)];
+  await writeAll(all);
+}

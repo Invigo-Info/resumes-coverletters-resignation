@@ -184,7 +184,9 @@ async function pgUpdateUserName(email: string, name: string): Promise<boolean> {
 
 async function pgDeleteUser(email: string): Promise<void> {
   const sql = getSql();
-  // documents are removed by the ON DELETE CASCADE on documents.email.
+  // Deletes the users row ONLY. There is no cascade: schema.sql explicitly
+  // drops documents_email_fkey so OAuth accounts (which have no users row) can
+  // still own documents. Full erasure lives in services/database/account.ts.
   await sql`delete from users where email = ${normalize(email)}`;
 }
 

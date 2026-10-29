@@ -181,3 +181,15 @@ export async function removeTailoringSession(
     ? pgRemoveSession(email, id)
     : fileRemoveSession(email, id);
 }
+
+/** Erase every tailoring session for a user. Used by account deletion. */
+export async function clearTailoringSessions(email: string): Promise<void> {
+  if (isDbEnabled()) {
+    const sql = getSql();
+    await sql`delete from tailoring_sessions where email = ${normalize(email)}`;
+    return;
+  }
+  const all = await readAll();
+  delete all[normalize(email)];
+  await writeAll(all);
+}

@@ -140,3 +140,15 @@ export async function removeSavedJob(
     ? pgRemoveSavedJob(email, jobId)
     : fileRemoveSavedJob(email, jobId);
 }
+
+/** Erase every saved posting for a user. Used by account deletion. */
+export async function clearSavedJobs(email: string): Promise<void> {
+  if (isDbEnabled()) {
+    const sql = getSql();
+    await sql`delete from saved_jobs where email = ${normalize(email)}`;
+    return;
+  }
+  const all = await readAll();
+  delete all[normalize(email)];
+  await writeAll(all);
+}

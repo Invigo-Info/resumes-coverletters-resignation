@@ -117,3 +117,15 @@ export async function setEntitlementByCustomer(
   `) as unknown as { email: string }[];
   return rows.length;
 }
+
+/**
+ * Erase a user's stored subscription row. Used by account deletion.
+ *
+ * No-op without a database: entitlements are Postgres-only (file-store mode has
+ * no subscription state to erase).
+ */
+export async function deleteEntitlement(email: string): Promise<void> {
+  if (!isDbEnabled()) return;
+  const sql = getSql();
+  await sql`delete from subscriptions where email = ${normalize(email)}`;
+}

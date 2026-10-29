@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/features/authentication/auth";
-import { updateUserName, deleteUser } from "@/services/database/users";
+import { updateUserName } from "@/services/database/users";
+import { deleteAccount } from "@/services/database/account";
 import { getStripe } from "@/services/payments/server";
 
 /** Update the signed-in user's display name. */
@@ -64,11 +65,20 @@ export async function DELETE() {
     }
   }
 
-  try {
-    await deleteUser(email);
-  } catch (err) {
-    console.error("[/api/account] delete failed", err);
-    return NextResponse.json({ error: "delete" }, { status: 500 });
+  // Erase every per-user store, not just the `users` row - see
+  // services/database/account.ts for why there is no cascade to rely on.
+  const result = await deleteAccount(email);
+  if (result.failed.length > 0) {
+    // Never report success while data remains: the user has just been told
+    // their account is gone. Name the stores so this is actionable.
+    console.error(
+      "[/api/account] erasure incomplete for stores:",
+      result.failed.map((f) => `${f.store}: ${f.error}`).join("; ")
+    );
+    return NextResponse.json(
+      { error: "delete", stores: result.failed.map((f) => f.store) },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ ok: true });
 }
